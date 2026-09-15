@@ -462,6 +462,7 @@
       justify-content: center;
     }
 
+    /* 卡片：单击/双击手势的点击区域 */
     .knowledge-card {
       background: white;
       border-radius: 28px;
@@ -470,6 +471,7 @@
       border: 1px solid rgba(255, 255, 255, 0.6);
       transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
       word-break: break-word;
+      cursor: pointer;
     }
 
     .card-title {
@@ -490,9 +492,10 @@
       color: #1e293b;
       white-space: pre-wrap;
       word-break: break-word;
-      -webkit-user-select: text;
-      user-select: text;
       transition: color 0.25s;
+      /* 注意：为了单击/双击手势，这里不再允许文本选择 */
+      -webkit-user-select: none;
+      user-select: none;
     }
 
     .card-title-row {
@@ -1943,6 +1946,9 @@
       };
 
       const MASTERED_THRESHOLD = 100;
+      // 单击延迟（毫秒）：等待这段时间，如果没有第二次点击，则执行单击操作
+      // 若太快触发单击，双击就会失效；太慢会让单击迟钝。250ms 是体验和识别的平衡点。
+      const CLICK_DELAY = 250;
 
       const DEFAULT_ITEMS = [
         { id: '1', title: 'HTML 语义化', content: '使用恰当的 HTML 标签来构建页面结构，例如 header、nav、main、article、section、aside、footer。语义化有助于 SEO、可访问性和代码可读性。', group: '前端基础', masteryLevel: 0 },
@@ -2107,7 +2113,7 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           const swCode = `
-            const CACHE_NAME = 'knowledge-cards-v5';
+            const CACHE_NAME = 'knowledge-cards-v6';
             const urlsToCache = ['./', './index.html'];
             self.addEventListener('install', (event) => {
               event.waitUntil(
@@ -2942,7 +2948,6 @@
         reciteIndex = currentIndex >= 0 ? currentIndex : 0;
         if (reciteIndex >= knowledgeItems.length) reciteIndex = knowledgeItems.length - 1;
 
-        // 两个实心三角形箭头 SVG
         const prevArrowSvg = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M 28 6 L 12 20 L 28 34 Z"/></svg>`;
         const nextArrowSvg = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M 12 6 L 28 20 L 12 34 Z"/></svg>`;
 
@@ -2959,7 +2964,7 @@
           slidesHtml += `
             <div class="recite-slide" data-index="${idx}" data-id="${item.id}">
               <div class="recite-slide-inner">
-                <div class="knowledge-card" data-card-id="${item.id}">
+                <div class="knowledge-card" data-card-id="${item.id}" data-card-action-id="${item.id}">
                   ${groupTag}
                   <div class="card-title-row">
                     <div class="card-title">${escapeHtml(item.title)}</div>
@@ -2993,7 +2998,6 @@
           `;
         });
 
-        // 注意：这里已去掉 .recite-indicator 元素
         contentArea.innerHTML = `
           <div class="recite-container">
             <div class="recite-slider" id="reciteSlider">
@@ -3093,6 +3097,59 @@
             const item = knowledgeItems.find(i => i.id === id);
             if (item) speakItem(item);
           });
+        });
+
+        // ====== 单击 / 双击手势 ======
+        // 在卡片上监听 click 事件，用定时器区分单击和双击
+        contentArea.querySelectorAll('.knowledge-card').forEach(cardEl => {
+          let clickTimer = null;
+          let clickCount = 0;
+
+          // 记录最近一次点击的坐标，用于判断双击是否为同一位置（可选）
+          let lastX = 0, lastY = 0;
+
+          cardEl.addEventListener('click', (e) => {
+            // 如果点击的是朗读按钮或内部交互元素，不触发单击/双击手势
+            if (e.target.closest('.speak-btn')) return;
+            // 忽略文本选择（虽然已经禁用了）
+            if (window.getSelection && window.getSelection().toString()) return;
+
+            clickCount++;
+            lastX = e.clientX;
+            lastY = e.clientY;
+
+            if (clickCount === 1) {
+              // 等待 CLICK_DELAY，若期间没有第二次点击，则执行单击
+              clickTimer = setTimeout(() => {
+                clickCount = 0;
+                // ====== 单击：返回全局模式 ======
+                handleCardSingleClick();
+              }, CLICK_DELAY);
+            } else if (clickCount === 2) {
+              // ====== 双击：进入录入模式编辑 ======
+              if (clickTimer) {
+                clearTimeout(clickTimer);
+                clickTimer = null;
+              }
+              clickCount = 0;
+              handleCardDoubleClick(e.currentTarget);
+            }
+          });
+
+          function handleCardSingleClick() {
+            // 单击：返回全局模式
+            setMode('global');
+          }
+
+          function handleCardDoubleClick(cardEl) {
+            // 双击：进入录入模式并编辑当前知识点
+            const itemId = cardEl.dataset.cardActionId;
+            if (itemId) {
+              activeId = itemId;
+              isCreatingNew = false;
+            }
+            setMode('edit');
+          }
         });
       }
 
