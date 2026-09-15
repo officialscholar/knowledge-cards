@@ -1784,11 +1784,6 @@
         font-size: 0.72rem;
       }
 
-      .recite-indicator {
-        font-size: 0.7rem;
-        padding: 5px 10px;
-      }
-
       .slide-nav-btn {
         width: 42px;
         height: 42px;
@@ -2112,7 +2107,7 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           const swCode = `
-            const CACHE_NAME = 'knowledge-cards-v4';
+            const CACHE_NAME = 'knowledge-cards-v5';
             const urlsToCache = ['./', './index.html'];
             self.addEventListener('install', (event) => {
               event.waitUntil(
@@ -2930,7 +2925,6 @@
       }
 
       // ========== 背诵模式 ==========
-      // 使用简单的纯色实心三角箭头（更清晰、跟图片一致）
       function renderReciteMode() {
         if (knowledgeItems.length === 0) {
           contentArea.innerHTML = `
@@ -2948,7 +2942,7 @@
         reciteIndex = currentIndex >= 0 ? currentIndex : 0;
         if (reciteIndex >= knowledgeItems.length) reciteIndex = knowledgeItems.length - 1;
 
-        // 两个实心三角形箭头 SVG（标准左右翻转箭头）
+        // 两个实心三角形箭头 SVG
         const prevArrowSvg = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M 28 6 L 12 20 L 28 34 Z"/></svg>`;
         const nextArrowSvg = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M 12 6 L 28 20 L 12 34 Z"/></svg>`;
 
@@ -2999,38 +2993,29 @@
           `;
         });
 
+        // 注意：这里已去掉 .recite-indicator 元素
         contentArea.innerHTML = `
           <div class="recite-container">
             <div class="recite-slider" id="reciteSlider">
               ${slidesHtml}
             </div>
-            <div class="recite-indicator" id="reciteIndicator">
-              <span class="nav-hint">← 左右滑动切换 →</span>
-              <span>${reciteIndex + 1} / ${knowledgeItems.length}</span>
-            </div>
           </div>
         `;
 
         const slider = document.getElementById('reciteSlider');
-        const indicator = document.getElementById('reciteIndicator');
 
-        // 通过 JS 直接设置宽度，避免不同浏览器的 scrollLeft 兼容问题
         const slideWidth = slider.clientWidth;
         slider.scrollLeft = reciteIndex * slideWidth;
 
-        // 初始渲染每张卡片的滑块状态
         knowledgeItems.forEach(item => {
           updateSliderVisuals(item.id, item.masteryLevel || 0);
         });
 
-        // 初始化所有滑块
         contentArea.querySelectorAll('.mastery-slider-container').forEach(container => {
           initMasterySlider(container.dataset.sliderId);
         });
 
-        // ====== 关键优化：立即更新 UI，不等待滚动完成 ======
         function updateNavUI() {
-          // 更新所有导航按钮和页码（因为每个卡片里都有一份，所以统一刷新）
           contentArea.querySelectorAll('[data-nav-prev]').forEach(btn => {
             btn.disabled = reciteIndex === 0;
           });
@@ -3040,12 +3025,6 @@
           contentArea.querySelectorAll('[data-nav-pos]').forEach(el => {
             el.textContent = `${reciteIndex + 1} / ${knowledgeItems.length}`;
           });
-          if (indicator) {
-            indicator.innerHTML = `
-              <span class="nav-hint">← 左右滑动切换 →</span>
-              <span>${reciteIndex + 1} / ${knowledgeItems.length}</span>
-            `;
-          }
         }
 
         function scrollToIndex(idx, smooth) {
@@ -3062,7 +3041,7 @@
           if (speakingId) stopSpeaking();
           reciteIndex--;
           activeId = knowledgeItems[reciteIndex].id;
-          updateNavUI(); // 立即更新页码和按钮
+          updateNavUI();
           scrollToIndex(reciteIndex, true);
           renderSidebar();
         }
@@ -3072,7 +3051,7 @@
           if (speakingId) stopSpeaking();
           reciteIndex++;
           activeId = knowledgeItems[reciteIndex].id;
-          updateNavUI(); // 立即更新页码和按钮
+          updateNavUI();
           scrollToIndex(reciteIndex, true);
           renderSidebar();
         }
@@ -3092,7 +3071,6 @@
 
         updateNavUI();
 
-        // 滑动结束后同步索引（debounce 缩短到 30ms）
         let scrollTimer = null;
         slider.addEventListener('scroll', () => {
           if (scrollTimer) clearTimeout(scrollTimer);
@@ -3450,12 +3428,9 @@
             if (speakingId) stopSpeaking();
             reciteIndex--;
             activeId = knowledgeItems[reciteIndex].id;
-            // 立即刷新 UI（手动同步，避免依赖 scroll 事件）
             contentArea.querySelectorAll('[data-nav-prev]').forEach(btn => { btn.disabled = reciteIndex === 0; });
             contentArea.querySelectorAll('[data-nav-next]').forEach(btn => { btn.disabled = reciteIndex === knowledgeItems.length - 1; });
             contentArea.querySelectorAll('[data-nav-pos]').forEach(el => { el.textContent = `${reciteIndex + 1} / ${knowledgeItems.length}`; });
-            const ind = document.getElementById('reciteIndicator');
-            if (ind) ind.innerHTML = `<span class="nav-hint">← 左右滑动切换 →</span><span>${reciteIndex + 1} / ${knowledgeItems.length}</span>`;
             slider.scrollTo({ left: reciteIndex * slider.clientWidth, behavior: 'smooth' });
             renderSidebar();
           } else if (e.key === 'ArrowRight' && reciteIndex < knowledgeItems.length - 1 && slider) {
@@ -3465,8 +3440,6 @@
             contentArea.querySelectorAll('[data-nav-prev]').forEach(btn => { btn.disabled = reciteIndex === 0; });
             contentArea.querySelectorAll('[data-nav-next]').forEach(btn => { btn.disabled = reciteIndex === knowledgeItems.length - 1; });
             contentArea.querySelectorAll('[data-nav-pos]').forEach(el => { el.textContent = `${reciteIndex + 1} / ${knowledgeItems.length}`; });
-            const ind = document.getElementById('reciteIndicator');
-            if (ind) ind.innerHTML = `<span class="nav-hint">← 左右滑动切换 →</span><span>${reciteIndex + 1} / ${knowledgeItems.length}</span>`;
             slider.scrollTo({ left: reciteIndex * slider.clientWidth, behavior: 'smooth' });
             renderSidebar();
           }
