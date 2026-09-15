@@ -171,11 +171,9 @@
     .knowledge-list::-webkit-scrollbar {
       width: 4px;
     }
-
     .knowledge-list::-webkit-scrollbar-track {
       background: #f1f5f9;
     }
-
     .knowledge-list::-webkit-scrollbar-thumb {
       background: #cbd5e1;
       border-radius: 10px;
@@ -232,7 +230,6 @@
       border-radius: 20px;
       font-size: 0.65rem;
       font-weight: 600;
-      letter-spacing: 0;
     }
 
     .group-items {
@@ -250,7 +247,6 @@
       opacity: 0;
       transition: opacity 0.1s;
     }
-
     .group-header:hover .group-actions {
       opacity: 1;
     }
@@ -319,7 +315,6 @@
       color: #1e3a8a;
     }
 
-    /* 已掌握（100）状态 */
     .knowledge-item.mastered {
       background: #f0fdf4;
       border-color: #bbf7d0;
@@ -437,6 +432,7 @@
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
       scroll-behavior: smooth;
+      touch-action: pan-x;
     }
 
     .recite-slider::-webkit-scrollbar {
@@ -466,7 +462,6 @@
       justify-content: center;
     }
 
-    /* ========== 知识卡片：背景随掌握度渐变 ========== */
     .knowledge-card {
       background: white;
       border-radius: 28px;
@@ -542,28 +537,21 @@
       background: #dbeafe;
       transform: scale(1.05);
     }
-
     .speak-btn:active {
       transform: scale(0.95);
     }
-
     .speak-btn.speaking {
       background: #2563eb;
       color: white;
       animation: speakPulse 1.5s ease-in-out infinite;
     }
-
     .speak-btn.speaking:hover {
       background: #1e40af;
     }
 
     @keyframes speakPulse {
-      0%, 100% {
-        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5);
-      }
-      50% {
-        box-shadow: 0 0 0 8px rgba(37, 99, 235, 0);
-      }
+      0%, 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5); }
+      50% { box-shadow: 0 0 0 8px rgba(37, 99, 235, 0); }
     }
 
     /* ========== 熟练度滑块 ========== */
@@ -586,10 +574,6 @@
     .mastery-labels .left-label,
     .mastery-labels .right-label {
       transition: color 0.25s;
-    }
-
-    .mastery-labels .right-label {
-      color: #cbd5e1;
     }
 
     .mastery-slider-container {
@@ -638,12 +622,6 @@
       cursor: grab;
       transition: border-color 0.25s, background 0.25s, transform 0.1s;
       z-index: 2;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: #64748b;
     }
 
     .mastery-thumb.dragging {
@@ -652,7 +630,74 @@
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
     }
 
-    /* 滑块手柄颜色随进度变化，通过 JS 内联样式控制 */
+    /* ========== 卡片下方左右切换按钮 ========== */
+    .slide-nav-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin-top: 20px;
+      padding: 0 4px;
+    }
+
+    .slide-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 52px;
+      height: 52px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: transform 0.12s, color 0.12s, opacity 0.12s;
+      color: #64748b;
+      line-height: 0;
+      border-radius: 50%;
+    }
+
+    .slide-nav-btn svg {
+      width: 34px;
+      height: 34px;
+      display: block;
+    }
+
+    .slide-nav-btn svg path {
+      fill: currentColor;
+      transition: fill 0.12s;
+    }
+
+    .slide-nav-btn:hover {
+      color: #1e3a8a;
+      transform: scale(1.08);
+    }
+
+    .slide-nav-btn:active {
+      transform: scale(0.92);
+    }
+
+    .slide-nav-btn:disabled {
+      opacity: 0.22;
+      cursor: not-allowed;
+    }
+
+    .slide-nav-btn:disabled:hover {
+      transform: none;
+      color: #64748b;
+    }
+
+    .slide-nav-position {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #475569;
+      padding: 4px 14px;
+      background: rgba(255, 255, 255, 0.75);
+      border-radius: 20px;
+      letter-spacing: 0.05em;
+      user-select: none;
+      min-width: 64px;
+      text-align: center;
+    }
 
     /* ========== 全局模式 ========== */
     .global-group-section {
@@ -820,7 +865,6 @@
       -webkit-box-orient: vertical;
     }
 
-    /* 已掌握小卡片右下角的绿色小勾 */
     .mastered-check {
       position: absolute;
       bottom: 6px;
@@ -867,13 +911,12 @@
       padding: 14px 16px;
       border: 1.5px solid #e2e8f0;
       border-radius: 18px;
-      font-size: 1rem;
+      font-size: 16px;
       font-family: inherit;
       background: #fafcff;
       transition: all 0.15s;
       outline: none;
       resize: vertical;
-      font-size: 16px;
     }
 
     .input-group input:focus,
@@ -1518,7 +1561,7 @@
       }
 
       .recite-slide {
-        padding: 16px 12px 80px;
+        padding: 16px 12px 30px;
       }
 
       .mastery-slider-row {
@@ -1532,6 +1575,27 @@
       .mastery-thumb {
         width: 26px;
         height: 26px;
+      }
+
+      .slide-nav-row {
+        margin-top: 14px;
+        padding: 0 2px;
+      }
+
+      .slide-nav-btn {
+        width: 46px;
+        height: 46px;
+      }
+
+      .slide-nav-btn svg {
+        width: 30px;
+        height: 30px;
+      }
+
+      .slide-nav-position {
+        font-size: 0.85rem;
+        padding: 3px 12px;
+        min-width: 58px;
       }
 
       .global-grid {
@@ -1725,6 +1789,22 @@
         padding: 5px 10px;
       }
 
+      .slide-nav-btn {
+        width: 42px;
+        height: 42px;
+      }
+
+      .slide-nav-btn svg {
+        width: 26px;
+        height: 26px;
+      }
+
+      .slide-nav-position {
+        font-size: 0.8rem;
+        padding: 3px 10px;
+        min-width: 52px;
+      }
+
       .import-mode-selector {
         flex-direction: column;
         gap: 6px;
@@ -1860,9 +1940,6 @@
 
   <script>
     (function(){
-      // ============================================================
-      // 语音朗读配置
-      // ============================================================
       const SPEECH_CONFIG = {
         rate: 0.85,
         pitch: 1.0,
@@ -1870,7 +1947,6 @@
         lang: 'zh-CN'
       };
 
-      // 熟练掌握阈值：masteryLevel >= 100 视为已掌握
       const MASTERED_THRESHOLD = 100;
 
       const DEFAULT_ITEMS = [
@@ -1968,27 +2044,21 @@
           alert('当前浏览器不支持语音朗读功能');
           return;
         }
-
         if (speakingId === item.id) {
           stopSpeaking();
           return;
         }
-
         window.speechSynthesis.cancel();
-
         const title = normalizeSpeechText(item.title);
         const content = normalizeSpeechText(item.content || '');
         let text = title;
-        if (content) {
-          text += '。' + content;
-        }
+        if (content) text += '。' + content;
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.rate = SPEECH_CONFIG.rate;
         utterance.pitch = SPEECH_CONFIG.pitch;
         utterance.volume = SPEECH_CONFIG.volume;
         utterance.lang = SPEECH_CONFIG.lang;
-
         const voice = getChineseVoice();
         if (voice) utterance.voice = voice;
 
@@ -1996,23 +2066,18 @@
           speakingId = item.id;
           updateSpeakButton(item.id, true);
         };
-
         utterance.onend = () => {
           speakingId = null;
           currentUtterance = null;
           updateSpeakButton(item.id, false);
         };
-
-        utterance.onerror = (e) => {
-          console.warn('语音朗读出错:', e);
+        utterance.onerror = () => {
           speakingId = null;
           currentUtterance = null;
           updateSpeakButton(item.id, false);
         };
-
         currentUtterance = utterance;
         speakingId = item.id;
-
         window.speechSynthesis.speak(utterance);
         updateSpeakButton(item.id, true);
       }
@@ -2047,9 +2112,8 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           const swCode = `
-            const CACHE_NAME = 'knowledge-cards-v1';
+            const CACHE_NAME = 'knowledge-cards-v4';
             const urlsToCache = ['./', './index.html'];
-
             self.addEventListener('install', (event) => {
               event.waitUntil(
                 caches.open(CACHE_NAME).then((cache) => {
@@ -2058,25 +2122,20 @@
               );
               self.skipWaiting();
             });
-
             self.addEventListener('activate', (event) => {
               event.waitUntil(
                 caches.keys().then((cacheNames) => {
                   return Promise.all(
                     cacheNames.map((cacheName) => {
-                      if (cacheName !== CACHE_NAME) {
-                        return caches.delete(cacheName);
-                      }
+                      if (cacheName !== CACHE_NAME) return caches.delete(cacheName);
                     })
                   );
                 })
               );
               self.clients.claim();
             });
-
             self.addEventListener('fetch', (event) => {
               if (event.request.method !== 'GET') return;
-              
               event.respondWith(
                 caches.match(event.request).then((response) => {
                   if (response) {
@@ -2089,11 +2148,8 @@
                     }).catch(() => {});
                     return response;
                   }
-                  
                   return fetch(event.request).then((response) => {
-                    if (!response || response.status !== 200 || response.type !== 'basic') {
-                      return response;
-                    }
+                    if (!response || response.status !== 200 || response.type !== 'basic') return response;
                     const responseToCache = response.clone();
                     caches.open(CACHE_NAME).then((cache) => {
                       cache.put(event.request, responseToCache);
@@ -2108,12 +2164,11 @@
               );
             });
           `;
-
           try {
             const blob = new Blob([swCode], { type: 'application/javascript' });
             const swUrl = URL.createObjectURL(blob);
             navigator.serviceWorker.register(swUrl)
-              .then(() => console.log('Service Worker 注册成功 (PWA 离线可用)'))
+              .then(() => console.log('Service Worker 注册成功'))
               .catch((err) => console.warn('Service Worker 注册失败:', err));
           } catch (e) {
             console.warn('Service Worker 初始化失败:', e);
@@ -2139,7 +2194,6 @@
         closeConfirm();
         if (cb) cb();
       });
-
       confirmCancel.addEventListener('click', closeConfirm);
       confirmOverlay.addEventListener('click', (e) => {
         if (e.target === confirmOverlay) closeConfirm();
@@ -2153,7 +2207,6 @@
             const parsed = JSON.parse(stored);
             if (Array.isArray(parsed) && parsed.length > 0) {
               return parsed.filter(item => item && item.title !== undefined).map(item => {
-                // 兼容老数据：把 mastered 转成 masteryLevel
                 let level = 0;
                 if (typeof item.masteryLevel === 'number') {
                   level = Math.max(0, Math.min(100, item.masteryLevel));
@@ -2235,36 +2288,27 @@
         return Array.from(groups).sort();
       }
 
-      // 判断是否已掌握
       function isMastered(item) {
         return (item.masteryLevel || 0) >= MASTERED_THRESHOLD;
       }
 
-      // 根据掌握度计算插值颜色（灰→绿）
       function getMasteryColor(level) {
-        // 0 → #94a3b8 (灰)
-        // 100 → #16a34a (绿)
         const t = Math.max(0, Math.min(100, level)) / 100;
-        // 灰色 #94a3b8 => RGB(148, 163, 184)
-        // 绿色 #16a34a => RGB(22, 163, 74)
         const r = Math.round(148 + (22 - 148) * t);
-        const g = Math.round(163 + (163 - 163) * t);  // 保持163
+        const g = Math.round(163 + (163 - 163) * t);
         const b = Math.round(184 + (74 - 184) * t);
         return `rgb(${r}, ${g}, ${b})`;
       }
 
-      // 根据掌握度计算卡片背景色（白→浅绿）
       function getCardBackground(level) {
         const t = Math.max(0, Math.min(100, level)) / 100;
         if (t === 0) return '#ffffff';
-        // 从 #ffffff 到 #dcfce7 线性插值
         const r = Math.round(255 + (220 - 255) * t);
         const g = Math.round(255 + (252 - 255) * t);
         const b = Math.round(255 + (231 - 255) * t);
         return `rgb(${r}, ${g}, ${b})`;
       }
 
-      // 根据掌握度计算卡片边框色（浅灰→浅绿）
       function getCardBorderColor(level) {
         const t = Math.max(0, Math.min(100, level)) / 100;
         if (t === 0) return 'rgba(255, 255, 255, 0.6)';
@@ -2276,17 +2320,12 @@
 
       // ---------- 导出 / 导入 ----------
       function openExportModal() {
-        const data = JSON.stringify(knowledgeItems, null, 2);
-        exportTextarea.value = data;
+        exportTextarea.value = JSON.stringify(knowledgeItems, null, 2);
         exportStatus.textContent = '';
         exportStatus.className = 'status-msg';
         exportModal.classList.add('show');
       }
-
-      function closeExportModal() {
-        exportModal.classList.remove('show');
-      }
-
+      function closeExportModal() { exportModal.classList.remove('show'); }
       function openImportModal() {
         importTextarea.value = '';
         importStatus.textContent = '';
@@ -2295,18 +2334,11 @@
         updateImportModeUI();
         importModal.classList.add('show');
       }
-
-      function closeImportModal() {
-        importModal.classList.remove('show');
-      }
+      function closeImportModal() { importModal.classList.remove('show'); }
 
       function updateImportModeUI() {
         importModeSelector.querySelectorAll('.import-mode-option').forEach(opt => {
-          if (opt.dataset.mode === importMode) {
-            opt.classList.add('selected');
-          } else {
-            opt.classList.remove('selected');
-          }
+          opt.classList.toggle('selected', opt.dataset.mode === importMode);
         });
       }
 
@@ -2327,13 +2359,8 @@
           exportTextarea.setSelectionRange(0, 99999);
           try {
             const ok = document.execCommand('copy');
-            if (ok) {
-              exportStatus.textContent = '✓ 已复制到剪贴板！';
-              exportStatus.className = 'status-msg';
-            } else {
-              exportStatus.textContent = '复制失败，请手动全选复制';
-              exportStatus.className = 'status-msg error';
-            }
+            exportStatus.textContent = ok ? '✓ 已复制到剪贴板！' : '复制失败，请手动全选复制';
+            exportStatus.className = ok ? 'status-msg' : 'status-msg error';
           } catch (e2) {
             exportStatus.textContent = '复制失败，请手动全选复制';
             exportStatus.className = 'status-msg error';
@@ -2368,7 +2395,6 @@
           importStatus.className = 'status-msg error';
           return;
         }
-
         let parsed;
         try {
           parsed = JSON.parse(rawText);
@@ -2377,13 +2403,11 @@
           importStatus.className = 'status-msg error';
           return;
         }
-
         if (!Array.isArray(parsed)) {
           importStatus.textContent = '❌ 数据格式错误，应为数组';
           importStatus.className = 'status-msg error';
           return;
         }
-
         const cleaned = parsed
           .filter(item => item && typeof item === 'object' && item.title !== undefined)
           .map(item => {
@@ -2419,52 +2443,37 @@
               saveToStorage();
               renderSidebar();
               renderContent();
-
               importStatus.textContent = `✓ 成功覆盖，共导入 ${cleaned.length} 个知识点！`;
               importStatus.className = 'status-msg';
-
-              setTimeout(() => {
-                closeImportModal();
-              }, 1200);
+              setTimeout(closeImportModal, 1200);
             }
           );
         } else {
           const existingIds = new Set(knowledgeItems.map(i => i.id));
           const mergedItems = cleaned.map(item => {
             const newItem = { ...item };
-            while (existingIds.has(newItem.id)) {
-              newItem.id = generateId();
-            }
+            while (existingIds.has(newItem.id)) newItem.id = generateId();
             existingIds.add(newItem.id);
             return newItem;
           });
-
           showConfirm(
             '确认合并',
             `即将追加 ${mergedItems.length} 个知识点，\n当前 ${knowledgeItems.length} 个知识点将被保留。\n合并后共 ${knowledgeItems.length + mergedItems.length} 个。\n\n确定继续吗？`,
             () => {
               knowledgeItems = knowledgeItems.concat(mergedItems);
-              if (!activeId && knowledgeItems.length > 0) {
-                activeId = knowledgeItems[0].id;
-              }
+              if (!activeId && knowledgeItems.length > 0) activeId = knowledgeItems[0].id;
               saveToStorage();
               renderSidebar();
               renderContent();
-
               importStatus.textContent = `✓ 成功合并，新增 ${mergedItems.length} 个知识点！`;
               importStatus.className = 'status-msg';
-
-              setTimeout(() => {
-                closeImportModal();
-              }, 1200);
+              setTimeout(closeImportModal, 1200);
             }
           );
         }
       }
 
-      function doImport() {
-        parseAndImport(importTextarea.value);
-      }
+      function doImport() { parseAndImport(importTextarea.value); }
 
       function handleFileSelect(file) {
         if (!file) return;
@@ -2473,11 +2482,9 @@
           importStatus.className = 'status-msg error';
           return;
         }
-
         const reader = new FileReader();
         reader.onload = (e) => {
-          const text = e.target.result;
-          importTextarea.value = text;
+          importTextarea.value = e.target.result;
           importStatus.textContent = `📄 已加载文件：${file.name}，请点击“确认导入”`;
           importStatus.className = 'status-msg';
         };
@@ -2488,30 +2495,20 @@
         reader.readAsText(file);
       }
 
-      fileDropZone.addEventListener('click', () => {
-        fileInput.click();
-      });
-
+      fileDropZone.addEventListener('click', () => fileInput.click());
       fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        handleFileSelect(file);
+        handleFileSelect(e.target.files[0]);
         fileInput.value = '';
       });
-
       fileDropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
         fileDropZone.classList.add('dragover');
       });
-
-      fileDropZone.addEventListener('dragleave', () => {
-        fileDropZone.classList.remove('dragover');
-      });
-
+      fileDropZone.addEventListener('dragleave', () => fileDropZone.classList.remove('dragover'));
       fileDropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         fileDropZone.classList.remove('dragover');
-        const file = e.dataTransfer.files[0];
-        handleFileSelect(file);
+        handleFileSelect(e.dataTransfer.files[0]);
       });
 
       // ---------- 渲染侧边栏 ----------
@@ -2529,7 +2526,6 @@
         groups.forEach(groupName => {
           const groupItems = knowledgeItems.filter(item => item.group && item.group.trim() === groupName);
           const isCollapsed = collapsedGroups[groupName] === true;
-
           html += `
             <div class="group-section ${isCollapsed ? 'collapsed' : ''}" data-group="${escapeHtml(groupName)}">
               <div class="group-header" data-group-toggle="${escapeHtml(groupName)}">
@@ -2548,9 +2544,7 @@
         });
 
         if (ungroupedItems.length > 0) {
-          if (groups.length > 0) {
-            html += `<div class="ungrouped-label">未分组</div>`;
-          }
+          if (groups.length > 0) html += `<div class="ungrouped-label">未分组</div>`;
           html += ungroupedItems.map(item => renderKnowledgeItem(item)).join('');
         }
 
@@ -2565,17 +2559,14 @@
             collapsedGroups[groupName] = !collapsedGroups[groupName];
             saveCollapsedState();
             const section = header.closest('.group-section');
-            if (section) {
-              section.classList.toggle('collapsed', collapsedGroups[groupName]);
-            }
+            if (section) section.classList.toggle('collapsed', collapsedGroups[groupName]);
           });
         });
 
         document.querySelectorAll('.delete-group').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const groupName = btn.dataset.groupDelete;
-            deleteGroup(groupName);
+            deleteGroup(btn.dataset.groupDelete);
           });
         });
 
@@ -2601,8 +2592,7 @@
         document.querySelectorAll('.delete-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const id = btn.dataset.id;
-            deleteKnowledgeItem(id);
+            deleteKnowledgeItem(btn.dataset.id);
           });
         });
       }
@@ -2629,9 +2619,7 @@
           `确定要删除分组「${groupName}」吗？\n组内 ${count} 个知识点将变为未分组状态。`,
           () => {
             knowledgeItems.forEach(item => {
-              if (item.group === groupName) {
-                item.group = '';
-              }
+              if (item.group === groupName) item.group = '';
             });
             saveToStorage();
             renderSidebar();
@@ -2643,14 +2631,11 @@
       function deleteKnowledgeItem(id) {
         const index = knowledgeItems.findIndex(item => item.id === id);
         if (index === -1) return;
-
         showConfirm(
           '删除知识点',
           `确定要删除知识点「${knowledgeItems[index].title}」吗？`,
           () => {
-            if (speakingId === id) {
-              stopSpeaking();
-            }
+            if (speakingId === id) stopSpeaking();
             knowledgeItems.splice(index, 1);
             if (activeId === id) {
               activeId = knowledgeItems.length > 0 ? knowledgeItems[0].id : null;
@@ -2681,9 +2666,7 @@
           contentArea.classList.remove('recite-full');
         }
 
-        if (speakingId) {
-          stopSpeaking();
-        }
+        if (speakingId) stopSpeaking();
 
         if (currentMode === 'global') {
           renderGlobalMode();
@@ -2711,18 +2694,15 @@
 
         const groups = getAllGroups();
         const ungroupedItems = knowledgeItems.filter(item => !item.group || !item.group.trim());
-
         let html = '';
 
         groups.forEach(groupName => {
           const groupItems = knowledgeItems.filter(item => item.group && item.group.trim() === groupName);
           if (groupItems.length === 0) return;
-
-          const sortedGroupItems = [
-            ...groupItems.filter(item => !isMastered(item)),
-            ...groupItems.filter(item => isMastered(item))
+          const sorted = [
+            ...groupItems.filter(i => !isMastered(i)),
+            ...groupItems.filter(i => isMastered(i))
           ];
-
           html += `
             <div class="global-group-section" data-group="${escapeHtml(groupName)}">
               <div class="global-group-divider">
@@ -2731,18 +2711,17 @@
                 <span class="divider-line"></span>
               </div>
               <div class="global-grid">
-                ${sortedGroupItems.map(item => renderGlobalCard(item)).join('')}
+                ${sorted.map(renderGlobalCard).join('')}
               </div>
             </div>
           `;
         });
 
         if (ungroupedItems.length > 0) {
-          const sortedUngrouped = [
-            ...ungroupedItems.filter(item => !isMastered(item)),
-            ...ungroupedItems.filter(item => isMastered(item))
+          const sorted = [
+            ...ungroupedItems.filter(i => !isMastered(i)),
+            ...ungroupedItems.filter(i => isMastered(i))
           ];
-
           html += `
             <div class="global-group-section ungrouped-section" data-group="">
               <div class="global-group-divider">
@@ -2751,7 +2730,7 @@
                 <span class="divider-line"></span>
               </div>
               <div class="global-grid">
-                ${sortedUngrouped.map(item => renderGlobalCard(item)).join('')}
+                ${sorted.map(renderGlobalCard).join('')}
               </div>
             </div>
           `;
@@ -2760,7 +2739,7 @@
         contentArea.innerHTML = html;
 
         contentArea.querySelectorAll('.global-card').forEach(card => {
-          card.addEventListener('click', (e) => {
+          card.addEventListener('click', () => {
             if (card.dataset.dragMoved === 'true') return;
             const id = card.dataset.id;
             if (id) {
@@ -2776,10 +2755,7 @@
 
       function renderGlobalCard(item) {
         const masteredClass = isMastered(item) ? 'mastered-global' : '';
-        // 右下角绿色小勾（仅已掌握显示）
-        const masteredCheck = isMastered(item)
-          ? '<span class="mastered-check">✓</span>'
-          : '';
+        const masteredCheck = isMastered(item) ? '<span class="mastered-check">✓</span>' : '';
         return `
           <div class="global-card ${masteredClass}" data-id="${item.id}" draggable="false">
             <div class="card-title">${escapeHtml(item.title)}</div>
@@ -2799,13 +2775,11 @@
         let dragOffsetX = 0, dragOffsetY = 0;
 
         const allCards = contentArea.querySelectorAll('.global-card');
-
         allCards.forEach(card => {
           card.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
             startDrag(e.clientX, e.clientY, card);
           });
-
           card.addEventListener('touchstart', (e) => {
             const touch = e.touches[0];
             startDrag(touch.clientX, touch.clientY, card);
@@ -2817,7 +2791,6 @@
           startY = clientY;
           isDragging = false;
           card.dataset.dragMoved = 'false';
-
           const rect = card.getBoundingClientRect();
           dragOffsetX = clientX - rect.left;
           dragOffsetY = clientY - rect.top;
@@ -2825,15 +2798,12 @@
           const onMouseMove = (moveEvent) => {
             const moveX = moveEvent.clientX !== undefined ? moveEvent.clientX : moveEvent.touches[0].clientX;
             const moveY = moveEvent.clientY !== undefined ? moveEvent.clientY : moveEvent.touches[0].clientY;
-
             const deltaX = Math.abs(moveX - startX);
             const deltaY = Math.abs(moveY - startY);
-
             if (!isDragging && (deltaX > 5 || deltaY > 5)) {
               isDragging = true;
               beginDrag(card, moveX, moveY);
             }
-
             if (isDragging) {
               moveEvent.preventDefault();
               updateDragPosition(moveX, moveY);
@@ -2846,10 +2816,7 @@
             document.removeEventListener('mouseup', onMouseUp);
             document.removeEventListener('touchmove', onMouseMove);
             document.removeEventListener('touchend', onMouseUp);
-
-            if (isDragging) {
-              endDrag();
-            }
+            if (isDragging) endDrag();
             setTimeout(() => {
               if (card) card.dataset.dragMoved = 'false';
             }, 50);
@@ -2865,7 +2832,6 @@
           draggedElement = card;
           card.classList.add('dragging');
           card.dataset.dragMoved = 'true';
-
           placeholder = document.createElement('div');
           placeholder.className = 'global-card';
           placeholder.style.visibility = 'hidden';
@@ -2882,69 +2848,41 @@
           card.style.height = rect.height + 'px';
           card.style.zIndex = '1000';
           card.style.pointerEvents = 'none';
-
           card.parentNode.insertBefore(placeholder, card);
         }
 
         function updateDragPosition(clientX, clientY) {
           if (!draggedElement) return;
-          const newLeft = clientX - dragOffsetX;
-          const newTop = clientY - dragOffsetY;
-          draggedElement.style.left = newLeft + 'px';
-          draggedElement.style.top = newTop + 'px';
+          draggedElement.style.left = (clientX - dragOffsetX) + 'px';
+          draggedElement.style.top = (clientY - dragOffsetY) + 'px';
         }
 
         function handleDragOver(clientX, clientY) {
           if (!draggedElement || !placeholder) return;
-
           const elemBelow = document.elementFromPoint(clientX, clientY);
           if (!elemBelow) return;
-
           const targetCard = elemBelow.closest('.global-card');
           if (!targetCard || targetCard === draggedElement || targetCard === placeholder) return;
-
           const targetGrid = targetCard.closest('.global-grid');
-          const placeholderGrid = placeholder.closest('.global-grid');
           if (!targetGrid) return;
-
-          if (targetGrid !== placeholderGrid) {
-            const targetRect = targetCard.getBoundingClientRect();
-            const targetMiddleY = targetRect.top + targetRect.height / 2;
-            if (clientY < targetMiddleY) {
-              targetGrid.insertBefore(placeholder, targetCard);
-            } else {
-              if (targetCard.nextSibling) {
-                targetGrid.insertBefore(placeholder, targetCard.nextSibling);
-              } else {
-                targetGrid.appendChild(placeholder);
-              }
-            }
-            return;
-          }
 
           const targetRect = targetCard.getBoundingClientRect();
           const targetMiddleX = targetRect.left + targetRect.width / 2;
           const targetMiddleY = targetRect.top + targetRect.height / 2;
-
           const insertBefore = (clientY < targetMiddleY) || (Math.abs(clientY - targetMiddleY) < targetRect.height / 2 && clientX < targetMiddleX);
 
           if (insertBefore) {
             targetGrid.insertBefore(placeholder, targetCard);
           } else {
-            if (targetCard.nextSibling) {
-              targetGrid.insertBefore(placeholder, targetCard.nextSibling);
-            } else {
-              targetGrid.appendChild(placeholder);
-            }
+            if (targetCard.nextSibling) targetGrid.insertBefore(placeholder, targetCard.nextSibling);
+            else targetGrid.appendChild(placeholder);
           }
         }
 
         function endDrag() {
           if (!draggedElement || !placeholder) return;
-
           placeholder.parentNode.insertBefore(draggedElement, placeholder);
           placeholder.remove();
-
           draggedElement.classList.remove('dragging');
           draggedElement.style.position = '';
           draggedElement.style.left = '';
@@ -2953,9 +2891,7 @@
           draggedElement.style.height = '';
           draggedElement.style.zIndex = '';
           draggedElement.style.pointerEvents = '';
-
           updateDataOrder();
-
           draggedElement = null;
           placeholder = null;
           isDragging = false;
@@ -2965,7 +2901,6 @@
           const sections = contentArea.querySelectorAll('.global-group-section');
           const newOrderedIds = [];
           const idToGroup = {};
-
           sections.forEach(section => {
             const groupName = section.dataset.group || '';
             section.querySelectorAll('.global-card:not([data-placeholder])').forEach(card => {
@@ -2976,9 +2911,7 @@
               }
             });
           });
-
           if (newOrderedIds.length !== knowledgeItems.length) return;
-
           const newItems = [];
           newOrderedIds.forEach(id => {
             const item = knowledgeItems.find(i => i.id === id);
@@ -2987,20 +2920,17 @@
               newItems.push(item);
             }
           });
-
           knowledgeItems = newItems;
           saveToStorage();
           renderSidebar();
-
           setTimeout(() => {
-            if (currentMode === 'global') {
-              renderGlobalMode();
-            }
+            if (currentMode === 'global') renderGlobalMode();
           }, 0);
         }
       }
 
       // ========== 背诵模式 ==========
+      // 使用简单的纯色实心三角箭头（更清晰、跟图片一致）
       function renderReciteMode() {
         if (knowledgeItems.length === 0) {
           contentArea.innerHTML = `
@@ -3018,13 +2948,16 @@
         reciteIndex = currentIndex >= 0 ? currentIndex : 0;
         if (reciteIndex >= knowledgeItems.length) reciteIndex = knowledgeItems.length - 1;
 
+        // 两个实心三角形箭头 SVG（标准左右翻转箭头）
+        const prevArrowSvg = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M 28 6 L 12 20 L 28 34 Z"/></svg>`;
+        const nextArrowSvg = `<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M 12 6 L 28 20 L 12 34 Z"/></svg>`;
+
         let slidesHtml = '';
         knowledgeItems.forEach((item, idx) => {
           const groupTag = item.group && item.group.trim()
             ? `<div style="font-size:0.75rem;color:#64748b;background:#f1f5f9;display:inline-block;padding:3px 12px;border-radius:20px;margin-bottom:12px;">📁 ${escapeHtml(item.group)}</div>`
             : '';
 
-          const level = item.masteryLevel || 0;
           const speakBtnHtml = speechSupported
             ? `<button class="speak-btn" data-speak-id="${item.id}" title="朗读">🔊</button>`
             : '';
@@ -3051,6 +2984,15 @@
                     </div>
                     <div class="mastery-thumb" data-thumb-id="${item.id}"></div>
                   </div>
+                  <div class="slide-nav-row">
+                    <button class="slide-nav-btn" data-nav-prev="${item.id}" title="上一个" aria-label="上一个">
+                      ${prevArrowSvg}
+                    </button>
+                    <span class="slide-nav-position" data-nav-pos="${item.id}">${idx + 1} / ${knowledgeItems.length}</span>
+                    <button class="slide-nav-btn" data-nav-next="${item.id}" title="下一个" aria-label="下一个">
+                      ${nextArrowSvg}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3062,8 +3004,6 @@
             <div class="recite-slider" id="reciteSlider">
               ${slidesHtml}
             </div>
-            <button class="recite-nav-btn prev" id="recitePrevBtn" ${reciteIndex === 0 ? 'disabled' : ''}>‹</button>
-            <button class="recite-nav-btn next" id="reciteNextBtn" ${reciteIndex === knowledgeItems.length - 1 ? 'disabled' : ''}>›</button>
             <div class="recite-indicator" id="reciteIndicator">
               <span class="nav-hint">← 左右滑动切换 →</span>
               <span>${reciteIndex + 1} / ${knowledgeItems.length}</span>
@@ -3072,10 +3012,9 @@
         `;
 
         const slider = document.getElementById('reciteSlider');
-        const prevBtn = document.getElementById('recitePrevBtn');
-        const nextBtn = document.getElementById('reciteNextBtn');
         const indicator = document.getElementById('reciteIndicator');
 
+        // 通过 JS 直接设置宽度，避免不同浏览器的 scrollLeft 兼容问题
         const slideWidth = slider.clientWidth;
         slider.scrollLeft = reciteIndex * slideWidth;
 
@@ -3084,6 +3023,76 @@
           updateSliderVisuals(item.id, item.masteryLevel || 0);
         });
 
+        // 初始化所有滑块
+        contentArea.querySelectorAll('.mastery-slider-container').forEach(container => {
+          initMasterySlider(container.dataset.sliderId);
+        });
+
+        // ====== 关键优化：立即更新 UI，不等待滚动完成 ======
+        function updateNavUI() {
+          // 更新所有导航按钮和页码（因为每个卡片里都有一份，所以统一刷新）
+          contentArea.querySelectorAll('[data-nav-prev]').forEach(btn => {
+            btn.disabled = reciteIndex === 0;
+          });
+          contentArea.querySelectorAll('[data-nav-next]').forEach(btn => {
+            btn.disabled = reciteIndex === knowledgeItems.length - 1;
+          });
+          contentArea.querySelectorAll('[data-nav-pos]').forEach(el => {
+            el.textContent = `${reciteIndex + 1} / ${knowledgeItems.length}`;
+          });
+          if (indicator) {
+            indicator.innerHTML = `
+              <span class="nav-hint">← 左右滑动切换 →</span>
+              <span>${reciteIndex + 1} / ${knowledgeItems.length}</span>
+            `;
+          }
+        }
+
+        function scrollToIndex(idx, smooth) {
+          const targetLeft = idx * slider.clientWidth;
+          if (smooth) {
+            slider.scrollTo({ left: targetLeft, behavior: 'smooth' });
+          } else {
+            slider.scrollLeft = targetLeft;
+          }
+        }
+
+        function goToPrev() {
+          if (reciteIndex <= 0) return;
+          if (speakingId) stopSpeaking();
+          reciteIndex--;
+          activeId = knowledgeItems[reciteIndex].id;
+          updateNavUI(); // 立即更新页码和按钮
+          scrollToIndex(reciteIndex, true);
+          renderSidebar();
+        }
+
+        function goToNext() {
+          if (reciteIndex >= knowledgeItems.length - 1) return;
+          if (speakingId) stopSpeaking();
+          reciteIndex++;
+          activeId = knowledgeItems[reciteIndex].id;
+          updateNavUI(); // 立即更新页码和按钮
+          scrollToIndex(reciteIndex, true);
+          renderSidebar();
+        }
+
+        contentArea.querySelectorAll('[data-nav-prev]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            goToPrev();
+          });
+        });
+        contentArea.querySelectorAll('[data-nav-next]').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            goToNext();
+          });
+        });
+
+        updateNavUI();
+
+        // 滑动结束后同步索引（debounce 缩短到 30ms）
         let scrollTimer = null;
         slider.addEventListener('scroll', () => {
           if (scrollTimer) clearTimeout(scrollTimer);
@@ -3092,56 +3101,24 @@
             if (newIndex !== reciteIndex && newIndex >= 0 && newIndex < knowledgeItems.length) {
               reciteIndex = newIndex;
               activeId = knowledgeItems[reciteIndex].id;
-              if (speakingId) {
-                stopSpeaking();
-              }
-              indicator.innerHTML = `
-                <span class="nav-hint">← 左右滑动切换 →</span>
-                <span>${reciteIndex + 1} / ${knowledgeItems.length}</span>
-              `;
-              prevBtn.disabled = reciteIndex === 0;
-              nextBtn.disabled = reciteIndex === knowledgeItems.length - 1;
+              if (speakingId) stopSpeaking();
+              updateNavUI();
               renderSidebar();
             }
-          }, 80);
+          }, 30);
         }, { passive: true });
-
-        prevBtn.addEventListener('click', () => {
-          if (reciteIndex > 0) {
-            if (speakingId) stopSpeaking();
-            reciteIndex--;
-            activeId = knowledgeItems[reciteIndex].id;
-            slider.scrollTo({ left: reciteIndex * slider.clientWidth, behavior: 'smooth' });
-          }
-        });
-
-        nextBtn.addEventListener('click', () => {
-          if (reciteIndex < knowledgeItems.length - 1) {
-            if (speakingId) stopSpeaking();
-            reciteIndex++;
-            activeId = knowledgeItems[reciteIndex].id;
-            slider.scrollTo({ left: reciteIndex * slider.clientWidth, behavior: 'smooth' });
-          }
-        });
 
         contentArea.querySelectorAll('.speak-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
             const id = btn.dataset.speakId;
             const item = knowledgeItems.find(i => i.id === id);
-            if (item) {
-              speakItem(item);
-            }
+            if (item) speakItem(item);
           });
-        });
-
-        // 初始化所有滑块
-        contentArea.querySelectorAll('.mastery-slider-container').forEach(container => {
-          initMasterySlider(container.dataset.sliderId);
         });
       }
 
-      // 初始化一个滑块（拖动交互）
+      // 初始化一个滑块
       function initMasterySlider(itemId) {
         const container = document.querySelector(`.mastery-slider-container[data-slider-id="${itemId}"]`);
         const thumb = document.querySelector(`.mastery-thumb[data-thumb-id="${itemId}"]`);
@@ -3151,7 +3128,6 @@
 
         let isDragging = false;
         let currentLevel = 0;
-
         const item = knowledgeItems.find(i => i.id === itemId);
         if (item) currentLevel = item.masteryLevel || 0;
 
@@ -3168,39 +3144,28 @@
           fill.style.width = percent + '%';
           thumb.style.left = percent + '%';
 
-          // 滑块手柄颜色渐变
           const color = getMasteryColor(level);
           thumb.style.borderColor = color;
-          thumb.style.color = level > 50 ? '#ffffff' : '#64748b';
           thumb.style.background = level > 0 ? color : '#ffffff';
 
-          // 卡片背景渐变
           if (card) {
             card.style.background = getCardBackground(level);
             card.style.borderColor = getCardBorderColor(level);
-            // 标题颜色：越高越绿
-            const titleColor = level >= 100 ? '#14532d' : (level > 0 ? '#0f172a' : '#0f172a');
+            const titleColor = level >= 100 ? '#14532d' : '#0f172a';
             const titleEl = card.querySelector('.card-title');
             if (titleEl) titleEl.style.color = titleColor;
           }
 
-          // 标签颜色
           const leftLabel = document.querySelector(`.left-label[data-label-left="${itemId}"]`);
           const rightLabel = document.querySelector(`.right-label[data-label-right="${itemId}"]`);
-          if (leftLabel) {
-            leftLabel.style.color = level < 50 ? '#64748b' : '#cbd5e1';
-          }
-          if (rightLabel) {
-            rightLabel.style.color = level > 50 ? '#16a34a' : '#cbd5e1';
-          }
+          if (leftLabel) leftLabel.style.color = level < 50 ? '#64748b' : '#cbd5e1';
+          if (rightLabel) rightLabel.style.color = level > 50 ? '#16a34a' : '#cbd5e1';
 
-          // 保存数据（松手时）
           if (save) {
             const dataItem = knowledgeItems.find(i => i.id === itemId);
             if (dataItem) {
               dataItem.masteryLevel = level;
               saveToStorage();
-              // 若状态跨过"已掌握"阈值，刷新目录和全局模式
               renderSidebar();
             }
           }
@@ -3211,24 +3176,20 @@
           thumb.classList.add('dragging');
           applyLevel(getLevelFromX(clientX), false);
         }
-
         function onMove(clientX) {
           if (!isDragging) return;
           applyLevel(getLevelFromX(clientX), false);
         }
-
         function onEnd() {
           if (!isDragging) return;
           isDragging = false;
           thumb.classList.remove('dragging');
-          // 吸附：靠近两端则吸附到 0 或 100
           let finalLevel = currentLevel;
           if (currentLevel < 5) finalLevel = 0;
           else if (currentLevel > 95) finalLevel = 100;
           applyLevel(finalLevel, true);
         }
 
-        // 鼠标事件
         thumb.addEventListener('mousedown', (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -3243,7 +3204,6 @@
           document.addEventListener('mouseup', onMouseUp);
         });
 
-        // 点击轨道直接跳到对应位置
         container.addEventListener('mousedown', (e) => {
           if (e.target === thumb) return;
           e.preventDefault();
@@ -3259,55 +3219,37 @@
           document.addEventListener('mouseup', onMouseUp);
         });
 
-        // 触摸事件
         thumb.addEventListener('touchstart', (e) => {
           e.stopPropagation();
-          const touch = e.touches[0];
-          onStart(touch.clientX);
-        }, { passive: false });
+          onStart(e.touches[0].clientX);
+        }, { passive: true });
 
         container.addEventListener('touchstart', (e) => {
           if (e.target === thumb) return;
           e.stopPropagation();
-          const touch = e.touches[0];
-          onStart(touch.clientX);
-        }, { passive: false });
+          onStart(e.touches[0].clientX);
+        }, { passive: true });
 
-        const onTouchMove = (e) => {
+        container.addEventListener('touchmove', (e) => {
           if (!isDragging) return;
           e.preventDefault();
-          const touch = e.touches[0];
-          onMove(touch.clientX);
-        };
+          onMove(e.touches[0].clientX);
+        }, { passive: false });
 
-        const onTouchEnd = () => {
-          onEnd();
-        };
-
-        document.addEventListener('touchmove', onTouchMove, { passive: false });
-        document.addEventListener('touchend', onTouchEnd);
-
-        // 保存清理引用
-        thumb._cleanup = () => {
-          document.removeEventListener('touchmove', onTouchMove);
-          document.removeEventListener('touchend', onTouchEnd);
-        };
+        container.addEventListener('touchend', onEnd);
+        container.addEventListener('touchcancel', onEnd);
       }
 
-      // 根据 id 更新滑块视觉（用于初始渲染）
       function updateSliderVisuals(itemId, level) {
         const thumb = document.querySelector(`.mastery-thumb[data-thumb-id="${itemId}"]`);
         const fill = document.querySelector(`.mastery-fill[data-fill-id="${itemId}"]`);
         const card = document.querySelector(`.knowledge-card[data-card-id="${itemId}"]`);
         if (!thumb || !fill) return;
 
-        const percent = level;
-        fill.style.width = percent + '%';
-        thumb.style.left = percent + '%';
-
+        fill.style.width = level + '%';
+        thumb.style.left = level + '%';
         const color = getMasteryColor(level);
         thumb.style.borderColor = color;
-        thumb.style.color = level > 50 ? '#ffffff' : '#64748b';
         thumb.style.background = level > 0 ? color : '#ffffff';
 
         if (card) {
@@ -3317,18 +3259,13 @@
 
         const leftLabel = document.querySelector(`.left-label[data-label-left="${itemId}"]`);
         const rightLabel = document.querySelector(`.right-label[data-label-right="${itemId}"]`);
-        if (leftLabel) {
-          leftLabel.style.color = level < 50 ? '#64748b' : '#cbd5e1';
-        }
-        if (rightLabel) {
-          rightLabel.style.color = level > 50 ? '#16a34a' : '#cbd5e1';
-        }
+        if (leftLabel) leftLabel.style.color = level < 50 ? '#64748b' : '#cbd5e1';
+        if (rightLabel) rightLabel.style.color = level > 50 ? '#16a34a' : '#cbd5e1';
       }
 
       // 录入模式
       function renderEditMode() {
         const activeItem = getActiveItem();
-
         const dataActionsHtml = `
           <div class="edit-data-actions">
             <button class="data-btn" id="exportBtn">📤 导出</button>
@@ -3372,17 +3309,8 @@
             const title = titleInput.value.trim();
             const group = groupInput.value.trim();
             const content = contentInput.value.trim();
-            if (!title) {
-              alert('请输入标题');
-              return;
-            }
-            const newItem = {
-              id: generateId(),
-              title: title,
-              content: content,
-              group: group,
-              masteryLevel: 0
-            };
+            if (!title) { alert('请输入标题'); return; }
+            const newItem = { id: generateId(), title, content, group, masteryLevel: 0 };
             knowledgeItems.push(newItem);
             activeId = newItem.id;
             isCreatingNew = false;
@@ -3393,11 +3321,7 @@
 
           document.getElementById('cancelAddBtn').addEventListener('click', () => {
             isCreatingNew = false;
-            if (knowledgeItems.length > 0) {
-              activeId = knowledgeItems[0].id;
-            } else {
-              activeId = null;
-            }
+            activeId = knowledgeItems.length > 0 ? knowledgeItems[0].id : null;
             renderSidebar();
             renderContent();
           });
@@ -3439,10 +3363,7 @@
           const newTitle = document.getElementById('editTitleInput').value.trim();
           const newGroup = document.getElementById('editGroupInput').value.trim();
           const newContent = document.getElementById('editContentInput').value.trim();
-          if (!newTitle) {
-            alert('标题不能为空');
-            return;
-          }
+          if (!newTitle) { alert('标题不能为空'); return; }
           const item = getActiveItem();
           if (item) {
             item.title = newTitle;
@@ -3454,10 +3375,7 @@
           }
         });
 
-        document.getElementById('cancelEditBtn').addEventListener('click', () => {
-          renderContent();
-        });
-
+        document.getElementById('cancelEditBtn').addEventListener('click', renderContent);
         document.getElementById('exportBtn').addEventListener('click', openExportModal);
         document.getElementById('importBtn').addEventListener('click', openImportModal);
       }
@@ -3465,7 +3383,6 @@
       function updateSidebarAddButton() {
         const oldBtn = document.getElementById('sidebarAddBtn');
         if (oldBtn) oldBtn.remove();
-
         if (currentMode !== 'edit') return;
 
         const addBtn = document.createElement('button');
@@ -3492,18 +3409,12 @@
           renderContent();
           return;
         }
-        if (speakingId) {
-          stopSpeaking();
-        }
+        if (speakingId) stopSpeaking();
         currentMode = mode;
-        if (mode !== 'edit') {
-          isCreatingNew = false;
-        }
-
+        if (mode !== 'edit') isCreatingNew = false;
         [globalModeBtn, reciteModeBtn, editModeBtn].forEach(btn => {
           btn.classList.toggle('active', btn.dataset.mode === mode);
         });
-
         validateActiveId();
         renderSidebar();
         renderContent();
@@ -3523,12 +3434,8 @@
       document.getElementById('importCancelBtn').addEventListener('click', closeImportModal);
       document.getElementById('doImportBtn').addEventListener('click', doImport);
 
-      exportModal.addEventListener('click', (e) => {
-        if (e.target === exportModal) closeExportModal();
-      });
-      importModal.addEventListener('click', (e) => {
-        if (e.target === importModal) closeImportModal();
-      });
+      exportModal.addEventListener('click', (e) => { if (e.target === exportModal) closeExportModal(); });
+      importModal.addEventListener('click', (e) => { if (e.target === importModal) closeImportModal(); });
 
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -3538,30 +3445,36 @@
           if (speakingId) stopSpeaking();
         }
         if (currentMode === 'recite' && knowledgeItems.length > 0) {
-          if (e.key === 'ArrowLeft' && reciteIndex > 0) {
-            const slider = document.getElementById('reciteSlider');
-            if (slider) {
-              if (speakingId) stopSpeaking();
-              reciteIndex--;
-              activeId = knowledgeItems[reciteIndex].id;
-              slider.scrollTo({ left: reciteIndex * slider.clientWidth, behavior: 'smooth' });
-            }
-          } else if (e.key === 'ArrowRight' && reciteIndex < knowledgeItems.length - 1) {
-            const slider = document.getElementById('reciteSlider');
-            if (slider) {
-              if (speakingId) stopSpeaking();
-              reciteIndex++;
-              activeId = knowledgeItems[reciteIndex].id;
-              slider.scrollTo({ left: reciteIndex * slider.clientWidth, behavior: 'smooth' });
-            }
+          const slider = document.getElementById('reciteSlider');
+          if (e.key === 'ArrowLeft' && reciteIndex > 0 && slider) {
+            if (speakingId) stopSpeaking();
+            reciteIndex--;
+            activeId = knowledgeItems[reciteIndex].id;
+            // 立即刷新 UI（手动同步，避免依赖 scroll 事件）
+            contentArea.querySelectorAll('[data-nav-prev]').forEach(btn => { btn.disabled = reciteIndex === 0; });
+            contentArea.querySelectorAll('[data-nav-next]').forEach(btn => { btn.disabled = reciteIndex === knowledgeItems.length - 1; });
+            contentArea.querySelectorAll('[data-nav-pos]').forEach(el => { el.textContent = `${reciteIndex + 1} / ${knowledgeItems.length}`; });
+            const ind = document.getElementById('reciteIndicator');
+            if (ind) ind.innerHTML = `<span class="nav-hint">← 左右滑动切换 →</span><span>${reciteIndex + 1} / ${knowledgeItems.length}</span>`;
+            slider.scrollTo({ left: reciteIndex * slider.clientWidth, behavior: 'smooth' });
+            renderSidebar();
+          } else if (e.key === 'ArrowRight' && reciteIndex < knowledgeItems.length - 1 && slider) {
+            if (speakingId) stopSpeaking();
+            reciteIndex++;
+            activeId = knowledgeItems[reciteIndex].id;
+            contentArea.querySelectorAll('[data-nav-prev]').forEach(btn => { btn.disabled = reciteIndex === 0; });
+            contentArea.querySelectorAll('[data-nav-next]').forEach(btn => { btn.disabled = reciteIndex === knowledgeItems.length - 1; });
+            contentArea.querySelectorAll('[data-nav-pos]').forEach(el => { el.textContent = `${reciteIndex + 1} / ${knowledgeItems.length}`; });
+            const ind = document.getElementById('reciteIndicator');
+            if (ind) ind.innerHTML = `<span class="nav-hint">← 左右滑动切换 →</span><span>${reciteIndex + 1} / ${knowledgeItems.length}</span>`;
+            slider.scrollTo({ left: reciteIndex * slider.clientWidth, behavior: 'smooth' });
+            renderSidebar();
           }
         }
       });
 
       document.addEventListener('visibilitychange', () => {
-        if (document.hidden && speakingId) {
-          stopSpeaking();
-        }
+        if (document.hidden && speakingId) stopSpeaking();
       });
       window.addEventListener('pagehide', () => {
         if (speakingId) stopSpeaking();
@@ -3575,7 +3488,6 @@
       }
 
       init();
-
     })();
   </script>
 </body>
