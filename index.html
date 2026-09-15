@@ -303,6 +303,7 @@
       color: #1e293b;
       word-break: break-word;
       line-height: 1.4;
+      position: relative;
     }
 
     .knowledge-item:hover {
@@ -318,6 +319,7 @@
       color: #1e3a8a;
     }
 
+    /* 已掌握（100）状态 */
     .knowledge-item.mastered {
       background: #f0fdf4;
       border-color: #bbf7d0;
@@ -464,20 +466,15 @@
       justify-content: center;
     }
 
+    /* ========== 知识卡片：背景随掌握度渐变 ========== */
     .knowledge-card {
       background: white;
       border-radius: 28px;
       padding: 28px 28px 32px;
       box-shadow: 0 12px 30px rgba(0, 20, 50, 0.08), 0 4px 8px rgba(0, 0, 0, 0.02);
       border: 1px solid rgba(255, 255, 255, 0.6);
-      transition: all 0.2s;
+      transition: background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
       word-break: break-word;
-    }
-
-    .knowledge-card.mastered-card {
-      background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-      border: 1px solid #bbf7d0;
-      box-shadow: 0 12px 30px rgba(22, 163, 74, 0.12);
     }
 
     .card-title {
@@ -489,11 +486,7 @@
       letter-spacing: -0.02em;
       padding-bottom: 8px;
       border-bottom: 3px solid #eef2ff;
-    }
-
-    .mastered-card .card-title {
-      border-bottom-color: #bbf7d0;
-      color: #14532d;
+      transition: color 0.25s, border-color 0.25s;
     }
 
     .card-content {
@@ -504,10 +497,7 @@
       word-break: break-word;
       -webkit-user-select: text;
       user-select: text;
-    }
-
-    .mastered-card .card-content {
-      color: #166534;
+      transition: color 0.25s;
     }
 
     .card-title-row {
@@ -518,10 +508,7 @@
       margin-bottom: 18px;
       padding-bottom: 8px;
       border-bottom: 3px solid #eef2ff;
-    }
-
-    .mastered-card .card-title-row {
-      border-bottom-color: #bbf7d0;
+      transition: border-color 0.25s;
     }
 
     .card-title-row .card-title {
@@ -570,21 +557,6 @@
       background: #1e40af;
     }
 
-    .mastered-card .speak-btn {
-      background: #dcfce7;
-      color: #16a34a;
-      box-shadow: 0 2px 8px rgba(22, 163, 74, 0.12);
-    }
-
-    .mastered-card .speak-btn:hover {
-      background: #bbf7d0;
-    }
-
-    .mastered-card .speak-btn.speaking {
-      background: #16a34a;
-      color: white;
-    }
-
     @keyframes speakPulse {
       0%, 100% {
         box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.5);
@@ -594,117 +566,93 @@
       }
     }
 
-    .recite-actions {
-      margin-top: 20px;
-      display: flex;
-      gap: 12px;
+    /* ========== 熟练度滑块 ========== */
+    .mastery-slider-row {
+      margin-top: 24px;
       width: 100%;
     }
 
-    .master-btn {
-      padding: 14px 28px;
-      border-radius: 40px;
-      font-weight: 600;
-      font-size: 1rem;
-      border: none;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: inline-flex;
+    .mastery-labels {
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
-      flex: 1;
-      background: #16a34a;
-      color: white;
-      box-shadow: 0 6px 14px rgba(22, 163, 74, 0.25);
+      margin-bottom: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #94a3b8;
+      user-select: none;
     }
 
-    .master-btn:hover {
-      background: #15803d;
+    .mastery-labels .left-label,
+    .mastery-labels .right-label {
+      transition: color 0.25s;
     }
 
-    .master-btn:active {
-      transform: scale(0.98);
+    .mastery-labels .right-label {
+      color: #cbd5e1;
     }
 
-    .master-btn.unmaster-btn {
-      background: #ffffff;
-      color: #16a34a;
-      border: 2px solid #16a34a;
-      box-shadow: 0 6px 14px rgba(22, 163, 74, 0.12);
-    }
-
-    .master-btn.unmaster-btn:hover {
-      background: #f0fdf4;
-    }
-
-    .recite-indicator {
-      position: absolute;
-      bottom: calc(12px + var(--safe-bottom));
-      left: 50%;
-      transform: translateX(-50%);
+    .mastery-slider-container {
+      position: relative;
+      width: 100%;
+      height: 44px;
       display: flex;
       align-items: center;
-      gap: 10px;
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      padding: 6px 14px;
-      border-radius: 30px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-      font-size: 0.78rem;
-      color: #64748b;
-      font-weight: 600;
-      z-index: 10;
-      pointer-events: none;
-      white-space: nowrap;
+      touch-action: none;
+      user-select: none;
     }
 
-    .recite-indicator .nav-hint {
-      color: #94a3b8;
-      font-weight: 500;
+    .mastery-track {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 12px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      overflow: hidden;
+      transition: background 0.25s;
     }
 
-    .recite-nav-btn {
+    .mastery-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 0%;
+      background: linear-gradient(to right, #94a3b8, #16a34a);
+      transition: width 0.05s linear;
+      border-radius: 6px 0 0 6px;
+    }
+
+    .mastery-thumb {
       position: absolute;
       top: 50%;
-      transform: translateY(-50%);
-      width: 40px;
-      height: 40px;
+      left: 0%;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
-      border: none;
-      background: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      color: #475569;
-      font-size: 1.1rem;
-      cursor: pointer;
+      background: white;
+      border: 3px solid #94a3b8;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      transform: translate(-50%, -50%);
+      cursor: grab;
+      transition: border-color 0.25s, background 0.25s, transform 0.1s;
+      z-index: 2;
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 10;
-      transition: all 0.15s;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #64748b;
     }
 
-    .recite-nav-btn:hover {
-      background: white;
-      color: #1e3a8a;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    .mastery-thumb.dragging {
+      cursor: grabbing;
+      transform: translate(-50%, -50%) scale(1.15);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
     }
 
-    .recite-nav-btn:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-
-    .recite-nav-btn.prev {
-      left: 12px;
-    }
-
-    .recite-nav-btn.next {
-      right: 12px;
-    }
+    /* 滑块手柄颜色随进度变化，通过 JS 内联样式控制 */
 
     /* ========== 全局模式 ========== */
     .global-group-section {
@@ -872,13 +820,23 @@
       -webkit-box-orient: vertical;
     }
 
-    .mastered-corner {
+    /* 已掌握小卡片右下角的绿色小勾 */
+    .mastered-check {
       position: absolute;
       bottom: 6px;
       right: 8px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #16a34a;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 0.75rem;
-      color: #16a34a;
       font-weight: 700;
+      box-shadow: 0 2px 6px rgba(22, 163, 74, 0.35);
+      line-height: 1;
     }
 
     .edit-card {
@@ -1218,7 +1176,6 @@
       background: #e2e8f0;
     }
 
-    /* 导入模式选择 */
     .import-mode-selector {
       display: flex;
       gap: 8px;
@@ -1564,13 +1521,17 @@
         padding: 16px 12px 80px;
       }
 
-      .master-btn {
-        padding: 12px 20px;
-        font-size: 0.95rem;
+      .mastery-slider-row {
+        margin-top: 18px;
       }
 
-      .recite-nav-btn {
-        display: none;
+      .mastery-slider-container {
+        height: 40px;
+      }
+
+      .mastery-thumb {
+        width: 26px;
+        height: 26px;
       }
 
       .global-grid {
@@ -1600,9 +1561,11 @@
         -webkit-line-clamp: 3;
       }
 
-      .mastered-corner {
-        font-size: 0.55rem;
-        bottom: 3px;
+      .mastered-check {
+        width: 16px;
+        height: 16px;
+        font-size: 0.6rem;
+        bottom: 4px;
         right: 5px;
       }
 
@@ -1747,8 +1710,10 @@
         -webkit-line-clamp: 2;
       }
 
-      .mastered-corner {
-        font-size: 0.5rem;
+      .mastered-check {
+        width: 14px;
+        height: 14px;
+        font-size: 0.55rem;
       }
 
       .global-group-divider .divider-name {
@@ -1902,17 +1867,19 @@
         rate: 0.85,
         pitch: 1.0,
         volume: 1.0,
-        lang: 'zh-CN',
-        pauseBetweenTitleAndContent: 400
+        lang: 'zh-CN'
       };
 
+      // 熟练掌握阈值：masteryLevel >= 100 视为已掌握
+      const MASTERED_THRESHOLD = 100;
+
       const DEFAULT_ITEMS = [
-        { id: '1', title: 'HTML 语义化', content: '使用恰当的 HTML 标签来构建页面结构，例如 header、nav、main、article、section、aside、footer。语义化有助于 SEO、可访问性和代码可读性。', group: '前端基础', mastered: false },
-        { id: '2', title: 'CSS 盒模型', content: '每个元素都是一个盒子。由内容(content)、内边距(padding)、边框(border)、外边距(margin)组成。box-sizing: border-box 使 width 包含 padding 和 border。', group: '前端基础', mastered: false },
-        { id: '3', title: 'JavaScript 闭包', content: '闭包是指函数能够记住并访问它的词法作用域，即使函数在其词法作用域之外执行。常用于创建私有变量和回调函数。', group: '前端基础', mastered: false },
-        { id: '4', title: 'HTTP 状态码', content: '1xx 信息，2xx 成功，3xx 重定向，4xx 客户端错误，5xx 服务端错误。常见：200 OK，301 永久重定向，404 未找到，500 服务器内部错误。', group: '网络基础', mastered: false },
-        { id: '5', title: 'Flex 布局', content: 'display: flex 创建弹性容器。justify-content 主轴对齐，align-items 交叉轴对齐，flex-direction 方向。flex: 1 占满剩余空间。', group: '前端基础', mastered: false },
-        { id: '6', title: 'Vue 响应式原理', content: 'Vue2 使用 Object.defineProperty 劫持数据，Vue3 使用 Proxy。当数据变化时触发依赖更新，重新渲染视图。', group: '框架', mastered: false }
+        { id: '1', title: 'HTML 语义化', content: '使用恰当的 HTML 标签来构建页面结构，例如 header、nav、main、article、section、aside、footer。语义化有助于 SEO、可访问性和代码可读性。', group: '前端基础', masteryLevel: 0 },
+        { id: '2', title: 'CSS 盒模型', content: '每个元素都是一个盒子。由内容(content)、内边距(padding)、边框(border)、外边距(margin)组成。box-sizing: border-box 使 width 包含 padding 和 border。', group: '前端基础', masteryLevel: 0 },
+        { id: '3', title: 'JavaScript 闭包', content: '闭包是指函数能够记住并访问它的词法作用域，即使函数在其词法作用域之外执行。常用于创建私有变量和回调函数。', group: '前端基础', masteryLevel: 0 },
+        { id: '4', title: 'HTTP 状态码', content: '1xx 信息，2xx 成功，3xx 重定向，4xx 客户端错误，5xx 服务端错误。常见：200 OK，301 永久重定向，404 未找到，500 服务器内部错误。', group: '网络基础', masteryLevel: 0 },
+        { id: '5', title: 'Flex 布局', content: 'display: flex 创建弹性容器。justify-content 主轴对齐，align-items 交叉轴对齐，flex-direction 方向。flex: 1 占满剩余空间。', group: '前端基础', masteryLevel: 0 },
+        { id: '6', title: 'Vue 响应式原理', content: 'Vue2 使用 Object.defineProperty 劫持数据，Vue3 使用 Proxy。当数据变化时触发依赖更新，重新渲染视图。', group: '框架', masteryLevel: 0 }
       ];
 
       let knowledgeItems = loadFromStorage();
@@ -1921,7 +1888,6 @@
       let isCreatingNew = false;
       let collapsedGroups = loadCollapsedState();
       let reciteIndex = 0;
-      // 导入模式：'merge' 或 'overwrite'
       let importMode = 'merge';
 
       const knowledgeListEl = document.getElementById('knowledgeList');
@@ -2186,13 +2152,22 @@
           if (stored) {
             const parsed = JSON.parse(stored);
             if (Array.isArray(parsed) && parsed.length > 0) {
-              return parsed.filter(item => item && item.title !== undefined).map(item => ({
-                id: item.id || generateId(),
-                title: item.title || '无标题',
-                content: item.content || '',
-                group: item.group || '',
-                mastered: item.mastered === true
-              }));
+              return parsed.filter(item => item && item.title !== undefined).map(item => {
+                // 兼容老数据：把 mastered 转成 masteryLevel
+                let level = 0;
+                if (typeof item.masteryLevel === 'number') {
+                  level = Math.max(0, Math.min(100, item.masteryLevel));
+                } else if (item.mastered === true) {
+                  level = 100;
+                }
+                return {
+                  id: item.id || generateId(),
+                  title: item.title || '无标题',
+                  content: item.content || '',
+                  group: item.group || '',
+                  masteryLevel: level
+                };
+              });
             }
           }
         } catch (e) {
@@ -2260,13 +2235,43 @@
         return Array.from(groups).sort();
       }
 
-      function toggleMastered(id) {
-        const item = knowledgeItems.find(i => i.id === id);
-        if (!item) return;
-        item.mastered = !item.mastered;
-        saveToStorage();
-        renderSidebar();
-        renderContent();
+      // 判断是否已掌握
+      function isMastered(item) {
+        return (item.masteryLevel || 0) >= MASTERED_THRESHOLD;
+      }
+
+      // 根据掌握度计算插值颜色（灰→绿）
+      function getMasteryColor(level) {
+        // 0 → #94a3b8 (灰)
+        // 100 → #16a34a (绿)
+        const t = Math.max(0, Math.min(100, level)) / 100;
+        // 灰色 #94a3b8 => RGB(148, 163, 184)
+        // 绿色 #16a34a => RGB(22, 163, 74)
+        const r = Math.round(148 + (22 - 148) * t);
+        const g = Math.round(163 + (163 - 163) * t);  // 保持163
+        const b = Math.round(184 + (74 - 184) * t);
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+
+      // 根据掌握度计算卡片背景色（白→浅绿）
+      function getCardBackground(level) {
+        const t = Math.max(0, Math.min(100, level)) / 100;
+        if (t === 0) return '#ffffff';
+        // 从 #ffffff 到 #dcfce7 线性插值
+        const r = Math.round(255 + (220 - 255) * t);
+        const g = Math.round(255 + (252 - 255) * t);
+        const b = Math.round(255 + (231 - 255) * t);
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+
+      // 根据掌握度计算卡片边框色（浅灰→浅绿）
+      function getCardBorderColor(level) {
+        const t = Math.max(0, Math.min(100, level)) / 100;
+        if (t === 0) return 'rgba(255, 255, 255, 0.6)';
+        const r = Math.round(255 + (187 - 255) * t);
+        const g = Math.round(255 + (247 - 255) * t);
+        const b = Math.round(255 + (208 - 255) * t);
+        return `rgb(${r}, ${g}, ${b})`;
       }
 
       // ---------- 导出 / 导入 ----------
@@ -2286,7 +2291,6 @@
         importTextarea.value = '';
         importStatus.textContent = '';
         importStatus.className = 'status-msg';
-        // 重置为默认的合并模式
         importMode = 'merge';
         updateImportModeUI();
         importModal.classList.add('show');
@@ -2296,7 +2300,6 @@
         importModal.classList.remove('show');
       }
 
-      // 更新导入模式选择器 UI
       function updateImportModeUI() {
         importModeSelector.querySelectorAll('.import-mode-option').forEach(opt => {
           if (opt.dataset.mode === importMode) {
@@ -2307,7 +2310,6 @@
         });
       }
 
-      // 绑定导入模式选择
       importModeSelector.querySelectorAll('.import-mode-option').forEach(opt => {
         opt.addEventListener('click', () => {
           importMode = opt.dataset.mode;
@@ -2360,7 +2362,6 @@
         }
       }
 
-      // 解析导入数据
       function parseAndImport(rawText) {
         if (!rawText || !rawText.trim()) {
           importStatus.textContent = '❌ 没有可导入的数据';
@@ -2385,13 +2386,21 @@
 
         const cleaned = parsed
           .filter(item => item && typeof item === 'object' && item.title !== undefined)
-          .map(item => ({
-            id: item.id || generateId(),
-            title: String(item.title || '无标题'),
-            content: String(item.content || ''),
-            group: String(item.group || ''),
-            mastered: item.mastered === true
-          }));
+          .map(item => {
+            let level = 0;
+            if (typeof item.masteryLevel === 'number') {
+              level = Math.max(0, Math.min(100, item.masteryLevel));
+            } else if (item.mastered === true) {
+              level = 100;
+            }
+            return {
+              id: item.id || generateId(),
+              title: String(item.title || '无标题'),
+              content: String(item.content || ''),
+              group: String(item.group || ''),
+              masteryLevel: level
+            };
+          });
 
         if (cleaned.length === 0) {
           importStatus.textContent = '❌ 没有有效的知识点数据';
@@ -2400,7 +2409,6 @@
         }
 
         if (importMode === 'overwrite') {
-          // 覆盖模式：清空后导入
           showConfirm(
             '确认覆盖',
             `即将用 ${cleaned.length} 个知识点覆盖当前数据，\n当前 ${knowledgeItems.length} 个知识点将被删除。\n\n确定继续吗？`,
@@ -2421,12 +2429,9 @@
             }
           );
         } else {
-          // 合并模式：追加到现有数据
-          // 为避免 id 冲突，为导入的数据生成新 id
           const existingIds = new Set(knowledgeItems.map(i => i.id));
           const mergedItems = cleaned.map(item => {
             const newItem = { ...item };
-            // 如果 id 已存在，生成新 id
             while (existingIds.has(newItem.id)) {
               newItem.id = generateId();
             }
@@ -2439,7 +2444,6 @@
             `即将追加 ${mergedItems.length} 个知识点，\n当前 ${knowledgeItems.length} 个知识点将被保留。\n合并后共 ${knowledgeItems.length + mergedItems.length} 个。\n\n确定继续吗？`,
             () => {
               knowledgeItems = knowledgeItems.concat(mergedItems);
-              // 保持当前 activeId 不变，如果没有则选第一个
               if (!activeId && knowledgeItems.length > 0) {
                 activeId = knowledgeItems[0].id;
               }
@@ -2606,8 +2610,8 @@
       function renderKnowledgeItem(item) {
         const isActive = item.id === activeId && !isCreatingNew;
         const displayTitle = item.title.length > 12 ? item.title.slice(0, 10) + '…' : item.title;
-        const masteredClass = item.mastered ? 'mastered' : '';
-        const masteredBadge = item.mastered ? '<span class="mastered-badge">✓</span>' : '';
+        const masteredClass = isMastered(item) ? 'mastered' : '';
+        const masteredBadge = isMastered(item) ? '<span class="mastered-badge">✓</span>' : '';
         return `
           <div class="knowledge-item ${isActive ? 'active' : ''} ${masteredClass}" data-id="${item.id}">
             <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${masteredBadge}${escapeHtml(displayTitle)}</span>
@@ -2715,8 +2719,8 @@
           if (groupItems.length === 0) return;
 
           const sortedGroupItems = [
-            ...groupItems.filter(item => !item.mastered),
-            ...groupItems.filter(item => item.mastered)
+            ...groupItems.filter(item => !isMastered(item)),
+            ...groupItems.filter(item => isMastered(item))
           ];
 
           html += `
@@ -2735,8 +2739,8 @@
 
         if (ungroupedItems.length > 0) {
           const sortedUngrouped = [
-            ...ungroupedItems.filter(item => !item.mastered),
-            ...ungroupedItems.filter(item => item.mastered)
+            ...ungroupedItems.filter(item => !isMastered(item)),
+            ...ungroupedItems.filter(item => isMastered(item))
           ];
 
           html += `
@@ -2771,13 +2775,16 @@
       }
 
       function renderGlobalCard(item) {
-        const masteredClass = item.mastered ? 'mastered-global' : '';
-        const masteredCorner = item.mastered ? '<span class="mastered-corner">✓</span>' : '';
+        const masteredClass = isMastered(item) ? 'mastered-global' : '';
+        // 右下角绿色小勾（仅已掌握显示）
+        const masteredCheck = isMastered(item)
+          ? '<span class="mastered-check">✓</span>'
+          : '';
         return `
           <div class="global-card ${masteredClass}" data-id="${item.id}" draggable="false">
             <div class="card-title">${escapeHtml(item.title)}</div>
             <div class="card-content">${escapeHtml(item.content) || '<span style="color:#94a3b8;font-style:italic;">暂无内容</span>'}</div>
-            ${masteredCorner}
+            ${masteredCheck}
             <span class="drag-handle">⠿</span>
           </div>
         `;
@@ -3017,10 +3024,7 @@
             ? `<div style="font-size:0.75rem;color:#64748b;background:#f1f5f9;display:inline-block;padding:3px 12px;border-radius:20px;margin-bottom:12px;">📁 ${escapeHtml(item.group)}</div>`
             : '';
 
-          const cardClass = item.mastered ? 'mastered-card' : '';
-          const masterBtnClass = item.mastered ? 'master-btn unmaster-btn' : 'master-btn';
-          const masterBtnText = item.mastered ? '↩️ 取消已掌握' : '✓ 已掌握';
-
+          const level = item.masteryLevel || 0;
           const speakBtnHtml = speechSupported
             ? `<button class="speak-btn" data-speak-id="${item.id}" title="朗读">🔊</button>`
             : '';
@@ -3028,7 +3032,7 @@
           slidesHtml += `
             <div class="recite-slide" data-index="${idx}" data-id="${item.id}">
               <div class="recite-slide-inner">
-                <div class="knowledge-card ${cardClass}">
+                <div class="knowledge-card" data-card-id="${item.id}">
                   ${groupTag}
                   <div class="card-title-row">
                     <div class="card-title">${escapeHtml(item.title)}</div>
@@ -3036,8 +3040,17 @@
                   </div>
                   <div class="card-content">${escapeHtml(item.content) || '<span style="color:#94a3b8;font-style:italic;">暂无内容</span>'}</div>
                 </div>
-                <div class="recite-actions">
-                  <button class="${masterBtnClass}" data-master-id="${item.id}">${masterBtnText}</button>
+                <div class="mastery-slider-row">
+                  <div class="mastery-labels">
+                    <span class="left-label" data-label-left="${item.id}">😵 不熟</span>
+                    <span class="right-label" data-label-right="${item.id}">🤩 熟记</span>
+                  </div>
+                  <div class="mastery-slider-container" data-slider-id="${item.id}">
+                    <div class="mastery-track">
+                      <div class="mastery-fill" data-fill-id="${item.id}"></div>
+                    </div>
+                    <div class="mastery-thumb" data-thumb-id="${item.id}"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3065,6 +3078,11 @@
 
         const slideWidth = slider.clientWidth;
         slider.scrollLeft = reciteIndex * slideWidth;
+
+        // 初始渲染每张卡片的滑块状态
+        knowledgeItems.forEach(item => {
+          updateSliderVisuals(item.id, item.masteryLevel || 0);
+        });
 
         let scrollTimer = null;
         slider.addEventListener('scroll', () => {
@@ -3106,14 +3124,6 @@
           }
         });
 
-        contentArea.querySelectorAll('[data-master-id]').forEach(btn => {
-          btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const id = btn.dataset.masterId;
-            toggleMastered(id);
-          });
-        });
-
         contentArea.querySelectorAll('.speak-btn').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -3124,6 +3134,195 @@
             }
           });
         });
+
+        // 初始化所有滑块
+        contentArea.querySelectorAll('.mastery-slider-container').forEach(container => {
+          initMasterySlider(container.dataset.sliderId);
+        });
+      }
+
+      // 初始化一个滑块（拖动交互）
+      function initMasterySlider(itemId) {
+        const container = document.querySelector(`.mastery-slider-container[data-slider-id="${itemId}"]`);
+        const thumb = document.querySelector(`.mastery-thumb[data-thumb-id="${itemId}"]`);
+        const fill = document.querySelector(`.mastery-fill[data-fill-id="${itemId}"]`);
+        const card = document.querySelector(`.knowledge-card[data-card-id="${itemId}"]`);
+        if (!container || !thumb || !fill) return;
+
+        let isDragging = false;
+        let currentLevel = 0;
+
+        const item = knowledgeItems.find(i => i.id === itemId);
+        if (item) currentLevel = item.masteryLevel || 0;
+
+        function getLevelFromX(clientX) {
+          const rect = container.getBoundingClientRect();
+          const x = clientX - rect.left;
+          const ratio = Math.max(0, Math.min(1, x / rect.width));
+          return Math.round(ratio * 100);
+        }
+
+        function applyLevel(level, save) {
+          currentLevel = level;
+          const percent = level;
+          fill.style.width = percent + '%';
+          thumb.style.left = percent + '%';
+
+          // 滑块手柄颜色渐变
+          const color = getMasteryColor(level);
+          thumb.style.borderColor = color;
+          thumb.style.color = level > 50 ? '#ffffff' : '#64748b';
+          thumb.style.background = level > 0 ? color : '#ffffff';
+
+          // 卡片背景渐变
+          if (card) {
+            card.style.background = getCardBackground(level);
+            card.style.borderColor = getCardBorderColor(level);
+            // 标题颜色：越高越绿
+            const titleColor = level >= 100 ? '#14532d' : (level > 0 ? '#0f172a' : '#0f172a');
+            const titleEl = card.querySelector('.card-title');
+            if (titleEl) titleEl.style.color = titleColor;
+          }
+
+          // 标签颜色
+          const leftLabel = document.querySelector(`.left-label[data-label-left="${itemId}"]`);
+          const rightLabel = document.querySelector(`.right-label[data-label-right="${itemId}"]`);
+          if (leftLabel) {
+            leftLabel.style.color = level < 50 ? '#64748b' : '#cbd5e1';
+          }
+          if (rightLabel) {
+            rightLabel.style.color = level > 50 ? '#16a34a' : '#cbd5e1';
+          }
+
+          // 保存数据（松手时）
+          if (save) {
+            const dataItem = knowledgeItems.find(i => i.id === itemId);
+            if (dataItem) {
+              dataItem.masteryLevel = level;
+              saveToStorage();
+              // 若状态跨过"已掌握"阈值，刷新目录和全局模式
+              renderSidebar();
+            }
+          }
+        }
+
+        function onStart(clientX) {
+          isDragging = true;
+          thumb.classList.add('dragging');
+          applyLevel(getLevelFromX(clientX), false);
+        }
+
+        function onMove(clientX) {
+          if (!isDragging) return;
+          applyLevel(getLevelFromX(clientX), false);
+        }
+
+        function onEnd() {
+          if (!isDragging) return;
+          isDragging = false;
+          thumb.classList.remove('dragging');
+          // 吸附：靠近两端则吸附到 0 或 100
+          let finalLevel = currentLevel;
+          if (currentLevel < 5) finalLevel = 0;
+          else if (currentLevel > 95) finalLevel = 100;
+          applyLevel(finalLevel, true);
+        }
+
+        // 鼠标事件
+        thumb.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onStart(e.clientX);
+          const onMouseMove = (ev) => onMove(ev.clientX);
+          const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            onEnd();
+          };
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+
+        // 点击轨道直接跳到对应位置
+        container.addEventListener('mousedown', (e) => {
+          if (e.target === thumb) return;
+          e.preventDefault();
+          e.stopPropagation();
+          onStart(e.clientX);
+          const onMouseMove = (ev) => onMove(ev.clientX);
+          const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            onEnd();
+          };
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+
+        // 触摸事件
+        thumb.addEventListener('touchstart', (e) => {
+          e.stopPropagation();
+          const touch = e.touches[0];
+          onStart(touch.clientX);
+        }, { passive: false });
+
+        container.addEventListener('touchstart', (e) => {
+          if (e.target === thumb) return;
+          e.stopPropagation();
+          const touch = e.touches[0];
+          onStart(touch.clientX);
+        }, { passive: false });
+
+        const onTouchMove = (e) => {
+          if (!isDragging) return;
+          e.preventDefault();
+          const touch = e.touches[0];
+          onMove(touch.clientX);
+        };
+
+        const onTouchEnd = () => {
+          onEnd();
+        };
+
+        document.addEventListener('touchmove', onTouchMove, { passive: false });
+        document.addEventListener('touchend', onTouchEnd);
+
+        // 保存清理引用
+        thumb._cleanup = () => {
+          document.removeEventListener('touchmove', onTouchMove);
+          document.removeEventListener('touchend', onTouchEnd);
+        };
+      }
+
+      // 根据 id 更新滑块视觉（用于初始渲染）
+      function updateSliderVisuals(itemId, level) {
+        const thumb = document.querySelector(`.mastery-thumb[data-thumb-id="${itemId}"]`);
+        const fill = document.querySelector(`.mastery-fill[data-fill-id="${itemId}"]`);
+        const card = document.querySelector(`.knowledge-card[data-card-id="${itemId}"]`);
+        if (!thumb || !fill) return;
+
+        const percent = level;
+        fill.style.width = percent + '%';
+        thumb.style.left = percent + '%';
+
+        const color = getMasteryColor(level);
+        thumb.style.borderColor = color;
+        thumb.style.color = level > 50 ? '#ffffff' : '#64748b';
+        thumb.style.background = level > 0 ? color : '#ffffff';
+
+        if (card) {
+          card.style.background = getCardBackground(level);
+          card.style.borderColor = getCardBorderColor(level);
+        }
+
+        const leftLabel = document.querySelector(`.left-label[data-label-left="${itemId}"]`);
+        const rightLabel = document.querySelector(`.right-label[data-label-right="${itemId}"]`);
+        if (leftLabel) {
+          leftLabel.style.color = level < 50 ? '#64748b' : '#cbd5e1';
+        }
+        if (rightLabel) {
+          rightLabel.style.color = level > 50 ? '#16a34a' : '#cbd5e1';
+        }
       }
 
       // 录入模式
@@ -3182,7 +3381,7 @@
               title: title,
               content: content,
               group: group,
-              mastered: false
+              masteryLevel: 0
             };
             knowledgeItems.push(newItem);
             activeId = newItem.id;
