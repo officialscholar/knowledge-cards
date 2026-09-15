@@ -416,7 +416,7 @@
       margin: 0 auto;
     }
 
-    /* ========== 背诵模式：滑动卡片 ========== */
+    /* ========== 背诵模式 ========== */
     .recite-container {
       display: flex;
       flex-direction: column;
@@ -1218,6 +1218,64 @@
       background: #e2e8f0;
     }
 
+    /* 导入模式选择 */
+    .import-mode-selector {
+      display: flex;
+      gap: 8px;
+      margin: 8px 0 16px;
+    }
+
+    .import-mode-option {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: white;
+    }
+
+    .import-mode-option:hover {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+
+    .import-mode-option.selected {
+      border-color: #2563eb;
+      background: #eff6ff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .import-mode-option .mode-icon {
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+
+    .import-mode-option .mode-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .import-mode-option .mode-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 2px;
+    }
+
+    .import-mode-option.selected .mode-title {
+      color: #1e3a8a;
+    }
+
+    .import-mode-option .mode-desc {
+      font-size: 0.7rem;
+      color: #64748b;
+      line-height: 1.3;
+    }
+
     .confirm-overlay {
       position: fixed;
       inset: 0;
@@ -1580,6 +1638,24 @@
       .modal-textarea {
         min-height: 150px;
       }
+
+      .import-mode-option {
+        padding: 10px 10px;
+        gap: 6px;
+        border-radius: 12px;
+      }
+
+      .import-mode-option .mode-icon {
+        font-size: 1.1rem;
+      }
+
+      .import-mode-option .mode-title {
+        font-size: 0.82rem;
+      }
+
+      .import-mode-option .mode-desc {
+        font-size: 0.65rem;
+      }
     }
 
     @media (max-width: 380px) {
@@ -1683,6 +1759,11 @@
         font-size: 0.7rem;
         padding: 5px 10px;
       }
+
+      .import-mode-selector {
+        flex-direction: column;
+        gap: 6px;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1770,8 +1851,27 @@
 
         <div class="divider-text">或者手动粘贴</div>
 
-        <p>将之前导出的 JSON 数据粘贴到下方输入框中，点击“确认导入”即可恢复知识点。注意：导入会覆盖当前所有知识点。</p>
+        <p>将之前导出的 JSON 数据粘贴到下方输入框中。</p>
         <textarea class="modal-textarea" id="importTextarea" placeholder='粘贴 JSON 数据'></textarea>
+
+        <p style="margin-top: 16px; margin-bottom: 8px; font-weight: 600; color: #334155;">请选择导入方式：</p>
+        <div class="import-mode-selector" id="importModeSelector">
+          <div class="import-mode-option selected" data-mode="merge">
+            <span class="mode-icon">🔀</span>
+            <div class="mode-info">
+              <div class="mode-title">合并</div>
+              <div class="mode-desc">保留现有数据，追加导入的知识点</div>
+            </div>
+          </div>
+          <div class="import-mode-option" data-mode="overwrite">
+            <span class="mode-icon">🔄</span>
+            <div class="mode-info">
+              <div class="mode-title">覆盖</div>
+              <div class="mode-desc">清空现有数据，替换为导入的知识点</div>
+            </div>
+          </div>
+        </div>
+
         <div class="status-msg" id="importStatus"></div>
       </div>
       <div class="modal-footer">
@@ -1796,19 +1896,13 @@
   <script>
     (function(){
       // ============================================================
-      // 语音朗读配置（可在此处集中调整朗读参数）
+      // 语音朗读配置
       // ============================================================
       const SPEECH_CONFIG = {
-        // 语速：0.1（极慢）~ 10（极快），1 为正常速度
-        // 推荐 0.85，听起来从容清晰，适合背诵记忆
         rate: 0.85,
-        // 音调：0（低）~ 2（高），1 为正常
         pitch: 1.0,
-        // 音量：0 ~ 1
         volume: 1.0,
-        // 语言
         lang: 'zh-CN',
-        // 标题与内容之间的停顿（毫秒），用于分隔
         pauseBetweenTitleAndContent: 400
       };
 
@@ -1825,10 +1919,10 @@
       let activeId = knowledgeItems.length > 0 ? knowledgeItems[0].id : null;
       let currentMode = 'recite';
       let isCreatingNew = false;
-
       let collapsedGroups = loadCollapsedState();
-
       let reciteIndex = 0;
+      // 导入模式：'merge' 或 'overwrite'
+      let importMode = 'merge';
 
       const knowledgeListEl = document.getElementById('knowledgeList');
       const contentArea = document.getElementById('contentArea');
@@ -1847,6 +1941,7 @@
       const importStatus = document.getElementById('importStatus');
       const fileDropZone = document.getElementById('fileDropZone');
       const fileInput = document.getElementById('fileInput');
+      const importModeSelector = document.getElementById('importModeSelector');
 
       const confirmOverlay = document.getElementById('confirmOverlay');
       const confirmTitle = document.getElementById('confirmTitle');
@@ -1856,12 +1951,11 @@
 
       let confirmCallback = null;
 
-      // ---------- 语音朗读相关 ----------
+      // ---------- 语音朗读 ----------
       const speechSupported = 'speechSynthesis' in window;
       let currentUtterance = null;
       let speakingId = null;
 
-      // 停止所有朗读
       function stopSpeaking() {
         if (speechSupported) {
           window.speechSynthesis.cancel();
@@ -1875,7 +1969,6 @@
         });
       }
 
-      // 预加载语音列表
       if (speechSupported) {
         window.speechSynthesis.getVoices();
         if (window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -1885,51 +1978,40 @@
         }
       }
 
-      // 获取合适的中文语音
       function getChineseVoice() {
         const voices = window.speechSynthesis.getVoices();
         if (voices.length === 0) return null;
-        // 优先本地 zh-CN
         let voice = voices.find(v => v.lang === 'zh-CN' && v.localService);
         if (!voice) voice = voices.find(v => v.lang === 'zh-CN');
         if (!voice) voice = voices.find(v => v.lang && v.lang.startsWith('zh'));
         return voice || null;
       }
 
-      // 把文本处理得更适合朗读：换行变句号，多余符号清理
       function normalizeSpeechText(raw) {
         if (!raw) return '';
         let text = String(raw);
-        // 换行转换成句号+空格，让朗读更自然
         text = text.replace(/\n+/g, '。');
-        // 连续多个句号合并成一个
         text = text.replace(/。{2,}/g, '。');
-        // 中文标点前后多余空格清理
         text = text.replace(/\s+([，。！？；：、])/g, '$1');
         text = text.replace(/([，。！？；：、])\s+/g, '$1');
         return text.trim();
       }
 
-      // 朗读指定知识点的标题+内容
       function speakItem(item) {
         if (!speechSupported) {
           alert('当前浏览器不支持语音朗读功能');
           return;
         }
 
-        // 如果正在朗读同一个，则停止
         if (speakingId === item.id) {
           stopSpeaking();
           return;
         }
 
-        // 停止之前的朗读
         window.speechSynthesis.cancel();
 
-        // 构造朗读文本：标题 + 停顿 + 内容
         const title = normalizeSpeechText(item.title);
         const content = normalizeSpeechText(item.content || '');
-        // 标题和内容之间用句号连接，形成自然停顿
         let text = title;
         if (content) {
           text += '。' + content;
@@ -1969,7 +2051,6 @@
         updateSpeakButton(item.id, true);
       }
 
-      // 更新朗读按钮状态
       function updateSpeakButton(itemId, isSpeaking) {
         const btn = document.querySelector(`.speak-btn[data-speak-id="${itemId}"]`);
         if (btn) {
@@ -1985,7 +2066,7 @@
         }
       }
 
-      // ---------- PWA: 离线状态监听 ----------
+      // ---------- PWA ----------
       function updateOnlineStatus() {
         if (navigator.onLine) {
           offlineBanner.classList.remove('show');
@@ -1997,7 +2078,6 @@
       window.addEventListener('offline', updateOnlineStatus);
       updateOnlineStatus();
 
-      // ---------- PWA: 注册 Service Worker ----------
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           const swCode = `
@@ -2206,12 +2286,34 @@
         importTextarea.value = '';
         importStatus.textContent = '';
         importStatus.className = 'status-msg';
+        // 重置为默认的合并模式
+        importMode = 'merge';
+        updateImportModeUI();
         importModal.classList.add('show');
       }
 
       function closeImportModal() {
         importModal.classList.remove('show');
       }
+
+      // 更新导入模式选择器 UI
+      function updateImportModeUI() {
+        importModeSelector.querySelectorAll('.import-mode-option').forEach(opt => {
+          if (opt.dataset.mode === importMode) {
+            opt.classList.add('selected');
+          } else {
+            opt.classList.remove('selected');
+          }
+        });
+      }
+
+      // 绑定导入模式选择
+      importModeSelector.querySelectorAll('.import-mode-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+          importMode = opt.dataset.mode;
+          updateImportModeUI();
+        });
+      });
 
       async function copyExportData() {
         try {
@@ -2258,7 +2360,8 @@
         }
       }
 
-      function parseAndImport(rawText, onSuccess) {
+      // 解析导入数据
+      function parseAndImport(rawText) {
         if (!rawText || !rawText.trim()) {
           importStatus.textContent = '❌ 没有可导入的数据';
           importStatus.className = 'status-msg error';
@@ -2296,27 +2399,63 @@
           return;
         }
 
-        showConfirm(
-          '确认导入',
-          `即将导入 ${cleaned.length} 个知识点，\n当前 ${knowledgeItems.length} 个知识点将被覆盖。\n\n确定继续吗？`,
-          () => {
-            knowledgeItems = cleaned;
-            activeId = knowledgeItems[0].id;
-            isCreatingNew = false;
-            saveToStorage();
-            renderSidebar();
-            renderContent();
+        if (importMode === 'overwrite') {
+          // 覆盖模式：清空后导入
+          showConfirm(
+            '确认覆盖',
+            `即将用 ${cleaned.length} 个知识点覆盖当前数据，\n当前 ${knowledgeItems.length} 个知识点将被删除。\n\n确定继续吗？`,
+            () => {
+              knowledgeItems = cleaned;
+              activeId = knowledgeItems.length > 0 ? knowledgeItems[0].id : null;
+              isCreatingNew = false;
+              saveToStorage();
+              renderSidebar();
+              renderContent();
 
-            importStatus.textContent = `✓ 成功导入 ${cleaned.length} 个知识点！`;
-            importStatus.className = 'status-msg';
+              importStatus.textContent = `✓ 成功覆盖，共导入 ${cleaned.length} 个知识点！`;
+              importStatus.className = 'status-msg';
 
-            setTimeout(() => {
-              closeImportModal();
-            }, 1200);
+              setTimeout(() => {
+                closeImportModal();
+              }, 1200);
+            }
+          );
+        } else {
+          // 合并模式：追加到现有数据
+          // 为避免 id 冲突，为导入的数据生成新 id
+          const existingIds = new Set(knowledgeItems.map(i => i.id));
+          const mergedItems = cleaned.map(item => {
+            const newItem = { ...item };
+            // 如果 id 已存在，生成新 id
+            while (existingIds.has(newItem.id)) {
+              newItem.id = generateId();
+            }
+            existingIds.add(newItem.id);
+            return newItem;
+          });
 
-            if (onSuccess) onSuccess();
-          }
-        );
+          showConfirm(
+            '确认合并',
+            `即将追加 ${mergedItems.length} 个知识点，\n当前 ${knowledgeItems.length} 个知识点将被保留。\n合并后共 ${knowledgeItems.length + mergedItems.length} 个。\n\n确定继续吗？`,
+            () => {
+              knowledgeItems = knowledgeItems.concat(mergedItems);
+              // 保持当前 activeId 不变，如果没有则选第一个
+              if (!activeId && knowledgeItems.length > 0) {
+                activeId = knowledgeItems[0].id;
+              }
+              saveToStorage();
+              renderSidebar();
+              renderContent();
+
+              importStatus.textContent = `✓ 成功合并，新增 ${mergedItems.length} 个知识点！`;
+              importStatus.className = 'status-msg';
+
+              setTimeout(() => {
+                closeImportModal();
+              }, 1200);
+            }
+          );
+        }
       }
 
       function doImport() {
@@ -2335,9 +2474,8 @@
         reader.onload = (e) => {
           const text = e.target.result;
           importTextarea.value = text;
-          importStatus.textContent = `📄 已加载文件：${file.name}`;
+          importStatus.textContent = `📄 已加载文件：${file.name}，请点击“确认导入”`;
           importStatus.className = 'status-msg';
-          parseAndImport(text);
         };
         reader.onerror = () => {
           importStatus.textContent = '❌ 文件读取失败，请重试';
