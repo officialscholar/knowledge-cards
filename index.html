@@ -8,7 +8,7 @@
 
   <!-- ========== iOS PWA ========== -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="知识点">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1e3a8a">
@@ -29,17 +29,9 @@
       --safe-bottom: env(safe-area-inset-bottom, 0px);
       --safe-left: env(safe-area-inset-left, 0px);
       --safe-right: env(safe-area-inset-right, 0px);
-      /* iOS 状态栏避让：在 PWA standalone 模式下，头部需要额外下移 */
+      /* iOS 状态栏避让：black-translucent 时需要额外下移；
+         改成 default 后由 iOS 自动避让，无需额外偏移 */
       --status-bar-offset: 0px;
-    }
-
-    /* iOS PWA standalone 检测：状态栏黑色半透明时，内容会被状态栏覆盖 */
-    @supports (-webkit-touch-callout: none) {
-      @media (display-mode: standalone) {
-        :root {
-          --status-bar-offset: 0px;
-        }
-      }
     }
 
     html, body {
@@ -88,8 +80,6 @@
       flex-shrink: 0;
       box-shadow: 0 2px 6px rgba(0,0,0,0.02);
       gap: 8px;
-      /* iOS PWA 下状态栏黑色半透明，需要留出状态栏高度 */
-      padding-top: calc(12px + var(--status-bar-offset));
     }
 
     .app-header h1 {
@@ -332,7 +322,6 @@
       align-items: center;
       background: #f4f7fc;
       -webkit-overflow-scrolling: touch;
-      /* iOS 平滑滚动 */
       scroll-behavior: smooth;
     }
 
@@ -700,7 +689,6 @@
       font-family: inherit;
       background: #fafcff;
       outline: none;
-      /* iOS 上防自动缩放 */
       -webkit-text-size-adjust: 100%;
     }
 
@@ -1029,7 +1017,6 @@
       touch-action: manipulation;
       -webkit-text-size-adjust: 100%;
       border-radius: 0 0 16px 16px;
-      /* iOS 输入时防止页面跳动 */
       -webkit-overflow-scrolling: touch;
     }
 
@@ -1376,7 +1363,7 @@
     .toast.error { background: rgba(220,38,38,0.95); }
 
     @media (max-width: 700px) {
-      .app-header { gap: 6px; padding: 8px 10px; padding-top: calc(8px + var(--status-bar-offset)); }
+      .app-header { gap: 6px; padding: 8px 10px; }
       .app-header h1 { font-size: 0.95rem; }
       .mode-toggle { flex: 1; padding: 3px; gap: 3px; max-width: 100%; }
       .mode-btn { flex: 1; text-align: center; padding: 6px 4px; font-size: 0.72rem; }
@@ -1446,36 +1433,6 @@
       .format-painter-btn.armed { animation: none; }
     }
   </style>
-
-  <script>
-    // ============================================================
-    // 尽早执行的 iOS PWA 检测：设置 --status-bar-offset
-    // 目的：当 PWA 全屏时（standalone 模式），
-    // apple-mobile-web-app-status-bar-style = black-translucent 会让内容延伸到状态栏下方。
-    // 需要在顶部预留状态栏高度，否则 app-header 会被刘海/状态栏遮挡。
-    // ============================================================
-    (function() {
-      function isStandalone() {
-        return window.navigator.standalone === true ||
-               window.matchMedia('(display-mode: standalone)').matches ||
-               window.matchMedia('(display-mode: fullscreen)').matches;
-      }
-      function update() {
-        if (isStandalone()) {
-          // 状态栏高度因设备而异，保守用 44px（iPhone 刘海/灵动岛）
-          // 非刘海机型状态栏约 20px，44px 会稍微多留白但不会遮挡
-          var isNotch = window.innerHeight >= 780;
-          var offset = isNotch ? '44px' : '20px';
-          document.documentElement.style.setProperty('--status-bar-offset', offset);
-        } else {
-          document.documentElement.style.setProperty('--status-bar-offset', '0px');
-        }
-      }
-      update();
-      window.addEventListener('resize', update);
-      window.addEventListener('orientationchange', () => setTimeout(update, 100));
-    })();
-  </script>
 </head>
 <body>
   <div class="offline-banner" id="offlineBanner">📡 当前处于离线状态</div>
@@ -1693,13 +1650,11 @@
         if (paletteBusBound) return;
         paletteBusBound = true;
 
-        // ★ iOS 修复：用 pointerdown 关闭，但要判断是不是刚打开（用时间戳抑制）
         let lastOpenTime = 0;
         const markOpen = () => { lastOpenTime = Date.now(); };
         window.__markPaletteOpen = markOpen;
 
         document.addEventListener('pointerdown', (e) => {
-          // 刚打开 200ms 内不关闭，避免点击箭头本身触发 pointerdown 误关
           if (Date.now() - lastOpenTime < 200) return;
           if (!e.target.closest('.color-btn-group') && !e.target.closest('.color-palette')) {
             closeAllPalettes();
@@ -1769,7 +1724,7 @@
         }
       }
 
-      // ---------- IndexedDB（iOS 首次打开延迟重试）----------
+      // ---------- IndexedDB ----------
       let dbPromise = null;
       function getDB() {
         if (dbPromise) return dbPromise;
@@ -1789,7 +1744,6 @@
               req.onerror = () => {
                 if (!retried) {
                   retried = true;
-                  // iOS 上首次 IndexedDB 打开可能失败，延时重试一次
                   setTimeout(() => { dbPromise = null; tryOpen(); }, 300);
                 } else {
                   reject(req.error);
@@ -2945,9 +2899,6 @@
 
         bindPaletteBus();
 
-        // iOS 修复：必须在用户手势（touch/click）的同步调用栈内设置 styleWithCSS，
-        // 否则 iOS Safari 会拒绝。
-        // 这里用一个"待激活"标志，第一次 touchstart 时立即激活。
         let styleWithCSSReady = false;
         function ensureStyleWithCSS() {
           if (styleWithCSSReady) return;
@@ -2956,9 +2907,7 @@
             styleWithCSSReady = true;
           } catch (e) {}
         }
-        // 立即尝试一次（桌面浏览器 OK）
         ensureStyleWithCSS();
-        // 在用户手势里再确保一次
         toolbar.addEventListener('touchstart', ensureStyleWithCSS, { passive: true, once: false });
         editor.addEventListener('touchstart', ensureStyleWithCSS, { passive: true, once: false });
 
@@ -3335,7 +3284,6 @@
               positionPalette(palette, colorArrow);
               palette.style.visibility = '';
 
-              // 标记打开时间，防止 pointerdown 立刻关闭
               if (window.__markPaletteOpen) window.__markPaletteOpen();
 
               const customInput = palette.querySelector('.color-custom-input');
