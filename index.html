@@ -312,7 +312,6 @@
 
     .card-wrapper { width: 100%; max-width: 680px; margin: 0 auto; }
 
-    /* ========== 背诵模式 ========== */
     .recite-container {
       display: flex;
       flex-direction: column;
@@ -369,7 +368,6 @@
       user-select: none;
     }
 
-    /* ===== 图片区：文字下方，宽度与文字一致 ===== */
     .card-images {
       margin-top: 14px;
       display: flex;
@@ -423,7 +421,6 @@
       color: #fff;
     }
 
-    /* ========== 熟练度滑块 ========== */
     .mastery-slider-row { margin-top: 24px; width: 100%; }
 
     .mastery-labels {
@@ -520,7 +517,6 @@
       text-align: center;
     }
 
-    /* ========== 全局模式 ========== */
     .global-group-section { width: 100%; margin-bottom: 28px; }
 
     .global-group-divider {
@@ -643,7 +639,6 @@
 
     .global-card:hover .drag-handle { opacity: 1; }
 
-    /* ========== 编辑模式 ========== */
     .edit-card {
       background: #fff;
       border-radius: 28px;
@@ -741,14 +736,10 @@
 
     .empty-state p { font-size: 1.1rem; margin-bottom: 16px; }
 
-    /* ============================================================
-       富文本编辑器（触屏优化）
-       ============================================================ */
+    /* 富文本编辑器 */
     .rich-editor-wrap {
-      /* 编辑器整体容器 */
       border: 1.5px solid #e2e8f0;
       border-radius: 18px;
-      overflow: hidden;
       background: #fafcff;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
@@ -758,7 +749,6 @@
       box-shadow: 0 0 0 4px rgba(37,99,235,0.1);
     }
 
-    /* 工具栏：横向滚动，按钮 44×44 触摸友好 */
     .rich-toolbar {
       display: flex;
       flex-wrap: nowrap;
@@ -766,13 +756,14 @@
       padding: 6px 8px;
       background: #f8fafc;
       border-bottom: 1px solid #e2e8f0;
+      border-radius: 16px 16px 0 0;
       align-items: center;
       overflow-x: auto;
       overflow-y: hidden;
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
-      /* 触摸友好：避免 300ms 延迟 */
       touch-action: manipulation;
+      position: relative;
     }
     .rich-toolbar::-webkit-scrollbar { display: none; }
 
@@ -813,39 +804,175 @@
       margin: 0 2px;
     }
 
-    .rich-color-wrap {
+    .color-btn-group {
       position: relative;
-      display: inline-flex;
       flex-shrink: 0;
+      display: inline-flex;
+      height: 44px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #fff;
+      -webkit-tap-highlight-color: transparent;
     }
+    .color-btn-group:hover { border-color: #93c5fd; }
+    .color-btn-group.open { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
 
-    .rich-color-input {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-      width: 100%;
+    .color-btn-main {
+      flex-shrink: 0;
+      width: 44px;
       height: 100%;
       border: none;
-      padding: 0;
-    }
-
-    .rich-color-btn {
-      position: relative;
-      overflow: hidden;
+      background: transparent;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #334155;
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
       padding-bottom: 8px;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
-
-    .rich-color-btn .color-bar {
+    .color-btn-main:hover { background: #eff6ff; }
+    .color-btn-main:active { background: #dbeafe; }
+    .color-btn-main .color-bar {
       position: absolute;
       bottom: 4px;
-      left: 8px;
-      right: 8px;
-      height: 4px;
-      border-radius: 2px;
+      left: 6px;
+      right: 6px;
+      height: 5px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.08);
     }
 
-    /* 编辑区：适配触屏 */
+    .color-btn-arrow {
+      flex-shrink: 0;
+      width: 20px;
+      height: 100%;
+      border: none;
+      border-left: 1px solid #e2e8f0;
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.55rem;
+      color: #94a3b8;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .color-btn-arrow:hover { background: #eff6ff; color: #2563eb; }
+
+    .color-palette {
+      position: fixed;
+      z-index: 8000;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+      padding: 12px;
+      display: none;
+      min-width: 260px;
+      touch-action: manipulation;
+    }
+    .color-palette.show { display: block; }
+
+    .color-palette-title {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      padding: 0 2px;
+    }
+
+    .color-swatches {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .color-swatch {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 10px;
+      border: 2px solid rgba(0,0,0,0.06);
+      cursor: pointer;
+      position: relative;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      transition: transform 0.1s;
+    }
+    .color-swatch:hover { transform: scale(1.08); }
+    .color-swatch:active { transform: scale(0.95); }
+    .color-swatch.selected {
+      border-color: #1e3a8a;
+      box-shadow: 0 0 0 2px #fff inset, 0 0 0 2px #1e3a8a;
+    }
+    .color-swatch.selected::after {
+      content: '✓';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
+
+    .color-custom-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #e2e8f0;
+    }
+
+    .color-custom-label {
+      font-size: 0.78rem;
+      color: #64748b;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .color-custom-input {
+      width: 40px;
+      height: 32px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      cursor: pointer;
+      padding: 2px;
+      background: #fff;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .color-custom-input::-webkit-color-swatch-wrapper { padding: 0; }
+    .color-custom-input::-webkit-color-swatch { border: none; border-radius: 5px; }
+    .color-custom-input::-moz-color-swatch { border: none; border-radius: 5px; }
+
+    /* 格式刷 */
+    .format-painter-btn.armed {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #fff;
+      animation: fpPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes fpPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.5); }
+      50% { box-shadow: 0 0 0 6px rgba(37,99,235,0); }
+    }
+
     .rich-editor {
       width: 100%;
       min-height: 180px;
@@ -853,21 +980,20 @@
       overflow-y: auto;
       padding: 14px 16px;
       border: none;
-      font-size: 16px;              /* 16px 防止 iOS 聚焦缩放 */
+      font-size: 16px;
       font-family: inherit;
-      line-height: 1.75;            /* 触屏行高更大，易点选 */
+      line-height: 1.75;
       background: transparent;
       outline: none;
       word-break: break-word;
       color: #1e293b;
       -webkit-user-select: text;
       user-select: text;
-      /* 触屏：允许长按选词、显示系统菜单 */
       -webkit-touch-callout: default;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
-      /* 输入体验 */
       -webkit-text-size-adjust: 100%;
+      border-radius: 0 0 16px 16px;
     }
 
     .rich-editor:empty::before {
@@ -876,10 +1002,7 @@
       pointer-events: none;
     }
 
-    .rich-editor:focus {
-      /* 聚焦时不再加 box-shadow（已有 wrap 的 focus-within） */
-      background: transparent;
-    }
+    .rich-editor:focus { background: transparent; }
 
     .rich-editor img {
       display: block;
@@ -898,12 +1021,7 @@
       line-height: 1.4;
     }
 
-    /* ============================================================
-       图片区（编辑模式）
-       ============================================================ */
-    .images-section {
-      margin-top: 8px;
-    }
+    .images-section { margin-top: 8px; }
 
     .images-section-header {
       display: flex;
@@ -924,7 +1042,6 @@
       gap: 4px;
     }
 
-    /* 小巧的圆形"+"按钮 */
     .add-image-icon-btn {
       flex-shrink: 0;
       width: 30px;
@@ -950,15 +1067,9 @@
       color: #2563eb;
       background: #eff6ff;
     }
-    .add-image-icon-btn:active {
-      transform: scale(0.92);
-    }
+    .add-image-icon-btn:active { transform: scale(0.92); }
 
-    .image-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+    .image-list { display: flex; flex-direction: column; gap: 10px; }
 
     .image-item {
       position: relative;
@@ -968,11 +1079,7 @@
       border: 1px solid #e2e8f0;
     }
 
-    .image-item img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
+    .image-item img { display: block; width: 100%; height: auto; }
 
     .image-item .remove-img-btn {
       position: absolute;
@@ -1007,7 +1114,6 @@
       background: #fafcff;
     }
 
-    /* ========== 模态框 ========== */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -1232,7 +1338,6 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.error { background: rgba(220,38,38,0.95); }
 
-    /* ========== 移动端适配 ========== */
     @media (max-width: 700px) {
       .app-header { gap: 6px; padding: 8px 10px; }
       .app-header h1 { font-size: 0.95rem; }
@@ -1277,9 +1382,11 @@
       .modal { max-height: 92vh; }
       .modal-textarea { min-height: 150px; }
 
-      /* 触屏下编辑器 */
       .rich-toolbar { padding: 6px; gap: 4px; }
       .rich-btn { min-width: 40px; height: 40px; font-size: 0.95rem; padding: 0 8px; }
+      .color-btn-group { height: 40px; }
+      .color-btn-main { width: 40px; }
+      .color-btn-arrow { width: 18px; }
       .rich-editor { min-height: 160px; padding: 12px 14px; line-height: 1.7; }
       .rich-hint { font-size: 0.68rem; }
     }
@@ -1299,6 +1406,7 @@
 
     @media (prefers-reduced-motion: reduce) {
       * { transition: none !important; }
+      .format-painter-btn.armed { animation: none; }
     }
   </style>
 </head>
@@ -1407,9 +1515,6 @@
     (function(){
       'use strict';
 
-      // ============================================================
-      // 常量
-      // ============================================================
       const SPEECH_CONFIG = { rate: 0.85, pitch: 1.0, volume: 1.0, lang: 'zh-CN' };
       const MASTERED_THRESHOLD = 100;
       const CLICK_DELAY = 250;
@@ -1421,6 +1526,27 @@
       const STORAGE_KEY_ITEMS = 'knowledge_card_items_v3';
       const STORAGE_KEY_COLLAPSED = 'knowledge_collapsed_groups_v3';
 
+      // ===== 预设颜色：深色高对比（文字色） =====
+      const PRESET_TEXT_COLORS = [
+        { name: '正红', value: '#D0021B' },
+        { name: '纯黑', value: '#000000' },
+        { name: '深蓝', value: '#0B4F9E' },
+        { name: '深绿', value: '#0F7B3A' },
+        { name: '橙红', value: '#E85D04' }
+      ];
+
+      // 背景色：高饱和亮色，配黑字清晰
+      const PRESET_BG_COLORS = [
+        { name: '亮黄', value: '#FFEB3B' },
+        { name: '亮橙', value: '#FFB74D' },
+        { name: '亮绿', value: '#81C784' },
+        { name: '亮蓝', value: '#64B5F6' },
+        { name: '亮粉', value: '#F48FB1' }
+      ];
+
+      const DEFAULT_TEXT_COLOR = PRESET_TEXT_COLORS[0].value;
+      const DEFAULT_BG_COLOR = PRESET_BG_COLORS[0].value;
+
       const DEFAULT_ITEMS = [
         { id: '1', title: 'HTML 语义化', content: '使用恰当的 HTML 标签来构建页面结构，例如 header、nav、main、article、section、aside、footer。语义化有助于 SEO、可访问性和代码可读性。', group: '前端基础', masteryLevel: 0, images: [] },
         { id: '2', title: 'CSS 盒模型', content: '每个元素都是一个盒子。由内容(content)、内边距(padding)、边框(border)、外边距(margin)组成。box-sizing: border-box 使 width 包含 padding 和 border。', group: '前端基础', masteryLevel: 0, images: [] },
@@ -1430,9 +1556,6 @@
         { id: '6', title: 'Vue 响应式原理', content: 'Vue2 使用 Object.defineProperty 劫持数据，Vue3 使用 Proxy。当数据变化时触发依赖更新，重新渲染视图。', group: '框架', masteryLevel: 0, images: [] }
       ];
 
-      // ============================================================
-      // 状态
-      // ============================================================
       const state = {
         items: [],
         activeId: null,
@@ -1445,12 +1568,14 @@
         confirmCallback: null,
         draftImages: [],
         editingSessionId: null,
-        pendingCardClickTimer: null
+        pendingCardClickTimer: null,
+        lastTextColor: DEFAULT_TEXT_COLOR,
+        lastBgColor: DEFAULT_BG_COLOR,
+        formatPainterClip: null,
+        formatPainterArmed: false,
+        formatPainterEditorId: null   // 记录格式刷属于哪个编辑器
       };
 
-      // ============================================================
-      // DOM 引用
-      // ============================================================
       const $ = (sel) => document.querySelector(sel);
       const el = {
         knowledgeList: $('#knowledgeList'),
@@ -1478,20 +1603,14 @@
         confirmCancel: $('#confirmCancel')
       };
 
-      // ============================================================
-      // Toast
-      // ============================================================
       let toastTimer = null;
       function showToast(msg, isError) {
         el.toast.textContent = msg;
         el.toast.className = 'toast show' + (isError ? ' error' : '');
         if (toastTimer) clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => el.toast.classList.remove('show'), 2200);
+        toastTimer = setTimeout(() => el.toast.classList.remove('show'), 2400);
       }
 
-      // ============================================================
-      // 卡片单击定时器管理
-      // ============================================================
       function clearPendingCardClick() {
         if (state.pendingCardClickTimer) {
           clearTimeout(state.pendingCardClickTimer);
@@ -1499,9 +1618,7 @@
         }
       }
 
-      // ============================================================
-      // IndexedDB
-      // ============================================================
+      // ---------- IndexedDB ----------
       let dbPromise = null;
       function getDB() {
         if (dbPromise) return dbPromise;
@@ -1576,9 +1693,6 @@
         return results;
       }
 
-      // ============================================================
-      // 工具
-      // ============================================================
       function generateId() {
         return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
       }
@@ -1607,7 +1721,6 @@
         return escapeHtml(content).replace(/\n/g, '<br>');
       }
 
-      // ---------- HTML 净化 ----------
       const ALLOWED_TAGS = new Set(['B', 'STRONG', 'U', 'I', 'EM', 'SPAN', 'BR', 'DIV', 'P', 'MARK', 'FONT']);
       const ALLOWED_ATTRS = {
         'SPAN': ['style'], 'DIV': ['style'], 'P': ['style'],
@@ -1666,7 +1779,6 @@
         return template.innerHTML;
       }
 
-      // ---------- 颜色 ----------
       const masteryColorCache = new Map();
       function getMasteryColor(level) {
         level = Math.max(0, Math.min(100, level));
@@ -1698,7 +1810,6 @@
         return `rgb(${r}, ${g}, ${b})`;
       }
 
-      // ---------- 存储 ----------
       function normalizeItem(item) {
         let level = 0;
         if (typeof item.masteryLevel === 'number') {
@@ -1762,9 +1873,6 @@
         } catch (e) {}
       }
 
-      // ============================================================
-      // 语音
-      // ============================================================
       const speechSupported = 'speechSynthesis' in window;
 
       function stopSpeaking() {
@@ -1825,9 +1933,6 @@
         window.speechSynthesis.speak(utterance);
       }
 
-      // ============================================================
-      // 确认
-      // ============================================================
       function showConfirm(title, message, onConfirm) {
         el.confirmTitle.textContent = title;
         el.confirmMessage.textContent = message;
@@ -1850,9 +1955,7 @@
         if (e.target === el.confirmOverlay) closeConfirm();
       });
 
-      // ============================================================
-      // 侧边栏
-      // ============================================================
+      // ---------- 侧边栏 ----------
       let sidebarRendered = false;
 
       function renderSidebar(force) {
@@ -1958,6 +2061,9 @@
             state.isCreatingNew = false;
             state.editingSessionId = null;
             state.draftImages = [];
+            state.formatPainterArmed = false;
+            state.formatPainterClip = null;
+            state.formatPainterEditorId = null;
             clearPendingCardClick();
             if (state.mode === 'global') {
               setMode('recite');
@@ -2004,9 +2110,6 @@
         });
       }
 
-      // ============================================================
-      // 内容渲染
-      // ============================================================
       function renderContent() {
         validateActiveId();
 
@@ -2040,9 +2143,7 @@
         }
       }
 
-      // ============================================================
-      // 全局模式
-      // ============================================================
+      // ---------- 全局模式 ----------
       let globalClickBound = false;
 
       function renderGlobalMode() {
@@ -2142,9 +2243,7 @@
         `;
       }
 
-      // ============================================================
-      // 全局拖拽
-      // ============================================================
+      // ---------- 全局拖拽 ----------
       let globalDragCleanup = null;
 
       function initGlobalDragSort() {
@@ -2319,9 +2418,7 @@
         renderSidebar(true);
       }
 
-      // ============================================================
-      // 背诵模式
-      // ============================================================
+      // ---------- 背诵模式 ----------
       let reciteRenderToken = 0;
 
       async function renderReciteMode() {
@@ -2476,7 +2573,6 @@
         updateSidebarActive();
       }
 
-      // ---------- 熟练度滑块 ----------
       let sliderCleanup = null;
       function initMasterySlider(itemId) {
         if (sliderCleanup) sliderCleanup();
@@ -2600,8 +2696,80 @@
       }
 
       // ============================================================
-      // 富文本编辑器（触屏优化）
+      // 富文本编辑器（重写格式刷）
       // ============================================================
+      let paletteOutsideBound = false;
+
+      function bindPaletteOutsideOnce() {
+        if (paletteOutsideBound) return;
+        paletteOutsideBound = true;
+        document.addEventListener('pointerdown', (ev) => {
+          if (!ev.target.closest('.color-btn-group') && !ev.target.closest('.color-palette')) {
+            closeAllPalettes();
+          }
+        }, true);
+      }
+
+      function closeAllPalettes() {
+        document.querySelectorAll('.color-palette.show').forEach(p => p.classList.remove('show'));
+        document.querySelectorAll('.color-btn-group.open').forEach(g => g.classList.remove('open'));
+      }
+
+      function positionPalette(palette, anchorEl) {
+        const rect = anchorEl.getBoundingClientRect();
+        const paletteWidth = 260;
+        let left = rect.left;
+        if (left + paletteWidth > window.innerWidth - 8) {
+          left = window.innerWidth - paletteWidth - 8;
+        }
+        if (left < 8) left = 8;
+        palette.style.left = left + 'px';
+        const spaceBelow = window.innerHeight - rect.bottom;
+        if (spaceBelow < 220 && rect.top > 220) {
+          palette.style.top = 'auto';
+          palette.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
+        } else {
+          palette.style.bottom = 'auto';
+          palette.style.top = (rect.bottom + 6) + 'px';
+        }
+      }
+
+      function buildColorButtonHtml(editorId, kind, currentColor) {
+        const isText = kind === 'text';
+        const label = isText ? 'A' : '◐';
+        const title = isText ? '字体颜色' : '背景色';
+        const barColor = currentColor;
+        return `
+          <div class="color-btn-group" data-color-group="${editorId}-${kind}">
+            <button type="button" class="color-btn-main" data-color-action="apply-current" data-color-kind="${kind}" data-editor-id="${editorId}" title="${title}">
+              ${label}
+              <span class="color-bar" style="background:${barColor};"></span>
+            </button>
+            <button type="button" class="color-btn-arrow" data-color-action="toggle-palette" data-color-kind="${kind}" data-editor-id="${editorId}" title="选择颜色" aria-label="展开调色板">▼</button>
+          </div>
+        `;
+      }
+
+      function buildPaletteHtml(editorId, kind) {
+        const isText = kind === 'text';
+        const paletteId = `palette-${editorId}-${kind}`;
+        return `
+          <div class="color-palette" id="${paletteId}" data-palette-for="${editorId}" data-palette-kind="${kind}">
+            <div class="color-palette-title">${isText ? '文字颜色' : '背景色'}</div>
+            <div class="color-swatches">
+              ${(isText ? PRESET_TEXT_COLORS : PRESET_BG_COLORS).map(c => `
+                <button type="button" class="color-swatch" data-color-value="${c.value}" title="${c.name}"
+                        style="background:${c.value};"></button>
+              `).join('')}
+            </div>
+            <div class="color-custom-row">
+              <span class="color-custom-label">自定义</span>
+              <input type="color" class="color-custom-input" value="${isText ? state.lastTextColor : state.lastBgColor}">
+            </div>
+          </div>
+        `;
+      }
+
       function buildRichEditorHtml(editorId, initialHtml) {
         return `
           <div class="rich-editor-wrap">
@@ -2610,19 +2778,10 @@
               <button type="button" class="rich-btn italic-btn" data-cmd="italic" title="斜体">I</button>
               <button type="button" class="rich-btn underline-btn" data-cmd="underline" title="下划线">U</button>
               <span class="rich-divider"></span>
-              <div class="rich-color-wrap">
-                <button type="button" class="rich-btn rich-color-btn" data-cmd="foreColor" title="字体颜色">
-                  A<span class="color-bar" style="background:#dc2626;"></span>
-                  <input type="color" class="rich-color-input" data-color-target="foreColor" value="#dc2626">
-                </button>
-              </div>
-              <div class="rich-color-wrap">
-                <button type="button" class="rich-btn rich-color-btn" data-cmd="hiliteColor" title="背景色" style="background:#fef08a;">
-                  🖍<span class="color-bar" style="background:#fef08a;"></span>
-                  <input type="color" class="rich-color-input" data-color-target="hiliteColor" value="#fef08a">
-                </button>
-              </div>
+              ${buildColorButtonHtml(editorId, 'text', state.lastTextColor)}
+              ${buildColorButtonHtml(editorId, 'bg', state.lastBgColor)}
               <span class="rich-divider"></span>
+              <button type="button" class="rich-btn format-painter-btn" data-cmd="formatPainter" title="格式刷">🖌</button>
               <button type="button" class="rich-btn" data-cmd="removeFormat" title="清除格式">✕</button>
             </div>
             <div class="rich-editor" id="${editorId}" contenteditable="true"
@@ -2630,14 +2789,45 @@
                  autocorrect="off" autocapitalize="off" spellcheck="false"
                  inputmode="text">${initialHtml || ''}</div>
           </div>
-          <div class="rich-hint">💡 选中文字后点上方按钮标注重点；图片请在下方"图片区"添加</div>
+          <div class="rich-hint">💡 选中文字后点按钮标注重点；A/◐=一键用当前色，▼=展开调色板；🖌=格式刷</div>
         `;
+      }
+
+      // 颜色归一化：统一为 #rrggbb 小写
+      function normalizeColor(c) {
+        if (!c) return null;
+        c = String(c).trim();
+        if (c === 'transparent' || c === 'rgba(0, 0, 0, 0)' || c === 'rgba(0,0,0,0)') return null;
+        if (c.startsWith('#')) {
+          if (c.length === 4) {
+            return '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3];
+          }
+          return c.toLowerCase();
+        }
+        const m = c.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+        if (!m) return null;
+        const toHex = (n) => parseInt(n, 10).toString(16).padStart(2, '0');
+        return ('#' + toHex(m[1]) + toHex(m[2]) + toHex(m[3])).toLowerCase();
       }
 
       function initRichEditor(editorId) {
         const editor = document.getElementById(editorId);
         const toolbar = document.querySelector(`.rich-toolbar[data-toolbar-for="${editorId}"]`);
         if (!editor || !toolbar) return;
+
+        bindPaletteOutsideOnce();
+
+        ['text', 'bg'].forEach(kind => {
+          const paletteId = `palette-${editorId}-${kind}`;
+          let palette = document.getElementById(paletteId);
+          if (!palette) {
+            const wrap = document.createElement('div');
+            wrap.innerHTML = buildPaletteHtml(editorId, kind);
+            palette = wrap.firstElementChild;
+            document.body.appendChild(palette);
+          }
+          updatePaletteSelection(palette, kind);
+        });
 
         let savedRange = null;
 
@@ -2648,24 +2838,20 @@
           }
         }
         function restoreSelection() {
-          if (!savedRange) return;
+          if (!savedRange) return false;
           try {
             const sel = window.getSelection();
             sel.removeAllRanges();
             sel.addRange(savedRange);
-          } catch (e) {}
+            return true;
+          } catch (e) { return false; }
         }
 
-        // 触屏 + 键盘：多种时机保存选区
         editor.addEventListener('keyup', saveSelection);
         editor.addEventListener('mouseup', saveSelection);
         editor.addEventListener('blur', saveSelection);
-        editor.addEventListener('touchend', () => {
-          // 触摸结束后延时保存选区，等待系统选区确定
-          setTimeout(saveSelection, 10);
-        });
+        editor.addEventListener('touchend', () => { setTimeout(saveSelection, 10); });
 
-        // 全局 selectionchange：触屏时也生效
         const onSelectionChange = () => {
           const sel = window.getSelection();
           if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
@@ -2675,10 +2861,13 @@
         };
         document.addEventListener('selectionchange', onSelectionChange);
 
-        // 编辑器元素被销毁时移除全局监听（用 MutationObserver）
         const observer = new MutationObserver(() => {
           if (!document.body.contains(editor)) {
             document.removeEventListener('selectionchange', onSelectionChange);
+            ['text', 'bg'].forEach(kind => {
+              const p = document.getElementById(`palette-${editorId}-${kind}`);
+              if (p) p.remove();
+            });
             observer.disconnect();
           }
         });
@@ -2693,29 +2882,212 @@
           });
         }
 
-        // 工具栏按钮：mousedown 时阻止默认（保留选区），触屏用 touchstart
+        // ============ 格式刷核心 ============
+
+        // 从选区起点读取格式（用 computedStyle，比 queryCommand 更可靠）
+        function readFormatFromSelection() {
+          const sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) return null;
+          const range = sel.getRangeAt(0);
+          if (!editor.contains(range.startContainer)) return null;
+
+          let node = range.startContainer;
+          if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+          if (!node) return null;
+
+          const cs = window.getComputedStyle(node);
+          const fontWeight = cs.fontWeight;
+          const clip = {
+            bold: fontWeight === 'bold' || parseInt(fontWeight, 10) >= 600,
+            italic: cs.fontStyle === 'italic',
+            underline: (cs.textDecorationLine || cs.textDecoration || '').includes('underline'),
+            foreColor: null,
+            hiliteColor: null
+          };
+
+          // 文字色（排除默认深色）
+          const fc = normalizeColor(cs.color);
+          // 默认色 #1e293b 或 #000000 也允许（用户可以刷成黑色）
+          if (fc && fc !== '#1e293b') clip.foreColor = fc;
+          // 但其实应该记录为"是否显式设置过"，这里简化：非默认就记录
+          // 更准确：判断是否有祖先 span 带 color
+          // 用 nearest 有 style 的祖先
+          let cur = node;
+          let foundColor = null;
+          let foundBg = null;
+          while (cur && cur !== editor && cur.nodeType === Node.ELEMENT_NODE) {
+            const inlineStyle = cur.getAttribute && cur.getAttribute('style');
+            if (inlineStyle) {
+              const colorMatch = inlineStyle.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
+              const bgMatch = inlineStyle.match(/(?:^|;)\s*background(?:-color)?\s*:\s*([^;]+)/i);
+              if (!foundColor && colorMatch) foundColor = normalizeColor(colorMatch[1]);
+              if (!foundBg && bgMatch) foundBg = normalizeColor(bgMatch[1]);
+            }
+            cur = cur.parentElement;
+          }
+          if (foundColor) clip.foreColor = foundColor;
+          if (foundBg) clip.hiliteColor = foundBg;
+
+          return clip;
+        }
+
+        // 应用格式到当前选中文字（关键：先保存目标选区，再应用）
+        function applyFormatToCurrentSelection() {
+          if (!state.formatPainterClip) return false;
+          const clip = state.formatPainterClip;
+
+          const sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) return false;
+          const range = sel.getRangeAt(0);
+          if (range.collapsed) return false;
+          if (!editor.contains(range.commonAncestorContainer)) return false;
+
+          // 保存当前选区
+          const targetRange = range.cloneRange();
+
+          // 恢复编辑器焦点 + 选区
+          editor.focus();
+          const sel2 = window.getSelection();
+          sel2.removeAllRanges();
+          sel2.addRange(targetRange);
+
+          // 应用命令
+          try {
+            // toggle 类：先查询目标当前状态，不一致才切换
+            const curBold = document.queryCommandState('bold');
+            if (!!clip.bold !== !!curBold) document.execCommand('bold', false, null);
+            const curItalic = document.queryCommandState('italic');
+            if (!!clip.italic !== !!curItalic) document.execCommand('italic', false, null);
+            const curUnderline = document.queryCommandState('underline');
+            if (!!clip.underline !== !!curUnderline) document.execCommand('underline', false, null);
+
+            // 颜色类：set 语义
+            if (clip.foreColor) {
+              document.execCommand('foreColor', false, clip.foreColor);
+            }
+            if (clip.hiliteColor) {
+              try { document.execCommand('hiliteColor', false, clip.hiliteColor); }
+              catch (e) { document.execCommand('backColor', false, clip.hiliteColor); }
+            }
+          } catch (e) { console.warn(e); }
+
+          saveSelection();
+          updateActiveStates();
+          return true;
+        }
+
+        function updateFormatPainterUI() {
+          const btn = toolbar.querySelector('.format-painter-btn');
+          if (btn) btn.classList.toggle('armed', state.formatPainterArmed);
+        }
+
         toolbar.addEventListener('mousedown', (e) => {
-          if (e.target.closest('.rich-btn[data-cmd]:not(.rich-color-btn)')) e.preventDefault();
+          if (e.target.closest('button')) e.preventDefault();
         });
         toolbar.addEventListener('touchstart', (e) => {
-          // 触屏时也保留选区
-          if (e.target.closest('.rich-btn[data-cmd]:not(.rich-color-btn)')) {
-            // 不 preventDefault，否则 click 不触发；只保存选区
-            saveSelection();
-          }
+          if (e.target.closest('button')) saveSelection();
         }, { passive: true });
 
         toolbar.addEventListener('click', (e) => {
           const btn = e.target.closest('.rich-btn[data-cmd]');
-          if (!btn || btn.classList.contains('rich-color-btn')) return;
+          const colorMain = e.target.closest('.color-btn-main');
+          const colorArrow = e.target.closest('.color-btn-arrow');
+
+          // 颜色主按钮：一键应用当前色
+          if (colorMain) {
+            e.preventDefault();
+            const kind = colorMain.dataset.colorKind;
+            const current = kind === 'text' ? state.lastTextColor : state.lastBgColor;
+            editor.focus();
+            restoreSelection();
+            applyColor(kind, current);
+            closeAllPalettes();
+            return;
+          }
+
+          // 颜色下拉箭头：开合调色板
+          if (colorArrow) {
+            e.preventDefault();
+            const kind = colorArrow.dataset.colorKind;
+            const palette = document.getElementById(`palette-${editorId}-${kind}`);
+            if (!palette) return;
+            const isOpen = palette.classList.contains('show');
+            closeAllPalettes();
+            if (!isOpen) {
+              positionPalette(palette, colorArrow);
+              palette.classList.add('show');
+              const group = colorArrow.closest('.color-btn-group');
+              if (group) group.classList.add('open');
+              const customInput = palette.querySelector('.color-custom-input');
+              if (customInput) {
+                customInput.value = kind === 'text' ? state.lastTextColor : state.lastBgColor;
+              }
+              updatePaletteSelection(palette, kind);
+            }
+            return;
+          }
+
+          if (!btn) return;
           e.preventDefault();
           const cmd = btn.dataset.cmd;
+
+          // ============ 格式刷 ============
+          if (cmd === 'formatPainter') {
+            // 情况A：已 armed，尝试应用
+            if (state.formatPainterArmed && state.formatPainterEditorId === editorId) {
+              const sel = window.getSelection();
+              const hasSelection = sel && sel.rangeCount > 0 && !sel.isCollapsed &&
+                sel.toString().length > 0 && editor.contains(sel.anchorNode);
+              if (hasSelection) {
+                const ok = applyFormatToCurrentSelection();
+                if (ok) {
+                  state.formatPainterArmed = false;
+                  state.formatPainterClip = null;
+                  state.formatPainterEditorId = null;
+                  updateFormatPainterUI();
+                  showToast('✓ 格式已应用');
+                } else {
+                  showToast('应用失败，请重新选中目标文字', true);
+                }
+              } else {
+                // 没选中 → 取消
+                state.formatPainterArmed = false;
+                state.formatPainterClip = null;
+                state.formatPainterEditorId = null;
+                updateFormatPainterUI();
+                showToast('已取消格式刷');
+              }
+              return;
+            }
+
+            // 情况B：首次点击 → 读取当前格式
+            editor.focus();
+            restoreSelection();
+            const clip = readFormatFromSelection();
+            if (!clip) {
+              showToast('请把光标放在文字上再点格式刷', true);
+              return;
+            }
+            const hasAny = clip.bold || clip.italic || clip.underline || clip.foreColor || clip.hiliteColor;
+            if (!hasAny) {
+              showToast('当前文字无特殊格式，无法复制', true);
+              return;
+            }
+            state.formatPainterClip = clip;
+            state.formatPainterArmed = true;
+            state.formatPainterEditorId = editorId;
+            updateFormatPainterUI();
+            showToast('格式已复制，请选中目标文字后再次点击🖌');
+            return;
+          }
+
+          // 其他命令
           editor.focus();
           restoreSelection();
-
-          if (cmd === 'hiliteColor' || cmd === 'backColor') {
-            try { document.execCommand('hiliteColor', false, '#fef08a'); }
-            catch (err) { document.execCommand('backColor', false, '#fef08a'); }
+          if (cmd === 'removeFormat') {
+            document.execCommand('removeFormat', false, null);
+            try { document.execCommand('hiliteColor', false, 'transparent'); } catch (e) {}
+            try { document.execCommand('backColor', false, 'transparent'); } catch (e) {}
           } else {
             document.execCommand(cmd, false, null);
           }
@@ -2723,27 +3095,62 @@
           updateActiveStates();
         });
 
-        // 颜色选择器
-        toolbar.addEventListener('input', (e) => {
-          const input = e.target.closest('.rich-color-input');
-          if (!input) return;
-          const color = input.value;
-          const target = input.dataset.colorTarget;
-          editor.focus();
-          restoreSelection();
-          if (target === 'hiliteColor') {
-            try { document.execCommand('hiliteColor', false, color); }
-            catch (err) { document.execCommand('backColor', false, color); }
-          } else {
-            document.execCommand('foreColor', false, color);
+        document.body.addEventListener('click', (e) => {
+          const palette = e.target.closest('.color-palette');
+          if (!palette) return;
+          if (palette.dataset.paletteFor !== editorId) return;
+          const swatch = e.target.closest('.color-swatch');
+          if (swatch) {
+            e.preventDefault();
+            const kind = palette.dataset.paletteKind;
+            const value = swatch.dataset.colorValue;
+            editor.focus();
+            restoreSelection();
+            applyColor(kind, value);
+            updatePaletteSelection(palette, kind);
+            closeAllPalettes();
+            return;
           }
-          const bar = input.parentElement.querySelector('.color-bar');
-          if (bar) bar.style.background = color;
-          saveSelection();
-          updateActiveStates();
         });
 
-        // 粘贴净化
+        document.body.addEventListener('input', (e) => {
+          const input = e.target.closest('.color-custom-input');
+          if (!input) return;
+          const palette = input.closest('.color-palette');
+          if (!palette || palette.dataset.paletteFor !== editorId) return;
+          const kind = palette.dataset.paletteKind;
+          editor.focus();
+          restoreSelection();
+          applyColor(kind, input.value);
+          updatePaletteSelection(palette, kind);
+        });
+
+        function applyColor(kind, color) {
+          if (kind === 'text') {
+            try { document.execCommand('foreColor', false, color); } catch (e) {}
+            state.lastTextColor = color;
+          } else {
+            try { document.execCommand('hiliteColor', false, color); }
+            catch (e) { document.execCommand('backColor', false, color); }
+            state.lastBgColor = color;
+          }
+          const group = toolbar.querySelector(`.color-btn-group[data-color-group="${editorId}-${kind}"]`);
+          if (group) {
+            const bar = group.querySelector('.color-btn-main .color-bar');
+            if (bar) bar.style.background = color;
+          }
+          saveSelection();
+          updateActiveStates();
+        }
+
+        function updatePaletteSelection(palette, kind) {
+          if (!palette) return;
+          const current = kind === 'text' ? state.lastTextColor : state.lastBgColor;
+          palette.querySelectorAll('.color-swatch').forEach(sw => {
+            sw.classList.toggle('selected', sw.dataset.colorValue.toLowerCase() === current.toLowerCase());
+          });
+        }
+
         editor.addEventListener('paste', (e) => {
           e.preventDefault();
           const html = (e.clipboardData || window.clipboardData).getData('text/html');
@@ -2752,21 +3159,17 @@
           else document.execCommand('insertText', false, text);
         });
 
-        // 聚焦时滚动到可视区域（防止软键盘遮挡）
         editor.addEventListener('focus', () => {
           setTimeout(() => {
-            try {
-              editor.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            } catch (e) {
-              editor.scrollIntoView();
-            }
+            try { editor.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+            catch (e) { editor.scrollIntoView(); }
           }, 300);
         });
+
+        updateFormatPainterUI();
       }
 
-      // ============================================================
-      // 图片区（编辑模式）
-      // ============================================================
+      // ---------- 图片区 ----------
       async function renderImageSection(images, containerId) {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -2847,9 +3250,7 @@
         reader.readAsDataURL(file);
       }
 
-      // ============================================================
-      // 编辑模式
-      // ============================================================
+      // ---------- 编辑模式 ----------
       function renderEditMode() {
         const activeItem = state.items.find(i => i.id === state.activeId);
         const sessionId = state.isCreatingNew ? '__new__' : (state.activeId || null);
@@ -2938,6 +3339,9 @@
             state.isCreatingNew = false;
             state.draftImages = [];
             state.editingSessionId = null;
+            state.formatPainterArmed = false;
+            state.formatPainterClip = null;
+            state.formatPainterEditorId = null;
             saveToStorage();
             renderSidebar(true);
             renderContent();
@@ -2948,6 +3352,9 @@
             state.isCreatingNew = false;
             state.draftImages = [];
             state.editingSessionId = null;
+            state.formatPainterArmed = false;
+            state.formatPainterClip = null;
+            state.formatPainterEditorId = null;
             state.activeId = state.items.length > 0 ? state.items[0].id : null;
             renderSidebar(true);
             renderContent();
@@ -3030,6 +3437,9 @@
             saveToStorage();
             state.editingSessionId = null;
             state.draftImages = [];
+            state.formatPainterArmed = false;
+            state.formatPainterClip = null;
+            state.formatPainterEditorId = null;
             renderSidebar(true);
             renderContent();
             showToast('已保存');
@@ -3039,6 +3449,9 @@
         document.getElementById('cancelEditBtn').addEventListener('click', () => {
           state.draftImages = [];
           state.editingSessionId = null;
+          state.formatPainterArmed = false;
+          state.formatPainterClip = null;
+          state.formatPainterEditorId = null;
           renderContent();
         });
         document.getElementById('exportBtn').addEventListener('click', openExportModal);
@@ -3059,19 +3472,20 @@
           state.isCreatingNew = true;
           state.draftImages = [];
           state.editingSessionId = null;
+          state.formatPainterArmed = false;
+          state.formatPainterClip = null;
+          state.formatPainterEditorId = null;
           renderSidebar(true);
           renderContent();
         });
         el.sidebar.appendChild(addBtn);
       }
 
-      // ============================================================
-      // 模式切换
-      // ============================================================
       function setMode(mode) {
         if (mode === state.mode) { renderContent(); return; }
         if (state.speakingId) stopSpeaking();
         clearPendingCardClick();
+        closeAllPalettes();
 
         if (state.mode === 'edit' && mode !== 'edit') {
           state.editingSessionId = null;
@@ -3080,6 +3494,9 @@
         if (mode === 'edit' && state.mode !== 'edit') {
           state.editingSessionId = null;
         }
+        state.formatPainterArmed = false;
+        state.formatPainterClip = null;
+        state.formatPainterEditorId = null;
 
         state.mode = mode;
         if (mode !== 'edit') state.isCreatingNew = false;
@@ -3095,9 +3512,7 @@
       el.reciteModeBtn.addEventListener('click', () => setMode('recite'));
       el.editModeBtn.addEventListener('click', () => setMode('edit'));
 
-      // ============================================================
-      // 导出 / 导入
-      // ============================================================
+      // ---------- 导出 / 导入 ----------
       async function openExportModal() {
         el.exportStatus.textContent = '正在准备数据...';
         el.exportStatus.className = 'status-msg';
@@ -3301,9 +3716,6 @@
         handleFileSelect(e.dataTransfer.files[0]);
       });
 
-      // ============================================================
-      // 模态框
-      // ============================================================
       document.getElementById('exportModalClose').addEventListener('click', closeExportModal);
       document.getElementById('exportCancelBtn').addEventListener('click', closeExportModal);
       document.getElementById('copyExportBtn').addEventListener('click', copyExportData);
@@ -3316,15 +3728,19 @@
       el.exportModal.addEventListener('click', (e) => { if (e.target === el.exportModal) closeExportModal(); });
       el.importModal.addEventListener('click', (e) => { if (e.target === el.importModal) closeImportModal(); });
 
-      // ============================================================
-      // 键盘
-      // ============================================================
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           if (el.exportModal.classList.contains('show')) closeExportModal();
           if (el.importModal.classList.contains('show')) closeImportModal();
           if (el.confirmOverlay.classList.contains('show')) closeConfirm();
           if (state.speakingId) stopSpeaking();
+          if (state.formatPainterArmed) {
+            state.formatPainterArmed = false;
+            state.formatPainterClip = null;
+            state.formatPainterEditorId = null;
+            document.querySelectorAll('.format-painter-btn.armed').forEach(b => b.classList.remove('armed'));
+          }
+          closeAllPalettes();
         }
         if (state.mode === 'recite' && state.items.length > 0) {
           if (e.key === 'ArrowLeft') { e.preventDefault(); goToPrev(); }
@@ -3339,9 +3755,6 @@
         if (state.speakingId) stopSpeaking();
       });
 
-      // ============================================================
-      // 在线状态
-      // ============================================================
       function updateOnlineStatus() {
         el.offlineBanner.classList.toggle('show', !navigator.onLine);
       }
@@ -3349,9 +3762,6 @@
       window.addEventListener('offline', updateOnlineStatus);
       updateOnlineStatus();
 
-      // ============================================================
-      // 初始化
-      // ============================================================
       function init() {
         state.items = loadFromStorage();
         state.collapsedGroups = loadCollapsedState();
