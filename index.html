@@ -1,21 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
   <title>知识点记忆卡片</title>
 
+  <!-- ========== iOS PWA ========== -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="知识点">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1e3a8a">
+  <meta name="format-detection" content="telephone=no">
   <meta name="description" content="知识点记忆卡片，支持录入、背诵、全局浏览">
 
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231e3a8a'/%3E%3Cstop offset='1' stop-color='%232563eb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='40' fill='url(%23g)'/%3E%3Ctext x='90' y='125' font-size='100' text-anchor='middle' fill='white' font-family='system-ui,Apple Color Emoji'%3E%F0%9F%93%9A%3C/text%3E%3C/svg%3E">
+  <!-- iOS 图标 -->
+  <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231e3a8a'/%3E%3Cstop offset='1' stop-color='%232563eb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='40' fill='url(%23g)'/%3E%3Ctext x='90' y='125' font-size='100' text-anchor='middle' fill='white' font-family='system-ui,Apple Color Emoji'%3E%F0%9F%93%9A%3C/text%3E%3C/svg%3E">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231e3a8a'/%3E%3Cstop offset='1' stop-color='%232563eb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='40' fill='url(%23g)'/%3E%3Ctext x='90' y='125' font-size='100' text-anchor='middle' fill='white' font-family='system-ui,Apple Color Emoji'%3E%F0%9F%93%9A%3C/text%3E%3C/svg%3E">
 
-  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%E7%9F%A5%E8%AF%86%E7%82%B9%E8%AE%B0%E5%BF%86%E5%8D%A1%E7%89%87%22%2C%22short_name%22%3A%22%E7%9F%A5%E8%AF%86%E7%82%B9%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%22%2C%22background_color%22%3A%22%23f4f7fc%22%2C%22theme_color%22%3A%22%231e3a8a%22%7D">
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%E7%9F%A5%E8%AF%86%E7%82%B9%E8%AE%B0%E5%BF%86%E5%8D%A1%E7%89%87%22%2C%22short_name%22%3A%22%E7%9F%A5%E8%AF%86%E7%82%B9%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%22%2C%22scope%22%3A%22.%22%2C%22background_color%22%3A%22%23f4f7fc%22%2C%22theme_color%22%3A%22%231e3a8a%22%2C%22orientation%22%3A%22portrait%22%7D">
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,6 +29,22 @@
       --safe-bottom: env(safe-area-inset-bottom, 0px);
       --safe-left: env(safe-area-inset-left, 0px);
       --safe-right: env(safe-area-inset-right, 0px);
+      /* iOS 状态栏避让：在 PWA standalone 模式下，头部需要额外下移 */
+      --status-bar-offset: 0px;
+    }
+
+    /* iOS PWA standalone 检测：状态栏黑色半透明时，内容会被状态栏覆盖 */
+    @supports (-webkit-touch-callout: none) {
+      @media (display-mode: standalone) {
+        :root {
+          --status-bar-offset: 0px;
+        }
+      }
+    }
+
+    html, body {
+      overscroll-behavior: none;
+      -webkit-overflow-scrolling: touch;
     }
 
     body {
@@ -44,9 +64,19 @@
       padding-right: var(--safe-right);
       -webkit-user-select: none;
       user-select: none;
+      /* 防止 iOS 双击缩放 */
+      touch-action: manipulation;
     }
 
-    input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
+    input, textarea, [contenteditable] {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    /* 防止 iOS 自动放大字体 */
+    input, textarea, select, button {
+      font-size: 16px;
+    }
 
     .app-header {
       padding: 12px 16px 8px;
@@ -58,6 +88,8 @@
       flex-shrink: 0;
       box-shadow: 0 2px 6px rgba(0,0,0,0.02);
       gap: 8px;
+      /* iOS PWA 下状态栏黑色半透明，需要留出状态栏高度 */
+      padding-top: calc(12px + var(--status-bar-offset));
     }
 
     .app-header h1 {
@@ -300,6 +332,8 @@
       align-items: center;
       background: #f4f7fc;
       -webkit-overflow-scrolling: touch;
+      /* iOS 平滑滚动 */
+      scroll-behavior: smooth;
     }
 
     .content-area.full-width { padding: 16px 16px 32px; }
@@ -666,6 +700,8 @@
       font-family: inherit;
       background: #fafcff;
       outline: none;
+      /* iOS 上防自动缩放 */
+      -webkit-text-size-adjust: 100%;
     }
 
     .input-group input:focus {
@@ -736,7 +772,6 @@
 
     .empty-state p { font-size: 1.1rem; margin-bottom: 16px; }
 
-    /* 富文本编辑器 */
     .rich-editor-wrap {
       border: 1.5px solid #e2e8f0;
       border-radius: 18px;
@@ -851,7 +886,7 @@
 
     .color-btn-arrow {
       flex-shrink: 0;
-      width: 20px;
+      width: 22px;
       height: 100%;
       border: none;
       border-left: 1px solid #e2e8f0;
@@ -868,6 +903,7 @@
       touch-action: manipulation;
     }
     .color-btn-arrow:hover { background: #eff6ff; color: #2563eb; }
+    .color-btn-arrow:active { background: #dbeafe; }
 
     .color-palette {
       position: fixed;
@@ -878,7 +914,7 @@
       box-shadow: 0 16px 40px rgba(0,0,0,0.18);
       padding: 12px;
       display: none;
-      min-width: 260px;
+      width: 260px;
       touch-action: manipulation;
     }
     .color-palette.show { display: block; }
@@ -961,7 +997,6 @@
     .color-custom-input::-webkit-color-swatch { border: none; border-radius: 5px; }
     .color-custom-input::-moz-color-swatch { border: none; border-radius: 5px; }
 
-    /* 格式刷 */
     .format-painter-btn.armed {
       background: #2563eb;
       border-color: #2563eb;
@@ -994,6 +1029,8 @@
       touch-action: manipulation;
       -webkit-text-size-adjust: 100%;
       border-radius: 0 0 16px 16px;
+      /* iOS 输入时防止页面跳动 */
+      -webkit-overflow-scrolling: touch;
     }
 
     .rich-editor:empty::before {
@@ -1339,7 +1376,7 @@
     .toast.error { background: rgba(220,38,38,0.95); }
 
     @media (max-width: 700px) {
-      .app-header { gap: 6px; padding: 8px 10px; }
+      .app-header { gap: 6px; padding: 8px 10px; padding-top: calc(8px + var(--status-bar-offset)); }
       .app-header h1 { font-size: 0.95rem; }
       .mode-toggle { flex: 1; padding: 3px; gap: 3px; max-width: 100%; }
       .mode-btn { flex: 1; text-align: center; padding: 6px 4px; font-size: 0.72rem; }
@@ -1386,7 +1423,7 @@
       .rich-btn { min-width: 40px; height: 40px; font-size: 0.95rem; padding: 0 8px; }
       .color-btn-group { height: 40px; }
       .color-btn-main { width: 40px; }
-      .color-btn-arrow { width: 18px; }
+      .color-btn-arrow { width: 20px; }
       .rich-editor { min-height: 160px; padding: 12px 14px; line-height: 1.7; }
       .rich-hint { font-size: 0.68rem; }
     }
@@ -1409,6 +1446,36 @@
       .format-painter-btn.armed { animation: none; }
     }
   </style>
+
+  <script>
+    // ============================================================
+    // 尽早执行的 iOS PWA 检测：设置 --status-bar-offset
+    // 目的：当 PWA 全屏时（standalone 模式），
+    // apple-mobile-web-app-status-bar-style = black-translucent 会让内容延伸到状态栏下方。
+    // 需要在顶部预留状态栏高度，否则 app-header 会被刘海/状态栏遮挡。
+    // ============================================================
+    (function() {
+      function isStandalone() {
+        return window.navigator.standalone === true ||
+               window.matchMedia('(display-mode: standalone)').matches ||
+               window.matchMedia('(display-mode: fullscreen)').matches;
+      }
+      function update() {
+        if (isStandalone()) {
+          // 状态栏高度因设备而异，保守用 44px（iPhone 刘海/灵动岛）
+          // 非刘海机型状态栏约 20px，44px 会稍微多留白但不会遮挡
+          var isNotch = window.innerHeight >= 780;
+          var offset = isNotch ? '44px' : '20px';
+          document.documentElement.style.setProperty('--status-bar-offset', offset);
+        } else {
+          document.documentElement.style.setProperty('--status-bar-offset', '0px');
+        }
+      }
+      update();
+      window.addEventListener('resize', update);
+      window.addEventListener('orientationchange', () => setTimeout(update, 100));
+    })();
+  </script>
 </head>
 <body>
   <div class="offline-banner" id="offlineBanner">📡 当前处于离线状态</div>
@@ -1526,7 +1593,6 @@
       const STORAGE_KEY_ITEMS = 'knowledge_card_items_v3';
       const STORAGE_KEY_COLLAPSED = 'knowledge_collapsed_groups_v3';
 
-      // ===== 预设颜色：深色高对比（文字色） =====
       const PRESET_TEXT_COLORS = [
         { name: '正红', value: '#D0021B' },
         { name: '纯黑', value: '#000000' },
@@ -1535,7 +1601,6 @@
         { name: '橙红', value: '#E85D04' }
       ];
 
-      // 背景色：高饱和亮色，配黑字清晰
       const PRESET_BG_COLORS = [
         { name: '亮黄', value: '#FFEB3B' },
         { name: '亮橙', value: '#FFB74D' },
@@ -1573,7 +1638,7 @@
         lastBgColor: DEFAULT_BG_COLOR,
         formatPainterClip: null,
         formatPainterArmed: false,
-        formatPainterEditorId: null   // 记录格式刷属于哪个编辑器
+        formatPainterEditorId: null
       };
 
       const $ = (sel) => document.querySelector(sel);
@@ -1618,21 +1683,123 @@
         }
       }
 
-      // ---------- IndexedDB ----------
+      // ============================================================
+      // 调色板注册表
+      // ============================================================
+      const paletteRegistry = new Map();
+      let paletteBusBound = false;
+
+      function bindPaletteBus() {
+        if (paletteBusBound) return;
+        paletteBusBound = true;
+
+        // ★ iOS 修复：用 pointerdown 关闭，但要判断是不是刚打开（用时间戳抑制）
+        let lastOpenTime = 0;
+        const markOpen = () => { lastOpenTime = Date.now(); };
+        window.__markPaletteOpen = markOpen;
+
+        document.addEventListener('pointerdown', (e) => {
+          // 刚打开 200ms 内不关闭，避免点击箭头本身触发 pointerdown 误关
+          if (Date.now() - lastOpenTime < 200) return;
+          if (!e.target.closest('.color-btn-group') && !e.target.closest('.color-palette')) {
+            closeAllPalettes();
+          }
+        });
+
+        document.addEventListener('click', (e) => {
+          const palette = e.target.closest('.color-palette');
+          if (!palette) return;
+          const editorId = palette.dataset.paletteFor;
+          const reg = paletteRegistry.get(editorId);
+          if (!reg) return;
+
+          const swatch = e.target.closest('.color-swatch');
+          if (swatch) {
+            e.preventDefault();
+            e.stopPropagation();
+            const kind = palette.dataset.paletteKind;
+            const value = swatch.dataset.colorValue;
+            reg.editor.focus({ preventScroll: true });
+            reg.restoreSelection();
+            reg.applyColor(kind, value);
+            reg.updatePaletteSelection(palette, kind);
+            closeAllPalettes();
+            return;
+          }
+        });
+
+        document.addEventListener('input', (e) => {
+          const input = e.target.closest('.color-custom-input');
+          if (!input) return;
+          const palette = input.closest('.color-palette');
+          if (!palette) return;
+          const editorId = palette.dataset.paletteFor;
+          const reg = paletteRegistry.get(editorId);
+          if (!reg) return;
+          const kind = palette.dataset.paletteKind;
+          reg.editor.focus({ preventScroll: true });
+          reg.restoreSelection();
+          reg.applyColor(kind, input.value);
+          reg.updatePaletteSelection(palette, kind);
+        });
+      }
+
+      function closeAllPalettes() {
+        document.querySelectorAll('.color-palette.show').forEach(p => p.classList.remove('show'));
+        document.querySelectorAll('.color-btn-group.open').forEach(g => g.classList.remove('open'));
+      }
+
+      function positionPalette(palette, anchorEl) {
+        const rect = anchorEl.getBoundingClientRect();
+        const pw = palette.offsetWidth || 260;
+        const ph = palette.offsetHeight || 200;
+
+        let left = rect.left;
+        if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+        if (left < 8) left = 8;
+        palette.style.left = left + 'px';
+
+        const spaceBelow = window.innerHeight - rect.bottom;
+        if (spaceBelow < ph + 12 && rect.top > ph + 12) {
+          palette.style.top = 'auto';
+          palette.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+        } else {
+          palette.style.bottom = 'auto';
+          palette.style.top = (rect.bottom + 6) + 'px';
+        }
+      }
+
+      // ---------- IndexedDB（iOS 首次打开延迟重试）----------
       let dbPromise = null;
       function getDB() {
         if (dbPromise) return dbPromise;
         dbPromise = new Promise((resolve, reject) => {
           if (!('indexedDB' in window)) { reject(new Error('IndexedDB 不可用')); return; }
-          const req = indexedDB.open(DB_NAME, DB_VERSION);
-          req.onupgradeneeded = (e) => {
-            const db = e.target.result;
-            if (!db.objectStoreNames.contains(STORE_IMAGES)) {
-              db.createObjectStore(STORE_IMAGES, { keyPath: 'id' });
+          let retried = false;
+          const tryOpen = () => {
+            try {
+              const req = indexedDB.open(DB_NAME, DB_VERSION);
+              req.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(STORE_IMAGES)) {
+                  db.createObjectStore(STORE_IMAGES, { keyPath: 'id' });
+                }
+              };
+              req.onsuccess = () => resolve(req.result);
+              req.onerror = () => {
+                if (!retried) {
+                  retried = true;
+                  // iOS 上首次 IndexedDB 打开可能失败，延时重试一次
+                  setTimeout(() => { dbPromise = null; tryOpen(); }, 300);
+                } else {
+                  reject(req.error);
+                }
+              };
+            } catch (e) {
+              reject(e);
             }
           };
-          req.onsuccess = () => resolve(req.result);
-          req.onerror = () => reject(req.error);
+          tryOpen();
         });
         return dbPromise;
       }
@@ -2696,54 +2863,17 @@
       }
 
       // ============================================================
-      // 富文本编辑器（重写格式刷）
+      // 富文本编辑器
       // ============================================================
-      let paletteOutsideBound = false;
-
-      function bindPaletteOutsideOnce() {
-        if (paletteOutsideBound) return;
-        paletteOutsideBound = true;
-        document.addEventListener('pointerdown', (ev) => {
-          if (!ev.target.closest('.color-btn-group') && !ev.target.closest('.color-palette')) {
-            closeAllPalettes();
-          }
-        }, true);
-      }
-
-      function closeAllPalettes() {
-        document.querySelectorAll('.color-palette.show').forEach(p => p.classList.remove('show'));
-        document.querySelectorAll('.color-btn-group.open').forEach(g => g.classList.remove('open'));
-      }
-
-      function positionPalette(palette, anchorEl) {
-        const rect = anchorEl.getBoundingClientRect();
-        const paletteWidth = 260;
-        let left = rect.left;
-        if (left + paletteWidth > window.innerWidth - 8) {
-          left = window.innerWidth - paletteWidth - 8;
-        }
-        if (left < 8) left = 8;
-        palette.style.left = left + 'px';
-        const spaceBelow = window.innerHeight - rect.bottom;
-        if (spaceBelow < 220 && rect.top > 220) {
-          palette.style.top = 'auto';
-          palette.style.bottom = (window.innerHeight - rect.top + 8) + 'px';
-        } else {
-          palette.style.bottom = 'auto';
-          palette.style.top = (rect.bottom + 6) + 'px';
-        }
-      }
-
       function buildColorButtonHtml(editorId, kind, currentColor) {
         const isText = kind === 'text';
         const label = isText ? 'A' : '◐';
         const title = isText ? '字体颜色' : '背景色';
-        const barColor = currentColor;
         return `
           <div class="color-btn-group" data-color-group="${editorId}-${kind}">
             <button type="button" class="color-btn-main" data-color-action="apply-current" data-color-kind="${kind}" data-editor-id="${editorId}" title="${title}">
               ${label}
-              <span class="color-bar" style="background:${barColor};"></span>
+              <span class="color-bar" style="background:${currentColor};"></span>
             </button>
             <button type="button" class="color-btn-arrow" data-color-action="toggle-palette" data-color-kind="${kind}" data-editor-id="${editorId}" title="选择颜色" aria-label="展开调色板">▼</button>
           </div>
@@ -2793,15 +2923,13 @@
         `;
       }
 
-      // 颜色归一化：统一为 #rrggbb 小写
       function normalizeColor(c) {
         if (!c) return null;
         c = String(c).trim();
+        if (!c) return null;
         if (c === 'transparent' || c === 'rgba(0, 0, 0, 0)' || c === 'rgba(0,0,0,0)') return null;
         if (c.startsWith('#')) {
-          if (c.length === 4) {
-            return '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3];
-          }
+          if (c.length === 4) return ('#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3]).toLowerCase();
           return c.toLowerCase();
         }
         const m = c.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
@@ -2815,18 +2943,34 @@
         const toolbar = document.querySelector(`.rich-toolbar[data-toolbar-for="${editorId}"]`);
         if (!editor || !toolbar) return;
 
-        bindPaletteOutsideOnce();
+        bindPaletteBus();
+
+        // iOS 修复：必须在用户手势（touch/click）的同步调用栈内设置 styleWithCSS，
+        // 否则 iOS Safari 会拒绝。
+        // 这里用一个"待激活"标志，第一次 touchstart 时立即激活。
+        let styleWithCSSReady = false;
+        function ensureStyleWithCSS() {
+          if (styleWithCSSReady) return;
+          try {
+            document.execCommand('styleWithCSS', false, true);
+            styleWithCSSReady = true;
+          } catch (e) {}
+        }
+        // 立即尝试一次（桌面浏览器 OK）
+        ensureStyleWithCSS();
+        // 在用户手势里再确保一次
+        toolbar.addEventListener('touchstart', ensureStyleWithCSS, { passive: true, once: false });
+        editor.addEventListener('touchstart', ensureStyleWithCSS, { passive: true, once: false });
 
         ['text', 'bg'].forEach(kind => {
           const paletteId = `palette-${editorId}-${kind}`;
-          let palette = document.getElementById(paletteId);
-          if (!palette) {
-            const wrap = document.createElement('div');
-            wrap.innerHTML = buildPaletteHtml(editorId, kind);
-            palette = wrap.firstElementChild;
-            document.body.appendChild(palette);
-          }
-          updatePaletteSelection(palette, kind);
+          const old = document.getElementById(paletteId);
+          if (old) old.remove();
+
+          const wrap = document.createElement('div');
+          wrap.innerHTML = buildPaletteHtml(editorId, kind);
+          const palette = wrap.firstElementChild;
+          document.body.appendChild(palette);
         });
 
         let savedRange = null;
@@ -2861,17 +3005,24 @@
         };
         document.addEventListener('selectionchange', onSelectionChange);
 
-        const observer = new MutationObserver(() => {
+        const cleanupTimer = setInterval(() => {
           if (!document.body.contains(editor)) {
+            clearInterval(cleanupTimer);
             document.removeEventListener('selectionchange', onSelectionChange);
             ['text', 'bg'].forEach(kind => {
               const p = document.getElementById(`palette-${editorId}-${kind}`);
               if (p) p.remove();
             });
-            observer.disconnect();
+            paletteRegistry.delete(editorId);
           }
+        }, 800);
+
+        paletteRegistry.set(editorId, {
+          editor,
+          restoreSelection,
+          applyColor,
+          updatePaletteSelection
         });
-        observer.observe(document.body, { childList: true, subtree: true });
 
         function updateActiveStates() {
           toolbar.querySelectorAll('.rich-btn[data-cmd]').forEach(btn => {
@@ -2882,9 +3033,6 @@
           });
         }
 
-        // ============ 格式刷核心 ============
-
-        // 从选区起点读取格式（用 computedStyle，比 queryCommand 更可靠）
         function readFormatFromSelection() {
           const sel = window.getSelection();
           if (!sel || sel.rangeCount === 0) return null;
@@ -2900,38 +3048,88 @@
           const clip = {
             bold: fontWeight === 'bold' || parseInt(fontWeight, 10) >= 600,
             italic: cs.fontStyle === 'italic',
-            underline: (cs.textDecorationLine || cs.textDecoration || '').includes('underline'),
+            underline: false,
             foreColor: null,
             hiliteColor: null
           };
 
-          // 文字色（排除默认深色）
-          const fc = normalizeColor(cs.color);
-          // 默认色 #1e293b 或 #000000 也允许（用户可以刷成黑色）
-          if (fc && fc !== '#1e293b') clip.foreColor = fc;
-          // 但其实应该记录为"是否显式设置过"，这里简化：非默认就记录
-          // 更准确：判断是否有祖先 span 带 color
-          // 用 nearest 有 style 的祖先
           let cur = node;
+          let foundUnderline = false;
           let foundColor = null;
           let foundBg = null;
           while (cur && cur !== editor && cur.nodeType === Node.ELEMENT_NODE) {
+            const tag = cur.tagName;
+            if (tag === 'U' || tag === 'INS') foundUnderline = true;
+
+            if (tag === 'FONT') {
+              const colorAttr = cur.getAttribute('color');
+              if (!foundColor && colorAttr) foundColor = normalizeColor(colorAttr);
+            }
+
             const inlineStyle = cur.getAttribute && cur.getAttribute('style');
             if (inlineStyle) {
+              if (/text-decoration\s*:[^;]*underline/i.test(inlineStyle)) foundUnderline = true;
+
               const colorMatch = inlineStyle.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
+              if (!foundColor && colorMatch) {
+                const n = normalizeColor(colorMatch[1]);
+                if (n) foundColor = n;
+              }
+
               const bgMatch = inlineStyle.match(/(?:^|;)\s*background(?:-color)?\s*:\s*([^;]+)/i);
-              if (!foundColor && colorMatch) foundColor = normalizeColor(colorMatch[1]);
-              if (!foundBg && bgMatch) foundBg = normalizeColor(bgMatch[1]);
+              if (!foundBg && bgMatch) {
+                const v = bgMatch[1].trim();
+                if (!/url\s*\(/i.test(v)) {
+                  const n = normalizeColor(v);
+                  if (n) foundBg = n;
+                }
+              }
             }
             cur = cur.parentElement;
           }
+
+          if (!foundColor) {
+            try {
+              const fc = document.queryCommandValue('foreColor');
+              if (fc) {
+                const n = normalizeColor(fc);
+                if (n && n !== '#1e293b') foundColor = n;
+              }
+            } catch (e) {}
+          }
+          if (!foundBg) {
+            try {
+              let hc = document.queryCommandValue('hiliteColor');
+              if (!hc || hc === 'rgba(0, 0, 0, 0)' || hc === 'transparent' || hc === 'rgba(0,0,0,0)') {
+                hc = document.queryCommandValue('backColor');
+              }
+              if (hc && hc !== 'rgba(0, 0, 0, 0)' && hc !== 'transparent' && hc !== 'rgba(0,0,0,0)') {
+                const n = normalizeColor(hc);
+                if (n && n !== '#ffffff') foundBg = n;
+              }
+            } catch (e) {}
+          }
+
+          if (!foundUnderline) {
+            const candidates = [
+              cs.textDecorationLine,
+              cs.textDecoration,
+              cs.webkitTextDecorationLine,
+              cs.webkitTextDecoration
+            ].filter(Boolean).join(' ');
+            if (/underline/i.test(candidates)) foundUnderline = true;
+          }
+          if (!foundUnderline) {
+            try { if (document.queryCommandState('underline')) foundUnderline = true; } catch (e) {}
+          }
+
+          clip.underline = foundUnderline;
           if (foundColor) clip.foreColor = foundColor;
           if (foundBg) clip.hiliteColor = foundBg;
 
           return clip;
         }
 
-        // 应用格式到当前选中文字（关键：先保存目标选区，再应用）
         function applyFormatToCurrentSelection() {
           if (!state.formatPainterClip) return false;
           const clip = state.formatPainterClip;
@@ -2942,32 +3140,37 @@
           if (range.collapsed) return false;
           if (!editor.contains(range.commonAncestorContainer)) return false;
 
-          // 保存当前选区
           const targetRange = range.cloneRange();
+          editor.focus({ preventScroll: true });
 
-          // 恢复编辑器焦点 + 选区
-          editor.focus();
-          const sel2 = window.getSelection();
-          sel2.removeAllRanges();
-          sel2.addRange(targetRange);
-
-          // 应用命令
           try {
-            // toggle 类：先查询目标当前状态，不一致才切换
+            const sel2 = window.getSelection();
+            sel2.removeAllRanges();
+            sel2.addRange(targetRange);
+          } catch (e) { return false; }
+
+          ensureStyleWithCSS();
+
+          try {
             const curBold = document.queryCommandState('bold');
             if (!!clip.bold !== !!curBold) document.execCommand('bold', false, null);
             const curItalic = document.queryCommandState('italic');
             if (!!clip.italic !== !!curItalic) document.execCommand('italic', false, null);
-            const curUnderline = document.queryCommandState('underline');
-            if (!!clip.underline !== !!curUnderline) document.execCommand('underline', false, null);
+            applyUnderlineSafely(clip.underline);
 
-            // 颜色类：set 语义
             if (clip.foreColor) {
-              document.execCommand('foreColor', false, clip.foreColor);
+              try { document.execCommand('foreColor', false, clip.foreColor); } catch (e) {}
+              if (!isColorApplied(clip.foreColor, 'color')) {
+                wrapSelectionWithStyle('color', clip.foreColor);
+              }
             }
             if (clip.hiliteColor) {
-              try { document.execCommand('hiliteColor', false, clip.hiliteColor); }
-              catch (e) { document.execCommand('backColor', false, clip.hiliteColor); }
+              try { document.execCommand('hiliteColor', false, clip.hiliteColor); } catch (e) {
+                try { document.execCommand('backColor', false, clip.hiliteColor); } catch (e2) {}
+              }
+              if (!isColorApplied(clip.hiliteColor, 'background-color')) {
+                wrapSelectionWithStyle('background-color', clip.hiliteColor);
+              }
             }
           } catch (e) { console.warn(e); }
 
@@ -2976,16 +3179,126 @@
           return true;
         }
 
+        function isColorApplied(color, prop) {
+          try {
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0) return false;
+            const r = sel.getRangeAt(0);
+            let node = r.startContainer;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+            if (!node) return false;
+            const cs = window.getComputedStyle(node);
+            const want = normalizeColor(color);
+            const got = normalizeColor(prop === 'color' ? cs.color : cs.backgroundColor);
+            return want && got && want === got;
+          } catch (e) { return false; }
+        }
+
+        function wrapSelectionWithStyle(prop, color) {
+          try {
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0) return;
+            const r = sel.getRangeAt(0);
+            if (r.collapsed) return;
+            const span = document.createElement('span');
+            span.style.setProperty(prop, color, 'important');
+            try {
+              r.surroundContents(span);
+            } catch (e) {
+              const frag = r.extractContents();
+              span.appendChild(frag);
+              r.insertNode(span);
+            }
+            const newSel = window.getSelection();
+            newSel.removeAllRanges();
+            const newRange = document.createRange();
+            newRange.selectNodeContents(span);
+            newSel.addRange(newRange);
+          } catch (e) { console.warn('wrapSelectionWithStyle 失败', e); }
+        }
+
+        function applyUnderlineSafely(wantUnderline) {
+          ensureStyleWithCSS();
+          const sel = window.getSelection();
+          if (!sel || sel.rangeCount === 0) return;
+          const range = sel.getRangeAt(0);
+          if (range.collapsed) return;
+
+          let curUnderline = false;
+          try { curUnderline = document.queryCommandState('underline'); } catch (e) {}
+
+          if (wantUnderline !== curUnderline) {
+            try { document.execCommand('underline', false, null); } catch (e) {}
+          }
+
+          let nowUnderline = false;
+          try { nowUnderline = document.queryCommandState('underline'); } catch (e) {}
+          if (nowUnderline === wantUnderline) return;
+
+          const sel2 = window.getSelection();
+          if (!sel2 || sel2.rangeCount === 0) return;
+          const r = sel2.getRangeAt(0);
+
+          if (wantUnderline) {
+            let anc = r.startContainer;
+            if (anc.nodeType === Node.TEXT_NODE) anc = anc.parentElement;
+            let hasU = false;
+            let walk = anc;
+            while (walk && walk !== editor) {
+              if (walk.nodeType === Node.ELEMENT_NODE &&
+                  (walk.tagName === 'U' || walk.tagName === 'INS')) { hasU = true; break; }
+              walk = walk.parentElement;
+            }
+            if (hasU) return;
+            try {
+              const u = document.createElement('u');
+              try {
+                r.surroundContents(u);
+              } catch (e) {
+                const frag = r.extractContents();
+                u.appendChild(frag);
+                r.insertNode(u);
+              }
+              const newSel = window.getSelection();
+              newSel.removeAllRanges();
+              const newRange = document.createRange();
+              newRange.selectNodeContents(u);
+              newSel.addRange(newRange);
+            } catch (e) { console.warn('下划线兜底失败', e); }
+          } else {
+            const us = [];
+            const root = r.commonAncestorContainer.nodeType === Node.ELEMENT_NODE
+              ? r.commonAncestorContainer
+              : r.commonAncestorContainer.parentElement;
+            if (root) {
+              const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null);
+              let n;
+              while ((n = walker.nextNode())) {
+                if (n.tagName === 'U' || n.tagName === 'INS') us.push(n);
+              }
+            }
+            us.forEach(u => {
+              if (!r.intersectsNode(u)) return;
+              const text = document.createTextNode(u.textContent);
+              u.parentNode.replaceChild(text, u);
+            });
+          }
+        }
+
         function updateFormatPainterUI() {
           const btn = toolbar.querySelector('.format-painter-btn');
-          if (btn) btn.classList.toggle('armed', state.formatPainterArmed);
+          if (!btn) return;
+          const shouldArmed = state.formatPainterArmed && state.formatPainterEditorId === editorId;
+          btn.classList.toggle('armed', shouldArmed);
         }
 
         toolbar.addEventListener('mousedown', (e) => {
-          if (e.target.closest('button')) e.preventDefault();
+          const cmdBtn = e.target.closest('.rich-btn[data-cmd]');
+          if (cmdBtn) e.preventDefault();
         });
         toolbar.addEventListener('touchstart', (e) => {
-          if (e.target.closest('button')) saveSelection();
+          const cmdBtn = e.target.closest('.rich-btn[data-cmd]');
+          if (cmdBtn) saveSelection();
         }, { passive: true });
 
         toolbar.addEventListener('click', (e) => {
@@ -2993,31 +3306,38 @@
           const colorMain = e.target.closest('.color-btn-main');
           const colorArrow = e.target.closest('.color-btn-arrow');
 
-          // 颜色主按钮：一键应用当前色
           if (colorMain) {
             e.preventDefault();
+            e.stopPropagation();
             const kind = colorMain.dataset.colorKind;
             const current = kind === 'text' ? state.lastTextColor : state.lastBgColor;
-            editor.focus();
+            editor.focus({ preventScroll: true });
             restoreSelection();
             applyColor(kind, current);
             closeAllPalettes();
             return;
           }
 
-          // 颜色下拉箭头：开合调色板
           if (colorArrow) {
             e.preventDefault();
+            e.stopPropagation();
             const kind = colorArrow.dataset.colorKind;
             const palette = document.getElementById(`palette-${editorId}-${kind}`);
             if (!palette) return;
             const isOpen = palette.classList.contains('show');
             closeAllPalettes();
             if (!isOpen) {
-              positionPalette(palette, colorArrow);
-              palette.classList.add('show');
               const group = colorArrow.closest('.color-btn-group');
               if (group) group.classList.add('open');
+
+              palette.style.visibility = 'hidden';
+              palette.classList.add('show');
+              positionPalette(palette, colorArrow);
+              palette.style.visibility = '';
+
+              // 标记打开时间，防止 pointerdown 立刻关闭
+              if (window.__markPaletteOpen) window.__markPaletteOpen();
+
               const customInput = palette.querySelector('.color-custom-input');
               if (customInput) {
                 customInput.value = kind === 'text' ? state.lastTextColor : state.lastBgColor;
@@ -3031,9 +3351,7 @@
           e.preventDefault();
           const cmd = btn.dataset.cmd;
 
-          // ============ 格式刷 ============
           if (cmd === 'formatPainter') {
-            // 情况A：已 armed，尝试应用
             if (state.formatPainterArmed && state.formatPainterEditorId === editorId) {
               const sel = window.getSelection();
               const hasSelection = sel && sel.rangeCount > 0 && !sel.isCollapsed &&
@@ -3050,7 +3368,6 @@
                   showToast('应用失败，请重新选中目标文字', true);
                 }
               } else {
-                // 没选中 → 取消
                 state.formatPainterArmed = false;
                 state.formatPainterClip = null;
                 state.formatPainterEditorId = null;
@@ -3060,8 +3377,7 @@
               return;
             }
 
-            // 情况B：首次点击 → 读取当前格式
-            editor.focus();
+            editor.focus({ preventScroll: true });
             restoreSelection();
             const clip = readFormatFromSelection();
             if (!clip) {
@@ -3081,13 +3397,14 @@
             return;
           }
 
-          // 其他命令
-          editor.focus();
+          editor.focus({ preventScroll: true });
           restoreSelection();
           if (cmd === 'removeFormat') {
             document.execCommand('removeFormat', false, null);
             try { document.execCommand('hiliteColor', false, 'transparent'); } catch (e) {}
             try { document.execCommand('backColor', false, 'transparent'); } catch (e) {}
+          } else if (cmd === 'underline') {
+            applyUnderlineSafely(true);
           } else {
             document.execCommand(cmd, false, null);
           }
@@ -3095,43 +3412,20 @@
           updateActiveStates();
         });
 
-        document.body.addEventListener('click', (e) => {
-          const palette = e.target.closest('.color-palette');
-          if (!palette) return;
-          if (palette.dataset.paletteFor !== editorId) return;
-          const swatch = e.target.closest('.color-swatch');
-          if (swatch) {
-            e.preventDefault();
-            const kind = palette.dataset.paletteKind;
-            const value = swatch.dataset.colorValue;
-            editor.focus();
-            restoreSelection();
-            applyColor(kind, value);
-            updatePaletteSelection(palette, kind);
-            closeAllPalettes();
-            return;
-          }
-        });
-
-        document.body.addEventListener('input', (e) => {
-          const input = e.target.closest('.color-custom-input');
-          if (!input) return;
-          const palette = input.closest('.color-palette');
-          if (!palette || palette.dataset.paletteFor !== editorId) return;
-          const kind = palette.dataset.paletteKind;
-          editor.focus();
-          restoreSelection();
-          applyColor(kind, input.value);
-          updatePaletteSelection(palette, kind);
-        });
-
         function applyColor(kind, color) {
+          ensureStyleWithCSS();
           if (kind === 'text') {
             try { document.execCommand('foreColor', false, color); } catch (e) {}
+            if (!isColorApplied(color, 'color')) {
+              wrapSelectionWithStyle('color', color);
+            }
             state.lastTextColor = color;
           } else {
             try { document.execCommand('hiliteColor', false, color); }
             catch (e) { document.execCommand('backColor', false, color); }
+            if (!isColorApplied(color, 'background-color')) {
+              wrapSelectionWithStyle('background-color', color);
+            }
             state.lastBgColor = color;
           }
           const group = toolbar.querySelector(`.color-btn-group[data-color-group="${editorId}-${kind}"]`);
