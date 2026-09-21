@@ -19,7 +19,6 @@
 
   <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%E7%9F%A5%E8%AF%86%E7%82%B9%E8%AE%B0%E5%BF%86%E5%8D%A1%E7%89%87%22%2C%22short_name%22%3A%22%E7%9F%A5%E8%AF%86%E7%82%B9%22%2C%22display%22%3A%22standalone%22%2C%22start_url%22%3A%22.%22%2C%22scope%22%3A%22.%22%2C%22background_color%22%3A%22%23f4f7fc%22%2C%22theme_color%22%3A%22%231e3a8a%22%2C%22orientation%22%3A%22portrait%22%7D">
 
-  <!-- 提前设置主题，防止 FOUC -->
   <script>
     (function(){
       try {
@@ -283,8 +282,8 @@
     .sidebar.hidden-sidebar { display: none; }
 
     .sidebar-header {
-      padding: 14px 14px 6px;
-      font-size: 0.78rem;
+      padding: 14px 14px 8px;
+      font-size: 0.8rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       font-weight: 600;
@@ -323,6 +322,20 @@
     }
     .sidebar-icon-btn:hover { background: var(--bg-accent); color: var(--primary-text); }
 
+    /* 新建按钮（侧边栏头部小按钮） */
+    .sidebar-icon-btn.add-btn {
+      background: var(--primary-soft);
+      color: var(--primary-text);
+      font-weight: 700;
+      font-size: 1.15rem;
+      line-height: 1;
+      padding-bottom: 2px;
+    }
+    .sidebar-icon-btn.add-btn:hover {
+      background: var(--primary);
+      color: var(--text-on-primary);
+    }
+
     /* 选择模式头部 */
     .selection-header {
       padding: 10px 12px;
@@ -337,12 +350,12 @@
       color: var(--primary-text);
       font-weight: 700;
     }
-    .selection-header .count { 
-      background: var(--primary); 
-      color: var(--text-on-primary); 
-      padding: 2px 8px; 
-      border-radius: 10px; 
-      font-size: 0.7rem; 
+    .selection-header .count {
+      background: var(--primary);
+      color: var(--text-on-primary);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.7rem;
       margin-left: 6px;
     }
     .selection-header button {
@@ -401,10 +414,10 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 10px;
+      padding: 9px 10px;
       border-radius: 10px;
       cursor: pointer;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       font-weight: 700;
       color: var(--text-primary-soft);
       text-transform: uppercase;
@@ -471,14 +484,14 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 11px 13px;
+      padding: 12px 14px;
       margin: 4px 0;
       border-radius: 12px;
       background: var(--bg-surface);
       border: 1px solid var(--border-faint);
       cursor: pointer;
       transition: background 0.15s, border-color 0.15s;
-      font-size: 0.92rem;
+      font-size: 0.94rem;
       font-weight: 500;
       color: var(--text);
       word-break: break-word;
@@ -537,7 +550,7 @@
       margin-right: 2px;
     }
 
-    .group-items .knowledge-item { margin-left: 4px; font-size: 0.87rem; padding: 9px 11px; }
+    .group-items .knowledge-item { margin-left: 4px; font-size: 0.9rem; padding: 10px 12px; }
 
     .item-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.1s; flex-shrink: 0; }
     .knowledge-item:hover .item-actions,
@@ -589,7 +602,7 @@
     .card-wrapper { width: 100%; max-width: 680px; margin: 0 auto; }
 
     /* ============================================================
-       全局模式 搜索/筛选 工具栏
+       全局模式 搜索/筛选 工具栏（搜索栏与筛选栏同一行）
        ============================================================ */
     .global-toolbar {
       position: sticky;
@@ -599,9 +612,18 @@
       padding: 14px 16px 10px;
       border-bottom: 1px solid var(--border-light);
       backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: nowrap;
     }
 
-    .search-box { position: relative; margin-bottom: 10px; }
+    .search-box {
+      position: relative;
+      flex: 1 1 0;
+      min-width: 120px;
+      margin-bottom: 0;
+    }
 
     .search-input {
       width: 100%;
@@ -655,9 +677,17 @@
     .filter-row {
       display: flex;
       gap: 6px;
-      flex-wrap: wrap;
       align-items: center;
+      flex-wrap: nowrap;
+      flex: 0 1 auto;
+      min-width: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 2px 0;
     }
+    .filter-row::-webkit-scrollbar { display: none; }
 
     .filter-select {
       padding: 6px 26px 6px 10px;
@@ -677,6 +707,7 @@
       max-width: 140px;
       text-overflow: ellipsis;
       transition: all 0.15s;
+      flex-shrink: 0;
     }
     .filter-select:hover { border-color: var(--border-accent); }
     .filter-select.active {
@@ -702,6 +733,7 @@
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
       white-space: nowrap;
+      flex-shrink: 0;
     }
     .filter-chip:hover { border-color: var(--border-accent); color: var(--primary-text); }
     .filter-chip.active {
@@ -711,11 +743,12 @@
     }
 
     .filter-result {
-      margin-left: auto;
+      margin-left: 2px;
       font-size: 0.74rem;
       color: var(--text-faint);
       font-weight: 700;
       white-space: nowrap;
+      flex-shrink: 0;
     }
 
     .filter-hint {
@@ -1913,14 +1946,29 @@
       .mode-btn { flex: 1; text-align: center; padding: 6px 3px; font-size: 0.68rem; }
       .theme-toggle-btn { width: 32px; height: 32px; font-size: 0.9rem; }
 
-      .sidebar { width: 92px; }
-      .sidebar-header { padding: 10px 6px 4px; font-size: 0.58rem; gap: 2px; flex-wrap: wrap; }
-      .sidebar-header .count-badge { padding: 1px 5px; font-size: 0.6rem; }
-      .sidebar-icon-btn { width: 22px; height: 22px; font-size: 0.8rem; }
-      .knowledge-list { padding: 4px 4px 12px; }
-      .group-header { font-size: 0.6rem; padding: 5px 4px; gap: 3px; }
-      .knowledge-item { padding: 8px 6px; font-size: 0.7rem; border-radius: 8px; margin: 3px 0; gap: 3px; }
-      .group-items .knowledge-item { font-size: 0.68rem; padding: 7px 5px; }
+      /* 侧边栏：加宽 + 提高可读性 */
+      .sidebar { width: 108px; }
+      .sidebar-header {
+        padding: 10px 6px 6px;
+        font-size: 0.6rem;
+        gap: 3px;
+        justify-content: center;
+      }
+      .sidebar-header > span:first-child { display: none; }
+      .sidebar-header .count-badge { padding: 2px 6px; font-size: 0.62rem; }
+      .sidebar-icon-btn { width: 24px; height: 24px; font-size: 0.85rem; }
+      .sidebar-icon-btn.add-btn { font-size: 1rem; padding-bottom: 2px; }
+
+      .knowledge-list { padding: 4px 5px 12px; }
+      .group-header { font-size: 0.66rem; padding: 6px 5px; gap: 4px; }
+      .knowledge-item {
+        padding: 9px 8px;
+        font-size: 0.78rem;
+        border-radius: 9px;
+        margin: 3px 0;
+        gap: 4px;
+      }
+      .group-items .knowledge-item { font-size: 0.75rem; padding: 8px 6px; }
       .item-actions { opacity: 1; }
       .delete-btn { width: 18px; height: 18px; font-size: 0.7rem; }
       .ungrouped-label { font-size: 0.58rem; }
@@ -1935,13 +1983,16 @@
       .content-area.full-width { padding: 0; }
       .content-area.recite-full { padding: 0; }
 
-      .global-toolbar { padding: 10px 10px 8px; }
-      .search-input { font-size: 0.85rem; padding: 9px 38px 9px 36px; }
-      .search-icon { left: 12px; font-size: 0.85rem; }
+      /* 全局工具栏：移动端也保持同一行，筛选栏可横向滑动 */
+      .global-toolbar { padding: 10px 10px 8px; gap: 6px; }
+      .search-box { min-width: 88px; }
+      .search-input { font-size: 0.8rem; padding: 9px 30px 9px 30px; }
+      .search-icon { left: 10px; font-size: 0.78rem; }
+      .search-clear { right: 4px; width: 24px; height: 24px; font-size: 0.66rem; }
       .filter-row { gap: 4px; }
-      .filter-select { padding: 5px 22px 5px 8px; font-size: 0.7rem; max-width: 110px; }
-      .filter-chip { padding: 5px 9px; font-size: 0.7rem; }
-      .filter-result { font-size: 0.68rem; }
+      .filter-select { padding: 5px 19px 5px 7px; font-size: 0.66rem; max-width: 78px; }
+      .filter-chip { padding: 5px 8px; font-size: 0.66rem; }
+      .filter-result { font-size: 0.62rem; }
       .global-body { padding: 12px 8px 24px; }
 
       .edit-card { padding: 20px 14px 22px; border-radius: 20px; }
@@ -1985,8 +2036,9 @@
     @media (max-width: 380px) {
       .app-header h1 { font-size: 0.78rem; }
       .mode-btn { font-size: 0.62rem; padding: 5px 2px; }
-      .sidebar { width: 82px; }
-      .knowledge-item { font-size: 0.66rem; padding: 7px 4px; }
+      .sidebar { width: 96px; }
+      .knowledge-item { font-size: 0.72rem; padding: 8px 6px; }
+      .group-items .knowledge-item { font-size: 0.7rem; padding: 7px 5px; }
       .global-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
       .global-card { padding: 6px 6px; height: 95px; }
       .global-card .card-title { font-size: 0.62rem; }
@@ -2195,18 +2247,15 @@
         formatPainterArmed: false,
         formatPainterEditorId: null,
 
-        // 新增：搜索与筛选
         searchQuery: '',
         filterGroup: '',
         filterTag: '',
         filterMastery: '',
         filterHasImage: false,
 
-        // 新增：批量选择
         selectionMode: false,
         selectedIds: new Set(),
 
-        // 新增：主题
         theme: 'auto'
       };
 
@@ -2414,7 +2463,6 @@
         state.theme = stored;
         applyTheme(stored);
 
-        // 跟随系统
         if (window.matchMedia) {
           const mq = window.matchMedia('(prefers-color-scheme: dark)');
           const handler = () => { if (state.theme === 'auto') applyTheme('auto'); };
@@ -2429,10 +2477,8 @@
         state.theme = next;
         try { localStorage.setItem(STORAGE_KEY_THEME, next); } catch (e) {}
         applyTheme(next);
-        // mastery 颜色依赖主题，需要重渲染
         if (state.mode === 'recite') renderReciteMode();
         else if (state.mode === 'global') {
-          // 不动 toolbar，只更新 body
           const body = document.getElementById('globalBody');
           if (body) renderGlobalBody();
         }
@@ -2746,7 +2792,6 @@
         return Array.from(tagMap.entries())
           .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
           .map(([k]) => {
-            // 找一个原始大小写
             for (const item of state.items) {
               for (const t of (item.tags || [])) {
                 if (normalizeTag(t).toLowerCase() === k) return normalizeTag(t);
@@ -3035,11 +3080,27 @@
       // ============================================================
       let sidebarRendered = false;
 
+      function renderSidebarHeader() {
+        el.sidebarHeader.classList.add('sidebar-header');
+        el.sidebarHeader.classList.remove('selection-header');
+        el.sidebarHeader.innerHTML = `
+          <span>目录</span>
+          <div class="sidebar-header-right">
+            <span class="count-badge" id="counterBadge">0</span>
+            <button class="sidebar-icon-btn add-btn" id="sidebarAddBtn" title="新建知识点">＋</button>
+            <button class="sidebar-icon-btn" id="selectModeBtn" title="批量选择">☰</button>
+          </div>
+        `;
+        const selectBtn = document.getElementById('selectModeBtn');
+        if (selectBtn) selectBtn.addEventListener('click', enterSelectionMode);
+        const addBtn = document.getElementById('sidebarAddBtn');
+        if (addBtn) addBtn.addEventListener('click', handleSidebarAddClick);
+      }
+
       function renderSidebar(force) {
         if (!force && sidebarRendered) { updateSidebarActive(); return; }
         sidebarRendered = true;
 
-        // 头部
         if (state.selectionMode) {
           el.sidebarHeader.outerHTML = `
             <div class="selection-header" id="sidebarHeader">
@@ -3052,7 +3113,6 @@
               </div>
             </div>
           `;
-          // 重新绑定
           el.sidebarHeader = document.getElementById('sidebarHeader');
           document.getElementById('selectAllBtn').addEventListener('click', selectAllInSidebar);
           document.getElementById('exitSelectionBtn').addEventListener('click', exitSelectionMode);
@@ -3060,23 +3120,23 @@
           renderSelectionBar();
         } else {
           if (!el.sidebarHeader.classList.contains('sidebar-header')) {
-            // 从 selection-header 恢复
             el.sidebarHeader.outerHTML = `
               <div class="sidebar-header" id="sidebarHeader">
                 <span>目录</span>
                 <div class="sidebar-header-right">
                   <span class="count-badge" id="counterBadge">0</span>
+                  <button class="sidebar-icon-btn add-btn" id="sidebarAddBtn" title="新建知识点">＋</button>
                   <button class="sidebar-icon-btn" id="selectModeBtn" title="批量选择">☰</button>
                 </div>
               </div>
             `;
             el.sidebarHeader = document.getElementById('sidebarHeader');
             document.getElementById('selectModeBtn').addEventListener('click', enterSelectionMode);
+            document.getElementById('sidebarAddBtn').addEventListener('click', handleSidebarAddClick);
           }
           el.selectionBar.style.display = 'none';
         }
 
-        // 列表
         if (state.items.length === 0) {
           el.knowledgeList.innerHTML = '<div class="empty-list-msg">暂无知识点</div>';
           const badge = document.getElementById('counterBadge');
@@ -3176,7 +3236,6 @@
       function renderKnowledgeItem(item) {
         const isActive = item.id === state.activeId && !state.isCreatingNew && !state.selectionMode;
         const isSelected = state.selectionMode && state.selectedIds.has(item.id);
-        const displayTitle = item.title.length > 12 ? item.title.slice(0, 10) + '…' : item.title;
         const masteredClass = (item.masteryLevel || 0) >= MASTERED_THRESHOLD ? 'mastered' : '';
         const masteredBadge = masteredClass ? '<span class="mastered-badge">✓</span>' : '';
 
@@ -3191,12 +3250,37 @@
         `;
 
         return `
-          <div class="knowledge-item ${isActive ? 'active' : ''} ${masteredClass} ${isSelected ? 'selected' : ''}" data-id="${item.id}" data-action="select-item">
+          <div class="knowledge-item ${isActive ? 'active' : ''} ${masteredClass} ${isSelected ? 'selected' : ''}" data-id="${item.id}" data-action="select-item" title="${escapeHtml(item.title)}">
             ${checkboxHtml}
-            <span class="item-body">${masteredBadge}${escapeHtml(displayTitle)}</span>
+            <span class="item-body">${masteredBadge}${escapeHtml(item.title)}</span>
             ${actionsHtml}
           </div>
         `;
+      }
+
+      // ============================================================
+      // 新建按钮处理（侧边栏头部）
+      // ============================================================
+      function handleSidebarAddClick() {
+        guardUnsaved(() => {
+          if (state.speakingId) stopSpeaking();
+          clearPendingCardClick();
+          closeAllPalettes();
+          state.isCreatingNew = true;
+          state.activeId = null;
+          state.draftImages = [];
+          state.draftTags = [];
+          state.editingSessionId = null;
+          state.formatPainterArmed = false;
+          state.formatPainterClip = null;
+          state.formatPainterEditorId = null;
+          renderSidebar(true);
+          renderContent();
+          setTimeout(() => {
+            const t = document.getElementById('newTitleInput');
+            if (t) t.focus();
+          }, 120);
+        });
       }
 
       // ============================================================
@@ -3270,7 +3354,6 @@
         el.moveGroupNewInput.value = '';
 
         let html = '';
-        // 未分组选项
         html += `
           <div class="move-group-option ungrouped" data-group="">
             <span>📄 未分组</span>
@@ -3302,7 +3385,6 @@
           const item = state.items.find(i => i.id === id);
           if (item) item.group = target;
         });
-        const n = state.selectedIds.size;
         saveToStorage();
         el.moveGroupModal.classList.remove('show');
         exitSelectionMode();
@@ -3441,8 +3523,6 @@
         if (state.mode === 'global') renderGlobalMode();
         else if (state.mode === 'recite') renderReciteMode();
         else renderEditMode();
-
-        updateSidebarAddButton();
       }
 
       function validateActiveId() {
@@ -3470,7 +3550,6 @@
           el.contentArea.dataset.mode = 'global';
           bindGlobalToolbarEvents();
         } else {
-          // 只更新 select 的 options（分组/标签可能变了）
           syncGlobalToolbarOptions();
         }
         renderGlobalBody();
@@ -3486,15 +3565,6 @@
           `<option value="${escapeHtml(t)}" ${state.filterTag === t ? 'selected' : ''}># ${escapeHtml(t)}</option>`
         ).join('');
         return `
-          <div class="search-box">
-            <span class="search-icon">🔍</span>
-            <input type="text" class="search-input" id="globalSearchInput"
-                   placeholder="搜索标题、内容或标签..."
-                   value="${escapeHtml(state.searchQuery)}"
-                   autocorrect="off" autocapitalize="off" spellcheck="false"
-                   autocomplete="off">
-            <button class="search-clear ${state.searchQuery ? 'visible' : ''}" id="globalSearchClear" title="清除">✕</button>
-          </div>
           <div class="filter-row">
             <select class="filter-select ${state.filterGroup ? 'active' : ''}" id="filterGroupSelect">
               <option value="">全部分组</option>
@@ -3514,11 +3584,19 @@
             <button class="filter-chip ${state.filterHasImage ? 'active' : ''}" id="filterImageBtn">🖼 有图</button>
             <span class="filter-result" id="filterResult"></span>
           </div>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" class="search-input" id="globalSearchInput"
+                   placeholder="搜索标题、内容或标签..."
+                   value="${escapeHtml(state.searchQuery)}"
+                   autocorrect="off" autocapitalize="off" spellcheck="false"
+                   autocomplete="off">
+            <button class="search-clear ${state.searchQuery ? 'visible' : ''}" id="globalSearchClear" title="清除">✕</button>
+          </div>
         `;
       }
 
       function syncGlobalToolbarOptions() {
-        // 重建筛选栏内容（保留 search input value）
         const input = document.getElementById('globalSearchInput');
         const savedValue = input ? input.value : state.searchQuery;
         const toolbar = document.getElementById('globalToolbar');
@@ -3661,7 +3739,6 @@
           globalClickBound = true;
         }
 
-        // 过滤状态下禁用拖拽
         if (!isFilterActive()) initGlobalDragSort();
       }
 
@@ -4896,10 +4973,8 @@
         if (!container) return;
 
         const input = document.getElementById(`${editorId}_input`);
-        // 清除旧 chip，保留 input
         container.querySelectorAll('.tag-pill').forEach(el => el.remove());
 
-        // 在 input 之前插入 chips
         state.draftTags.forEach((tag, i) => {
           const pill = document.createElement('span');
           pill.className = 'tag-pill';
@@ -4921,16 +4996,13 @@
             addDraftTag(v);
             input.value = '';
           } else if (e.key === 'Backspace' && !input.value && state.draftTags.length > 0) {
-            // 空输入框按退格删除最后一个
             state.draftTags.pop();
             renderTagEditor(editorId);
           }
         });
 
-        // 处理中文输入法
         input.addEventListener('input', () => {
           const v = input.value;
-          // 用户输入了中文逗号或英文逗号
           if (v.includes('，') || v.includes(',')) {
             const parts = v.split(/[,，]/);
             parts.slice(0, -1).forEach(p => { if (p.trim()) addDraftTag(p); });
@@ -4948,7 +5020,6 @@
             }
             return;
           }
-          // 点空白聚焦 input
           if (e.target === container) input.focus();
         });
       }
@@ -4963,7 +5034,6 @@
           return;
         }
         state.draftTags.push(n);
-        // 找当前编辑器重新渲染
         ['newTagEditor', 'editTagEditor'].forEach(id => {
           if (document.getElementById(id)) renderTagEditor(id);
         });
@@ -5058,7 +5128,6 @@
           });
 
           document.getElementById('addNewBtn').addEventListener('click', () => {
-            // 未提交的标签
             const tagInput = document.getElementById('newTagEditor_input');
             if (tagInput && tagInput.value.trim()) {
               addDraftTag(tagInput.value);
@@ -5223,30 +5292,6 @@
         document.getElementById('importBtn').addEventListener('click', openImportModal);
       }
 
-      function updateSidebarAddButton() {
-        const oldBtn = document.getElementById('sidebarAddBtn');
-        if (oldBtn) oldBtn.remove();
-        if (state.mode !== 'edit' || state.selectionMode) return;
-
-        const addBtn = document.createElement('button');
-        addBtn.id = 'sidebarAddBtn';
-        addBtn.className = 'btn btn-secondary';
-        addBtn.style.cssText = 'margin:8px 6px 12px;padding:8px 4px;font-size:0.72rem;border-radius:30px;width:calc(100% - 12px);flex-shrink:0;';
-        addBtn.textContent = '➕ 新建';
-        addBtn.addEventListener('click', () => {
-          state.isCreatingNew = true;
-          state.draftImages = [];
-          state.draftTags = [];
-          state.editingSessionId = null;
-          state.formatPainterArmed = false;
-          state.formatPainterClip = null;
-          state.formatPainterEditorId = null;
-          renderSidebar(true);
-          renderContent();
-        });
-        el.sidebar.appendChild(addBtn);
-      }
-
       function setMode(mode) {
         if (mode === state.mode) { renderContent(); return; }
         guardUnsaved(() => { doSetMode(mode); });
@@ -5268,14 +5313,12 @@
         state.formatPainterClip = null;
         state.formatPainterEditorId = null;
 
-        // 切模式清空过滤，避免侧边栏/内容不一致
         state.searchQuery = '';
         state.filterGroup = '';
         state.filterTag = '';
         state.filterMastery = '';
         state.filterHasImage = false;
 
-        // 退出选择模式
         if (state.selectionMode) {
           state.selectionMode = false;
           state.selectedIds = new Set();
@@ -5569,15 +5612,16 @@
         state.activeId = state.items.length > 0 ? state.items[0].id : null;
         validateActiveId();
 
-        // 初始化侧边栏头部按钮
         el.sidebarHeader.innerHTML = `
           <span>目录</span>
           <div class="sidebar-header-right">
             <span class="count-badge" id="counterBadge">0</span>
+            <button class="sidebar-icon-btn add-btn" id="sidebarAddBtn" title="新建知识点">＋</button>
             <button class="sidebar-icon-btn" id="selectModeBtn" title="批量选择">☰</button>
           </div>
         `;
         document.getElementById('selectModeBtn').addEventListener('click', enterSelectionMode);
+        document.getElementById('sidebarAddBtn').addEventListener('click', handleSidebarAddClick);
 
         renderSidebar(true);
         renderContent();
