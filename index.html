@@ -1285,6 +1285,12 @@
       transition: all 0.15s;
     }
     .edit-data-actions .data-btn:hover { background: var(--bg-hover); color: var(--primary-text); }
+    .edit-data-actions .data-btn.word-btn {
+      background: var(--bg-accent);
+      border-color: var(--border-accent);
+      color: var(--primary-text);
+    }
+    .edit-data-actions .data-btn.word-btn:hover { background: var(--primary); color: var(--text-on-primary); border-color: var(--primary); }
 
     .empty-state {
       text-align: center;
@@ -1799,6 +1805,50 @@
       box-shadow: 0 0 0 4px rgba(37,99,235,0.1);
     }
 
+    /* Word 导出范围选择 */
+    .export-scope-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+
+    .export-scope-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg-surface);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .export-scope-option:hover { border-color: var(--border-accent); }
+    .export-scope-option.selected {
+      border-color: var(--primary-bright);
+      background: var(--bg-accent);
+    }
+    .export-scope-option input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      flex-shrink: 0;
+      margin: 0;
+    }
+    .export-scope-option .scope-title {
+      flex: 1;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .export-scope-option .scope-count {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      background: var(--bg-subtle);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 700;
+    }
+
+    .export-scope-detail { padding: 0 4px 2px 4px; }
+    .export-scope-detail .filter-select { max-width: none; width: 100%; padding: 9px 28px 9px 12px; }
+
     /* 状态提示 */
     .status-msg {
       font-size: 0.85rem;
@@ -1998,6 +2048,7 @@
       .edit-card { padding: 20px 14px 22px; border-radius: 20px; }
       .input-group input { padding: 13px 13px; font-size: 16px; border-radius: 14px; }
       .btn { padding: 12px 16px; font-size: 0.9rem; }
+      .edit-data-actions .data-btn { font-size: 0.78rem; padding: 10px 8px; }
 
       .knowledge-card { padding: 18px 15px; border-radius: 22px; }
       .card-title { font-size: 1.2rem; }
@@ -2096,6 +2147,50 @@
         <button class="btn btn-primary" id="copyExportBtn">📋 复制到剪贴板</button>
         <button class="btn btn-secondary" id="downloadExportBtn">💾 下载为文件</button>
         <button class="btn btn-secondary" id="exportCancelBtn">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Word 导出弹窗 -->
+  <div class="modal-overlay" id="wordExportModal">
+    <div class="modal" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3>📄 导出为 Word</h3>
+        <button class="modal-close" id="wordExportModalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-weight:600; color: var(--text-primary-soft); margin-bottom:10px;">选择导出范围：</p>
+        <div class="export-scope-list" id="wordExportScopeList">
+          <label class="export-scope-option selected" data-scope="all">
+            <input type="radio" name="wordExportScope" value="all" checked>
+            <span class="scope-title">全部知识点</span>
+            <span class="scope-count" id="wordScopeAllCount">0</span>
+          </label>
+          <label class="export-scope-option" data-scope="current">
+            <input type="radio" name="wordExportScope" value="current">
+            <span class="scope-title">当前知识点</span>
+            <span class="scope-count" id="wordScopeCurrentCount">0</span>
+          </label>
+          <label class="export-scope-option" data-scope="group">
+            <input type="radio" name="wordExportScope" value="group">
+            <span class="scope-title">按目录导出</span>
+          </label>
+          <div class="export-scope-detail" id="wordGroupDetail" style="display:none;">
+            <select class="filter-select" id="wordExportGroupSelect"></select>
+          </div>
+          <label class="export-scope-option" data-scope="tag">
+            <input type="radio" name="wordExportScope" value="tag">
+            <span class="scope-title">按标签导出</span>
+          </label>
+          <div class="export-scope-detail" id="wordTagDetail" style="display:none;">
+            <select class="filter-select" id="wordExportTagSelect"></select>
+          </div>
+        </div>
+        <div class="status-msg" id="wordExportStatus"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="doWordExportBtn">📄 开始导出</button>
+        <button class="btn btn-secondary" id="wordExportCancelBtn">取消</button>
       </div>
     </div>
   </div>
@@ -2256,7 +2351,12 @@
         selectionMode: false,
         selectedIds: new Set(),
 
-        theme: 'auto'
+        theme: 'auto',
+
+        // 【修复1】编辑脏标记：只有真正输入过才认为有未保存修改
+        editDirty: false,
+        // 【新增】Word 导出范围
+        wordExportScope: 'all'
       };
 
       const $ = (sel) => document.querySelector(sel);
@@ -3025,49 +3125,23 @@
       });
 
       // ============================================================
-      // 未保存检测
+      // 未保存检测（修复：改为脏标记，避免误报）
       // ============================================================
+      function markEditDirty() {
+        if (state.mode === 'edit') state.editDirty = true;
+      }
+
+      function bindEditDirtyTracking(ids) {
+        ids.forEach(id => {
+          const node = document.getElementById(id);
+          if (!node) return;
+          node.addEventListener('input', markEditDirty);
+        });
+      }
+
       function hasUnsavedEdit() {
         if (state.mode !== 'edit') return false;
-
-        if (state.isCreatingNew) {
-          const title = document.getElementById('newTitleInput');
-          const group = document.getElementById('newGroupInput');
-          const editor = document.getElementById('newContentEditor');
-          if (!title || !group || !editor) return false;
-          if (title.value.trim()) return true;
-          if (group.value.trim()) return true;
-          if (state.draftImages.length > 0) return true;
-          if (state.draftTags.length > 0) return true;
-          const plain = htmlToPlainText(sanitizeHtml(editor.innerHTML.trim()));
-          if (plain) return true;
-          return false;
-        }
-
-        const activeItem = state.items.find(i => i.id === state.activeId);
-        if (!activeItem) return false;
-        const title = document.getElementById('editTitleInput');
-        const group = document.getElementById('editGroupInput');
-        const editor = document.getElementById('editContentEditor');
-        if (!title || !group || !editor) return false;
-
-        if (title.value.trim() !== activeItem.title) return true;
-        if (group.value.trim() !== (activeItem.group || '').trim()) return true;
-        const newContent = sanitizeHtml(editor.innerHTML.trim());
-        const oldContent = activeItem.content || '';
-        if (newContent !== oldContent) return true;
-
-        const orig = activeItem.images || [];
-        const draft = state.draftImages;
-        if (orig.length !== draft.length) return true;
-        for (let i = 0; i < draft.length; i++) if (orig[i] !== draft[i]) return true;
-
-        const origTags = activeItem.tags || [];
-        const newTags = state.draftTags;
-        if (origTags.length !== newTags.length) return true;
-        for (let i = 0; i < newTags.length; i++) if (origTags[i] !== newTags[i]) return true;
-
-        return false;
+        return state.editDirty === true;
       }
 
       function guardUnsaved(onProceed) {
@@ -3271,6 +3345,7 @@
           state.draftImages = [];
           state.draftTags = [];
           state.editingSessionId = null;
+          state.editDirty = false;
           state.formatPainterArmed = false;
           state.formatPainterClip = null;
           state.formatPainterEditorId = null;
@@ -3443,6 +3518,7 @@
               state.activeId = id;
               state.isCreatingNew = false;
               state.editingSessionId = null;
+              state.editDirty = false;
               state.draftImages = [];
               state.draftTags = [];
               state.formatPainterArmed = false;
@@ -3488,6 +3564,7 @@
             state.isCreatingNew = false;
           }
           state.editingSessionId = null;
+          state.editDirty = false;
           state.draftImages = [];
           state.draftTags = [];
           saveToStorage();
@@ -4997,6 +5074,7 @@
             input.value = '';
           } else if (e.key === 'Backspace' && !input.value && state.draftTags.length > 0) {
             state.draftTags.pop();
+            markEditDirty();
             renderTagEditor(editorId);
           }
         });
@@ -5016,6 +5094,7 @@
             const i = parseInt(btn.dataset.tagIndex, 10);
             if (!isNaN(i)) {
               state.draftTags.splice(i, 1);
+              markEditDirty();
               renderTagEditor(editorId);
             }
             return;
@@ -5034,6 +5113,7 @@
           return;
         }
         state.draftTags.push(n);
+        markEditDirty();
         ['newTagEditor', 'editTagEditor'].forEach(id => {
           if (document.getElementById(id)) renderTagEditor(id);
         });
@@ -5051,6 +5131,7 @@
         const isNewSession = state.editingSessionId !== sessionId;
         if (isNewSession) {
           state.editingSessionId = sessionId;
+          state.editDirty = false;   // 【修复1】切换会话时重置脏标记
           state.draftImages = state.isCreatingNew
             ? []
             : ((activeItem && activeItem.images) ? activeItem.images.slice() : []);
@@ -5097,6 +5178,7 @@
               <div class="edit-data-actions">
                 <button class="data-btn" id="exportBtn">📤 导出</button>
                 <button class="data-btn" id="importBtn">📥 导入</button>
+                <button class="data-btn word-btn" id="wordExportBtn">📄 Word</button>
               </div>
             </div>
           `;
@@ -5106,10 +5188,12 @@
           renderImageSection(state.draftImages, 'newImageList');
           renderTagEditor('newTagEditor');
           bindTagEditorEvents('newTagEditor');
+          bindEditDirtyTracking(['newTitleInput', 'newGroupInput', 'newContentEditor']);
 
           document.getElementById('addNewImagesBtn').addEventListener('click', () => {
             pickAndAddImages(async (ref) => {
               state.draftImages.push(ref);
+              markEditDirty();
               await renderImageSection(state.draftImages, 'newImageList');
             });
           });
@@ -5119,6 +5203,7 @@
             if (!btn) return;
             const i = parseInt(btn.dataset.imgIndex, 10);
             state.draftImages.splice(i, 1);
+            markEditDirty();
             renderImageSection(state.draftImages, 'newImageList');
           });
 
@@ -5153,6 +5238,7 @@
             state.draftImages = [];
             state.draftTags = [];
             state.editingSessionId = null;
+            state.editDirty = false;
             state.formatPainterArmed = false;
             state.formatPainterClip = null;
             state.formatPainterEditorId = null;
@@ -5167,6 +5253,7 @@
             state.draftImages = [];
             state.draftTags = [];
             state.editingSessionId = null;
+            state.editDirty = false;
             state.formatPainterArmed = false;
             state.formatPainterClip = null;
             state.formatPainterEditorId = null;
@@ -5177,6 +5264,7 @@
 
           document.getElementById('exportBtn').addEventListener('click', openExportModal);
           document.getElementById('importBtn').addEventListener('click', openImportModal);
+          document.getElementById('wordExportBtn').addEventListener('click', openWordExportModal);
           return;
         }
 
@@ -5217,6 +5305,7 @@
             <div class="edit-data-actions">
               <button class="data-btn" id="exportBtn">📤 导出</button>
               <button class="data-btn" id="importBtn">📥 导入</button>
+              <button class="data-btn word-btn" id="wordExportBtn">📄 Word</button>
             </div>
           </div>
         `;
@@ -5226,10 +5315,12 @@
         renderImageSection(state.draftImages, 'editImageList');
         renderTagEditor('editTagEditor');
         bindTagEditorEvents('editTagEditor');
+        bindEditDirtyTracking(['editTitleInput', 'editGroupInput', 'editContentEditor']);
 
         document.getElementById('addEditImagesBtn').addEventListener('click', () => {
           pickAndAddImages(async (ref) => {
             state.draftImages.push(ref);
+            markEditDirty();
             await renderImageSection(state.draftImages, 'editImageList');
           });
         });
@@ -5239,6 +5330,7 @@
           if (!btn) return;
           const i = parseInt(btn.dataset.imgIndex, 10);
           state.draftImages.splice(i, 1);
+          markEditDirty();
           renderImageSection(state.draftImages, 'editImageList');
         });
 
@@ -5268,6 +5360,7 @@
             item.tags = state.draftTags.slice();
             saveToStorage();
             state.editingSessionId = null;
+            state.editDirty = false;
             state.draftImages = [];
             state.draftTags = [];
             state.formatPainterArmed = false;
@@ -5283,6 +5376,7 @@
           state.draftImages = [];
           state.draftTags = [];
           state.editingSessionId = null;
+          state.editDirty = false;
           state.formatPainterArmed = false;
           state.formatPainterClip = null;
           state.formatPainterEditorId = null;
@@ -5290,6 +5384,7 @@
         });
         document.getElementById('exportBtn').addEventListener('click', openExportModal);
         document.getElementById('importBtn').addEventListener('click', openImportModal);
+        document.getElementById('wordExportBtn').addEventListener('click', openWordExportModal);
       }
 
       function setMode(mode) {
@@ -5309,6 +5404,7 @@
         }
         if (mode === 'edit' && state.mode !== 'edit') state.editingSessionId = null;
 
+        state.editDirty = false;
         state.formatPainterArmed = false;
         state.formatPainterClip = null;
         state.formatPainterEditorId = null;
@@ -5339,7 +5435,7 @@
       el.editModeBtn.addEventListener('click', () => setMode('edit'));
 
       // ============================================================
-      // 导出 / 导入
+      // 导出 / 导入（JSON）
       // ============================================================
       async function openExportModal() {
         el.exportStatus.textContent = '正在准备数据...';
@@ -5469,6 +5565,7 @@
             state.activeId = state.items.length > 0 ? state.items[0].id : null;
             state.isCreatingNew = false;
             state.editingSessionId = null;
+            state.editDirty = false;
             state.draftImages = [];
             state.draftTags = [];
             saveToStorage();
@@ -5492,6 +5589,7 @@
             state.items = state.items.concat(merged);
             if (!state.activeId && state.items.length > 0) state.activeId = state.items[0].id;
             state.editingSessionId = null;
+            state.editDirty = false;
             state.draftImages = [];
             state.draftTags = [];
             saveToStorage();
@@ -5556,12 +5654,498 @@
       el.importModal.addEventListener('click', (e) => { if (e.target === el.importModal) closeImportModal(); });
 
       // ============================================================
+      // 【新增】Word (.docx) 导出
+      // ============================================================
+
+      // ---------- ZIP (store 模式) ----------
+      const CRC32_TABLE = (() => {
+        const table = new Uint32Array(256);
+        for (let n = 0; n < 256; n++) {
+          let c = n;
+          for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+          table[n] = c >>> 0;
+        }
+        return table;
+      })();
+
+      function crc32(bytes) {
+        let c = 0xFFFFFFFF;
+        for (let i = 0; i < bytes.length; i++) {
+          c = CRC32_TABLE[(c ^ bytes[i]) & 0xFF] ^ (c >>> 8);
+        }
+        return (c ^ 0xFFFFFFFF) >>> 0;
+      }
+
+      function concatUint8(arrays) {
+        let total = 0;
+        for (const a of arrays) total += a.length;
+        const out = new Uint8Array(total);
+        let pos = 0;
+        for (const a of arrays) { out.set(a, pos); pos += a.length; }
+        return out;
+      }
+
+      function buildZipBytes(files) {
+        const encoder = new TextEncoder();
+        const localParts = [];
+        const centralParts = [];
+        let offset = 0;
+
+        const dosTime = 0;
+        const dosDate = ((2024 - 1980) << 9) | (1 << 5) | 1;
+
+        for (const file of files) {
+          const nameBytes = encoder.encode(file.name);
+          const data = file.data instanceof Uint8Array ? file.data : new Uint8Array(file.data);
+          const crc = crc32(data);
+
+          const local = new Uint8Array(30 + nameBytes.length);
+          const lv = new DataView(local.buffer);
+          lv.setUint32(0, 0x04034b50, true);
+          lv.setUint16(4, 20, true);
+          lv.setUint16(6, 0x0800, true);
+          lv.setUint16(8, 0, true);
+          lv.setUint16(10, dosTime, true);
+          lv.setUint16(12, dosDate, true);
+          lv.setUint32(14, crc, true);
+          lv.setUint32(18, data.length, true);
+          lv.setUint32(22, data.length, true);
+          lv.setUint16(26, nameBytes.length, true);
+          lv.setUint16(28, 0, true);
+          local.set(nameBytes, 30);
+
+          localParts.push(local, data);
+
+          const central = new Uint8Array(46 + nameBytes.length);
+          const cv = new DataView(central.buffer);
+          cv.setUint32(0, 0x02014b50, true);
+          cv.setUint16(4, 20, true);
+          cv.setUint16(6, 20, true);
+          cv.setUint16(8, 0x0800, true);
+          cv.setUint16(10, 0, true);
+          cv.setUint16(12, dosTime, true);
+          cv.setUint16(14, dosDate, true);
+          cv.setUint32(16, crc, true);
+          cv.setUint32(20, data.length, true);
+          cv.setUint32(24, data.length, true);
+          cv.setUint16(28, nameBytes.length, true);
+          cv.setUint16(30, 0, true);
+          cv.setUint16(32, 0, true);
+          cv.setUint16(34, 0, true);
+          cv.setUint16(36, 0, true);
+          cv.setUint32(38, 0, true);
+          cv.setUint32(42, offset, true);
+          central.set(nameBytes, 46);
+          centralParts.push(central);
+
+          offset += local.length + data.length;
+        }
+
+        let centralSize = 0;
+        for (const c of centralParts) centralSize += c.length;
+
+        const eocd = new Uint8Array(22);
+        const ev = new DataView(eocd.buffer);
+        ev.setUint32(0, 0x06054b50, true);
+        ev.setUint16(4, 0, true);
+        ev.setUint16(6, 0, true);
+        ev.setUint16(8, files.length, true);
+        ev.setUint16(10, files.length, true);
+        ev.setUint32(12, centralSize, true);
+        ev.setUint32(16, offset, true);
+        ev.setUint16(20, 0, true);
+
+        return concatUint8([...localParts, ...centralParts, eocd]);
+      }
+
+      // ---------- 工具 ----------
+      function xmlEscape(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&apos;');
+      }
+
+      function toHexColor(c) {
+        if (!c) return null;
+        c = String(c).trim();
+        if (/^#[0-9a-f]{6}$/i.test(c)) return c.slice(1).toUpperCase();
+        if (/^#[0-9a-f]{3}$/i.test(c)) return (c[1]+c[1]+c[2]+c[2]+c[3]+c[3]).toUpperCase();
+        const m = c.match(/rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
+        if (m) {
+          const h = (n) => Math.max(0, Math.min(255, parseInt(n, 10))).toString(16).padStart(2, '0');
+          return (h(m[1]) + h(m[2]) + h(m[3])).toUpperCase();
+        }
+        return null;
+      }
+
+      function dataUrlToBytes(dataUrl) {
+        const m = /^data:([^;,]+)(;base64)?,([\s\S]*)$/i.exec(dataUrl);
+        if (!m) return null;
+        const mime = m[1];
+        const isB64 = !!m[2];
+        const payload = m[3];
+        let bytes;
+        try {
+          if (isB64) {
+            const bin = atob(payload);
+            bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          } else {
+            bytes = new TextEncoder().encode(decodeURIComponent(payload));
+          }
+        } catch (e) { return null; }
+        return { mime, bytes };
+      }
+
+      function getImageNaturalSize(src) {
+        return new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve({ w: img.naturalWidth || 600, h: img.naturalHeight || 400 });
+          img.onerror = () => resolve({ w: 600, h: 400 });
+          img.src = src;
+        });
+      }
+
+      function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }
+
+      // ---------- HTML → Word 行（保留加粗/斜体/下划线/颜色/高亮） ----------
+      function parseHtmlToWordLines(html) {
+        const container = document.createElement('div');
+        container.innerHTML = sanitizeHtml(html || '');
+        const lines = [[]];
+
+        function addRun(run) {
+          if (lines.length === 0) lines.push([]);
+          lines[lines.length - 1].push(run);
+        }
+
+        function walk(node, fmt) {
+          Array.from(node.childNodes || []).forEach(child => {
+            if (child.nodeType === Node.TEXT_NODE) {
+              const t = child.textContent;
+              if (t) addRun({ text: t, fmt });
+              return;
+            }
+            if (child.nodeType !== Node.ELEMENT_NODE) return;
+
+            const tag = child.tagName;
+            const nf = Object.assign({}, fmt);
+
+            if (tag === 'B' || tag === 'STRONG') nf.bold = true;
+            if (tag === 'I' || tag === 'EM') nf.italic = true;
+            if (tag === 'U') nf.underline = true;
+
+            if (tag === 'FONT') {
+              const c = child.getAttribute('color');
+              if (c) { const h = toHexColor(c); if (h) nf.color = h; }
+            }
+
+            const style = child.getAttribute && child.getAttribute('style');
+            if (style) {
+              const cM = /(?:^|;)\s*color\s*:\s*([^;]+)/i.exec(style);
+              if (cM) { const h = toHexColor(cM[1]); if (h) nf.color = h; }
+              const bM = /(?:^|;)\s*background(?:-color)?\s*:\s*([^;]+)/i.exec(style);
+              if (bM) { const h = toHexColor(bM[1]); if (h) nf.bg = h; }
+              const fwM = /(?:^|;)\s*font-weight\s*:\s*([^;]+)/i.exec(style);
+              if (fwM) {
+                const v = fwM[1].trim().toLowerCase();
+                if (v === 'bold' || v === 'bolder' || parseInt(v, 10) >= 600) nf.bold = true;
+              }
+              const fsM = /(?:^|;)\s*font-style\s*:\s*([^;]+)/i.exec(style);
+              if (fsM && /italic|oblique/i.test(fsM[1])) nf.italic = true;
+              const tdM = /text-decoration[^:;]*:\s*([^;]+)/i.exec(style);
+              if (tdM && /underline/i.test(tdM[1])) nf.underline = true;
+            }
+
+            if (tag === 'BR') { lines.push([]); return; }
+
+            const isBlock = (tag === 'DIV' || tag === 'P');
+            if (isBlock) {
+              if (lines[lines.length - 1].length > 0) lines.push([]);
+            }
+            walk(child, nf);
+            if (isBlock) {
+              if (lines[lines.length - 1].length > 0) lines.push([]);
+            }
+          });
+        }
+
+        walk(container, {});
+
+        while (lines.length > 1 && lines[lines.length - 1].length === 0) lines.pop();
+        return lines;
+      }
+
+      function buildWordRunXml(run) {
+        const fmt = run.fmt || {};
+        const props = [];
+        if (fmt.bold) props.push('<w:b/>');
+        if (fmt.italic) props.push('<w:i/>');
+        if (fmt.underline) props.push('<w:u w:val="single"/>');
+        if (fmt.color) props.push(`<w:color w:val="${fmt.color}"/>`);
+        if (fmt.bg) props.push(`<w:shd w:val="clear" w:color="auto" w:fill="${fmt.bg}"/>`);
+        const rPr = props.length ? `<w:rPr>${props.join('')}</w:rPr>` : '';
+        const text = xmlEscape(run.text).replace(/\r?\n/g, ' ');
+        return `<w:r>${rPr}<w:t xml:space="preserve">${text}</w:t></w:r>`;
+      }
+
+      function buildWordImageParagraph(rId, cx, cy, id, name) {
+        return `<w:p><w:pPr><w:spacing w:before="60" w:after="120"/></w:pPr><w:r><w:drawing>`
+          + `<wp:inline distT="0" distB="0" distL="0" distR="0">`
+          + `<wp:extent cx="${cx}" cy="${cy}"/>`
+          + `<wp:effectExtent l="0" t="0" r="0" b="0"/>`
+          + `<wp:docPr id="${id}" name="Picture ${id}"/>`
+          + `<wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>`
+          + `<a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">`
+          + `<pic:pic>`
+          + `<pic:nvPicPr><pic:cNvPr id="${id}" name="${xmlEscape(name)}"/><pic:cNvPicPr/></pic:nvPicPr>`
+          + `<pic:blipFill><a:blip r:embed="${rId}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>`
+          + `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm>`
+          + `<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>`
+          + `</pic:pic></a:graphicData></a:graphic></wp:inline>`
+          + `</w:drawing></w:r></w:p>`;
+      }
+
+      async function buildDocxBlob(items) {
+        const encoder = new TextEncoder();
+        const zipFiles = [];
+        const relsEntries = [];
+        const mediaEntries = [];
+        let relIdCounter = 1; // rId1 = styles
+        let docPrId = 1;
+
+        relsEntries.push(
+          '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+        );
+
+        let body = '';
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+
+          // 标题
+          body += `<w:p><w:pPr><w:pStyle w:val="Heading1"/><w:spacing w:before="${i === 0 ? 0 : 360}" w:after="120"/></w:pPr>`
+                + `<w:r><w:t xml:space="preserve">${xmlEscape(item.title)}</w:t></w:r></w:p>`;
+
+          // 元信息
+          const meta = [];
+          if (item.group) meta.push('目录：' + item.group);
+          if (item.tags && item.tags.length) meta.push('标签：' + item.tags.map(t => '#' + t).join(' '));
+          if (meta.length) {
+            body += `<w:p><w:pPr><w:spacing w:after="120"/></w:pPr><w:r><w:rPr><w:color w:val="64748B"/><w:sz w:val="18"/></w:rPr>`
+                  + `<w:t xml:space="preserve">${xmlEscape(meta.join('    '))}</w:t></w:r></w:p>`;
+          }
+
+          // 正文
+          const lines = parseHtmlToWordLines(item.content);
+          if (lines.length === 0) {
+            body += '<w:p/>';
+          } else {
+            lines.forEach(line => {
+              if (line.length === 0) { body += '<w:p/>'; return; }
+              body += `<w:p><w:pPr><w:spacing w:after="80" w:line="300" w:lineRule="auto"/></w:pPr>`
+                    + line.map(buildWordRunXml).join('')
+                    + '</w:p>';
+            });
+          }
+
+          // 图片
+          let resolvedImages = [];
+          try { resolvedImages = await resolveImageArray(item.images); } catch (e) {}
+
+          for (const src of resolvedImages) {
+            if (typeof src !== 'string' || !src.startsWith('data:image/')) continue;
+            const parsed = dataUrlToBytes(src);
+            if (!parsed) continue;
+
+            let ext = null;
+            if (/^image\/png/i.test(parsed.mime)) ext = 'png';
+            else if (/^image\/gif/i.test(parsed.mime)) ext = 'gif';
+            else if (/^image\/jpe?g/i.test(parsed.mime)) ext = 'jpeg';
+            else if (/^image\/bmp/i.test(parsed.mime)) ext = 'bmp';
+            if (!ext) continue;
+
+            const fileName = `image${mediaEntries.length + 1}.${ext}`;
+            mediaEntries.push({ name: `word/media/${fileName}`, data: parsed.bytes });
+
+            const rId = 'rId' + (++relIdCounter);
+            relsEntries.push(
+              `<Relationship Id="${rId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/${fileName}"/>`
+            );
+
+            const dim = await getImageNaturalSize(src);
+            const MAX_W = 6000000; // ≈6.56 英寸
+            let cx = Math.round((dim.w || 600) * 9525);
+            let cy = Math.round((dim.h || 400) * 9525);
+            if (cx > MAX_W) {
+              cy = Math.round(cy * MAX_W / cx);
+              cx = MAX_W;
+            }
+            body += buildWordImageParagraph(rId, cx, cy, docPrId++, fileName);
+          }
+        }
+
+        const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="851" w:footer="992" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+
+        const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="jpeg" ContentType="image/jpeg"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="png" ContentType="image/png"/><Default Extension="gif" ContentType="image/gif"/><Default Extension="bmp" ContentType="image/bmp"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`;
+
+        const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
+
+        const docRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relsEntries.join('')}</Relationships>`;
+
+        const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Segoe UI" w:hAnsi="Segoe UI" w:eastAsia="微软雅黑" w:cs="Segoe UI"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="300" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="360" w:after="120"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="1E3A8A"/><w:sz w:val="30"/><w:szCs w:val="30"/></w:rPr></w:style></w:styles>`;
+
+        zipFiles.push({ name: '[Content_Types].xml', data: encoder.encode(contentTypes) });
+        zipFiles.push({ name: '_rels/.rels', data: encoder.encode(rootRels) });
+        zipFiles.push({ name: 'word/document.xml', data: encoder.encode(documentXml) });
+        zipFiles.push({ name: 'word/_rels/document.xml.rels', data: encoder.encode(docRels) });
+        zipFiles.push({ name: 'word/styles.xml', data: encoder.encode(stylesXml) });
+        mediaEntries.forEach(m => zipFiles.push(m));
+
+        const zipBytes = buildZipBytes(zipFiles);
+        return new Blob([zipBytes], {
+          type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        });
+      }
+
+      // ---------- Word 导出弹窗 ----------
+      function setWordExportScope(scope) {
+        state.wordExportScope = scope;
+        document.querySelectorAll('#wordExportScopeList .export-scope-option').forEach(o => {
+          const on = o.dataset.scope === scope;
+          o.classList.toggle('selected', on);
+          const radio = o.querySelector('input[type="radio"]');
+          if (radio) radio.checked = on;
+        });
+        const gd = document.getElementById('wordGroupDetail');
+        const td = document.getElementById('wordTagDetail');
+        if (gd) gd.style.display = scope === 'group' ? '' : 'none';
+        if (td) td.style.display = scope === 'tag' ? '' : 'none';
+      }
+
+      function openWordExportModal() {
+        const groupSel = document.getElementById('wordExportGroupSelect');
+        const groups = getAllGroups();
+        groupSel.innerHTML = '<option value="">（未分组）</option>' +
+          groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+
+        const tagSel = document.getElementById('wordExportTagSelect');
+        const tags = getAllTags();
+        tagSel.innerHTML = tags.length
+          ? tags.map(t => `<option value="${escapeHtml(t)}"># ${escapeHtml(t)}</option>`).join('')
+          : '<option value="">（暂无标签）</option>';
+
+        document.getElementById('wordScopeAllCount').textContent = state.items.length;
+        const cur = state.items.find(i => i.id === state.activeId);
+        document.getElementById('wordScopeCurrentCount').textContent = cur ? '1' : '0';
+
+        setWordExportScope(cur ? 'current' : 'all');
+
+        const statusEl = document.getElementById('wordExportStatus');
+        statusEl.textContent = '';
+        statusEl.className = 'status-msg';
+        document.getElementById('wordExportModal').classList.add('show');
+      }
+
+      function closeWordExportModal() {
+        document.getElementById('wordExportModal').classList.remove('show');
+      }
+
+      async function performWordExport() {
+        const scope = state.wordExportScope || 'all';
+        let items = [];
+        let namePart = '全部';
+
+        if (scope === 'all') {
+          items = state.items.slice();
+          namePart = '全部知识点';
+        } else if (scope === 'current') {
+          const cur = state.items.find(i => i.id === state.activeId);
+          if (!cur) { showToast('没有可导出的知识点', true); return; }
+          items = [cur];
+          namePart = cur.title;
+        } else if (scope === 'group') {
+          const g = document.getElementById('wordExportGroupSelect').value;
+          items = state.items.filter(i => (i.group || '').trim() === g);
+          namePart = g ? g : '未分组';
+        } else if (scope === 'tag') {
+          const t = document.getElementById('wordExportTagSelect').value;
+          if (!t) { showToast('请选择标签', true); return; }
+          const tl = t.toLowerCase();
+          items = state.items.filter(i =>
+            (i.tags || []).some(x => normalizeTag(x).toLowerCase() === tl)
+          );
+          namePart = '标签_' + t;
+        }
+
+        if (items.length === 0) { showToast('没有符合条件的知识点', true); return; }
+
+        const statusEl = document.getElementById('wordExportStatus');
+        statusEl.textContent = '正在生成 Word 文档…';
+        statusEl.className = 'status-msg';
+
+        try {
+          const blob = await buildDocxBlob(items);
+          const date = new Date();
+          const stamp = `${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}`;
+          const safeName = String(namePart).replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40) || '知识点';
+          downloadBlob(blob, `知识点_${safeName}_${stamp}.docx`);
+          statusEl.textContent = `✓ 已导出 ${items.length} 个知识点`;
+          statusEl.className = 'status-msg';
+          showToast(`已导出 ${items.length} 个知识点`);
+          setTimeout(closeWordExportModal, 900);
+        } catch (e) {
+          console.error('Word 导出失败', e);
+          statusEl.textContent = '❌ 导出失败：' + (e && e.message ? e.message : '未知错误');
+          statusEl.className = 'status-msg error';
+        }
+      }
+
+      function initWordExportUI() {
+        const list = document.getElementById('wordExportScopeList');
+        if (list) {
+          list.addEventListener('change', (e) => {
+            if (e.target.name === 'wordExportScope') setWordExportScope(e.target.value);
+          });
+        }
+        const closeBtn = document.getElementById('wordExportModalClose');
+        const cancelBtn = document.getElementById('wordExportCancelBtn');
+        const doBtn = document.getElementById('doWordExportBtn');
+        const modal = document.getElementById('wordExportModal');
+        if (closeBtn) closeBtn.addEventListener('click', closeWordExportModal);
+        if (cancelBtn) cancelBtn.addEventListener('click', closeWordExportModal);
+        if (doBtn) doBtn.addEventListener('click', performWordExport);
+        if (modal) modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeWordExportModal();
+        });
+      }
+
+      // ============================================================
       // 键盘
       // ============================================================
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
           if (el.exportModal.classList.contains('show')) closeExportModal();
           if (el.importModal.classList.contains('show')) closeImportModal();
+          const wordModal = document.getElementById('wordExportModal');
+          if (wordModal && wordModal.classList.contains('show')) closeWordExportModal();
           if (el.moveGroupModal.classList.contains('show')) el.moveGroupModal.classList.remove('show');
           if (el.confirmOverlay.classList.contains('show')) closeConfirm();
           if (state.speakingId) stopSpeaking();
@@ -5622,6 +6206,8 @@
         `;
         document.getElementById('selectModeBtn').addEventListener('click', enterSelectionMode);
         document.getElementById('sidebarAddBtn').addEventListener('click', handleSidebarAddClick);
+
+        initWordExportUI();
 
         renderSidebar(true);
         renderContent();
