@@ -2287,6 +2287,7 @@
       const LONG_PRESS_MS = 400;
       const DRAG_CLICK_GUARD_MS = 300;
       const MAX_TAGS_PER_ITEM = 20;
+      const MAX_PASTE_IMAGES = 20;
       const DB_NAME = 'knowledge_cards_db';
       const DB_VERSION = 1;
       const STORE_IMAGES = 'images';
@@ -2353,9 +2354,7 @@
 
         theme: 'auto',
 
-        // 【修复1】编辑脏标记：只有真正输入过才认为有未保存修改
         editDirty: false,
-        // 【新增】Word 导出范围
         wordExportScope: 'all'
       };
 
@@ -2478,14 +2477,16 @@
       // ============================================================
       // HTML 净化
       // ============================================================
-      const ALLOWED_TAGS = new Set(['B', 'STRONG', 'U', 'I', 'EM', 'SPAN', 'BR', 'DIV', 'P', 'MARK', 'FONT']);
+      const ALLOWED_TAGS = new Set(['B', 'STRONG', 'U', 'INS', 'I', 'EM', 'SPAN', 'BR', 'DIV', 'P', 'MARK', 'FONT']);
       const ALLOWED_ATTRS = {
         'SPAN': ['style'], 'DIV': ['style'], 'P': ['style'],
         'FONT': ['color', 'style'], 'MARK': ['style']
       };
       const ALLOWED_STYLE_PROPS = new Set([
-        'font-weight', 'text-decoration', 'color', 'background-color',
-        'background', 'font-style'
+        'font-weight', 'font-style',
+        'text-decoration', 'text-decoration-line', 'text-decoration-style', 'text-decoration-color',
+        '-webkit-text-decoration',
+        'color', 'background-color', 'background'
       ]);
 
       function sanitizeStyle(style) {
@@ -2493,11 +2494,15 @@
         String(style).split(';').forEach(decl => {
           const idx = decl.indexOf(':');
           if (idx === -1) return;
-          const prop = decl.slice(0, idx).trim().toLowerCase();
+          let prop = decl.slice(0, idx).trim().toLowerCase();
           const val = decl.slice(idx + 1).trim();
           if (!ALLOWED_STYLE_PROPS.has(prop)) return;
           if (/expression|javascript:|url\s*\(/i.test(val)) return;
-          result.push(`${prop}: ${val}`);
+          // 把 text-decoration-line / -webkit-text-decoration 归一化为 text-decoration
+          if (prop === 'text-decoration-line' || prop === '-webkit-text-decoration') {
+            prop = 'text-decoration';
+          }
+          result.push(prop + ': ' + val);
         });
         return result.join('; ');
       }
@@ -2667,18 +2672,40 @@
         };
       }
 
+      // 【P0-1 修改】loadFromStorage：解析失败时备份原始字符串，避免用户数据被默认数据覆盖
       function loadFromStorage() {
         try {
           const stored = localStorage.getItem(STORAGE_KEY_ITEMS);
           if (stored !== null) {
-            const parsed = JSON.parse(stored);
+            let parsed;
+            try {
+              parsed = JSON.parse(stored);
+            } catch (parseErr) {
+              // JSON 损坏：先把原始字符串备份到独立 key，避免后续写入覆盖用户数据
+              try {
+                localStorage.setItem(STORAGE_KEY_ITEMS + '_corrupt_backup', stored);
+              } catch (backupErr) { /* 存储已满，忽略 */ }
+              console.warn('本地数据解析失败，已备份原始内容', parseErr);
+              setTimeout(() => showToast('⚠️ 本地数据损坏，已备份原始内容', true), 300);
+              return DEFAULT_ITEMS.map(item => normalizeItem(item));
+            }
+
             if (Array.isArray(parsed)) {
               return parsed
                 .filter(item => item && item.title !== undefined)
                 .map(normalizeItem);
             }
+
+            // 结构异常（非数组）：同样备份
+            try {
+              localStorage.setItem(STORAGE_KEY_ITEMS + '_corrupt_backup', stored);
+            } catch (backupErr) { /* 忽略 */ }
+            console.warn('本地数据格式异常（非数组），已备份原始内容');
+            setTimeout(() => showToast('⚠️ 本地数据格式异常，已备份原始内容', true), 300);
           }
-        } catch (e) { console.warn('读取失败', e); }
+        } catch (e) {
+          console.warn('读取失败', e);
+        }
         return DEFAULT_ITEMS.map(item => normalizeItem(item));
       }
 
@@ -2798,6 +2825,8 @@
         return val;
       }
 
+      // 【P0-2 修改】resolveImageArray：为 pendingImageLoads 加 catch/finally，
+      // 避免 getDB() 拒绝时 Promise 永久驻留在 Map 中
       async function resolveImageArray(images) {
         if (!Array.isArray(images) || images.length === 0) return [];
         const results = [];
@@ -2812,11 +2841,15 @@
             else {
               let promise = pendingImageLoads.get(id);
               if (!promise) {
-                promise = getImage(id).then((dataUrl) => {
-                  pendingImageLoads.delete(id);
-                  if (dataUrl) cacheImage(id, dataUrl);
-                  return dataUrl;
-                });
+                promise = getImage(id)
+                  .then((dataUrl) => {
+                    if (dataUrl) cacheImage(id, dataUrl);
+                    return dataUrl;
+                  })
+                  .catch(() => null)
+                  .finally(() => {
+                    pendingImageLoads.delete(id);
+                  });
                 pendingImageLoads.set(id, promise);
               }
               const dataUrl = await promise;
@@ -3125,7 +3158,7 @@
       });
 
       // ============================================================
-      // 未保存检测（修复：改为脏标记，避免误报）
+      // 未保存检测（脏标记）
       // ============================================================
       function markEditDirty() {
         if (state.mode === 'edit') state.editDirty = true;
@@ -3684,6 +3717,16 @@
         bindGlobalToolbarEvents();
       }
 
+      // 【P0-4 新增】筛选变化时把 selectedIds 中已不可见的 id 移除，
+      // 避免后续批量操作误伤不可见条目。非选择模式直接返回，无副作用。
+      function pruneSelectionToVisible() {
+        if (!state.selectionMode) return;
+        const visible = new Set(getFilteredItems().map(i => i.id));
+        state.selectedIds.forEach(id => {
+          if (!visible.has(id)) state.selectedIds.delete(id);
+        });
+      }
+
       function bindGlobalToolbarEvents() {
         const input = document.getElementById('globalSearchInput');
         const clearBtn = document.getElementById('globalSearchClear');
@@ -3696,6 +3739,7 @@
           input.addEventListener('input', debounce(() => {
             state.searchQuery = input.value;
             if (clearBtn) clearBtn.classList.toggle('visible', !!input.value);
+            pruneSelectionToVisible();
             renderGlobalBody();
             renderSidebar(true);
           }, 180));
@@ -3705,6 +3749,7 @@
             if (input) input.value = '';
             state.searchQuery = '';
             if (clearBtn) clearBtn.classList.remove('visible');
+            pruneSelectionToVisible();
             renderGlobalBody();
             renderSidebar(true);
           });
@@ -3713,6 +3758,7 @@
           groupSel.addEventListener('change', (e) => {
             state.filterGroup = e.target.value;
             e.target.classList.toggle('active', !!e.target.value);
+            pruneSelectionToVisible();
             renderGlobalBody();
             renderSidebar(true);
           });
@@ -3721,6 +3767,7 @@
           tagSel.addEventListener('change', (e) => {
             state.filterTag = e.target.value;
             e.target.classList.toggle('active', !!e.target.value);
+            pruneSelectionToVisible();
             renderGlobalBody();
             renderSidebar(true);
           });
@@ -3729,6 +3776,7 @@
           masterySel.addEventListener('change', (e) => {
             state.filterMastery = e.target.value;
             e.target.classList.toggle('active', !!e.target.value);
+            pruneSelectionToVisible();
             renderGlobalBody();
             renderSidebar(true);
           });
@@ -3737,6 +3785,7 @@
           imgBtn.addEventListener('click', () => {
             state.filterHasImage = !state.filterHasImage;
             imgBtn.classList.toggle('active', state.filterHasImage);
+            pruneSelectionToVisible();
             renderGlobalBody();
             renderSidebar(true);
           });
@@ -4076,6 +4125,8 @@
         };
       }
 
+      // 【P0-3 修改】updateDataOrderFromDOM：把"数量一致"升级为"集合完全一致且无重复"，
+      // 异常时不再静默 return，而是提示并回滚 DOM 到数据层状态
       function updateDataOrderFromDOM() {
         const sections = el.contentArea.querySelectorAll('.global-group-section');
         const newOrderedIds = [];
@@ -4090,7 +4141,25 @@
             }
           });
         });
-        if (newOrderedIds.length !== state.items.length) return;
+
+        // 校验：DOM 中不能出现重复 id，且 id 集合必须与 state.items 完全一致
+        const seen = new Set();
+        let hasDup = false;
+        for (const id of newOrderedIds) {
+          if (seen.has(id)) { hasDup = true; break; }
+          seen.add(id);
+        }
+        const stateIds = new Set(state.items.map(i => i.id));
+        const sameSet = !hasDup &&
+                        newOrderedIds.length === stateIds.size &&
+                        newOrderedIds.every(id => stateIds.has(id));
+
+        if (!sameSet) {
+          // DOM 与数据已不一致（并发操作或渲染异常），回滚到数据层视图并提示
+          showToast('排序未保存：数据已变化，请重试', true);
+          renderGlobalBody();
+          return;
+        }
 
         const itemMap = new Map(state.items.map(i => [i.id, i]));
         const newItems = [];
@@ -4456,7 +4525,7 @@
                  autocorrect="off" autocapitalize="off" spellcheck="false"
                  inputmode="text">${initialHtml || ''}</div>
           </div>
-          <div class="rich-hint">💡 选中文字后点按钮标注重点；A/◐=一键用当前色，▼=展开调色板；🖌=格式刷</div>
+          <div class="rich-hint">💡 选中文字后点按钮标注重点；A/◐=一键用当前色，▼=展开调色板；🖌=格式刷；可直接 Ctrl+V 粘贴图片</div>
         `;
       }
 
@@ -4475,10 +4544,97 @@
         return ('#' + toHex(m[1]) + toHex(m[2]) + toHex(m[3])).toLowerCase();
       }
 
-      function initRichEditor(editorId) {
+      // ---------- 粘贴图片辅助 ----------
+      function compressImageAsync(file) {
+        return new Promise((resolve) => { compressImage(file, (d) => resolve(d)); });
+      }
+
+      function compressDataUrlAsync(dataUrl) {
+        return new Promise((resolve) => {
+          if (!dataUrl || typeof dataUrl !== 'string') { resolve(null); return; }
+          if (dataUrl.length < 300 * 1024) { resolve(dataUrl); return; }
+          const img = new Image();
+          img.onload = () => {
+            try {
+              let w = img.naturalWidth || img.width;
+              let h = img.naturalHeight || img.height;
+              if (!w || !h) { resolve(dataUrl); return; }
+              if (w > IMG_MAX_SIZE || h > IMG_MAX_SIZE) {
+                if (w >= h) { h = Math.round(h * IMG_MAX_SIZE / w); w = IMG_MAX_SIZE; }
+                else { w = Math.round(w * IMG_MAX_SIZE / h); h = IMG_MAX_SIZE; }
+              }
+              const canvas = document.createElement('canvas');
+              canvas.width = w; canvas.height = h;
+              canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+              let out;
+              try { out = canvas.toDataURL('image/jpeg', IMG_QUALITY); }
+              catch (e) { out = dataUrl; }
+              resolve(out || dataUrl);
+            } catch (e) { resolve(dataUrl); }
+          };
+          img.onerror = () => resolve(dataUrl);
+          img.src = dataUrl;
+        });
+      }
+
+      // 把剪贴板中的图片存进 IndexedDB，返回引用数组（img://id 或 http(s) URL）
+      async function storePastedImages(payload) {
+        const added = [];
+        const files = (payload && payload.files) || [];
+        const dataUrls = (payload && payload.dataUrls) || [];
+        const httpUrls = (payload && payload.httpUrls) || [];
+
+        for (const file of files) {
+          if (added.length >= MAX_PASTE_IMAGES) break;
+          try {
+            const dataUrl = await compressImageAsync(file);
+            if (!dataUrl) continue;
+            const id = generateId();
+            await saveImage(id, dataUrl);
+            added.push('img://' + id);
+          } catch (e) { console.warn('粘贴图片处理失败', e); }
+        }
+
+        for (const d of dataUrls) {
+          if (added.length >= MAX_PASTE_IMAGES) break;
+          try {
+            const compressed = await compressDataUrlAsync(d);
+            if (!compressed) continue;
+            const id = generateId();
+            await saveImage(id, compressed);
+            added.push('img://' + id);
+          } catch (e) { console.warn('粘贴图片处理失败', e); }
+        }
+
+        for (const u of httpUrls) {
+          if (added.length >= MAX_PASTE_IMAGES) break;
+          added.push(u);
+        }
+
+        return added;
+      }
+
+      // 把粘贴到的图片写入当前草稿图片列表并刷新 UI
+      async function handlePastedImages(payload, imageListId) {
+        const added = await storePastedImages(payload);
+        if (added.length === 0) {
+          showToast('未能从剪贴板读取到图片', true);
+          return;
+        }
+        state.draftImages.push(...added);
+        markEditDirty();
+        await renderImageSection(state.draftImages, imageListId);
+        showToast(`已粘贴 ${added.length} 张图片到图片区`);
+      }
+
+      function initRichEditor(editorId, options) {
         const editor = document.getElementById(editorId);
         const toolbar = document.querySelector(`.rich-toolbar[data-toolbar-for="${editorId}"]`);
         if (!editor || !toolbar) return;
+
+        const onPasteImages = (options && typeof options.onPasteImages === 'function')
+          ? options.onPasteImages
+          : null;
 
         bindPaletteBus();
 
@@ -4590,7 +4746,7 @@
             }
             const inlineStyle = cur.getAttribute && cur.getAttribute('style');
             if (inlineStyle) {
-              if (/text-decoration\s*:[^;]*underline/i.test(inlineStyle)) foundUnderline = true;
+              if (/text-decoration[^:;]*:[^;]*underline/i.test(inlineStyle)) foundUnderline = true;
               const colorMatch = inlineStyle.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
               if (!foundColor && colorMatch) {
                 const n = normalizeColor(colorMatch[1]);
@@ -4929,12 +5085,73 @@
           });
         }
 
+        // ---------- 粘贴处理：文本 / HTML / 图片 ----------
         editor.addEventListener('paste', (e) => {
+          const cd = e.clipboardData || window.clipboardData;
+          if (!cd) return;
+
+          // 1. 收集剪贴板里的图片文件
+          const files = [];
+          if (cd.items && cd.items.length) {
+            for (let i = 0; i < cd.items.length; i++) {
+              const item = cd.items[i];
+              if (item.kind === 'file' && item.type && item.type.indexOf('image/') === 0) {
+                const f = item.getAsFile();
+                if (f) files.push(f);
+              }
+            }
+          }
+          if (files.length === 0 && cd.files && cd.files.length) {
+            for (let i = 0; i < cd.files.length; i++) {
+              const f = cd.files[i];
+              if (f && f.type && f.type.indexOf('image/') === 0) files.push(f);
+            }
+          }
+
+          const html = cd.getData ? (cd.getData('text/html') || '') : '';
+          const text = cd.getData ? (cd.getData('text/plain') || '') : '';
+
+          // 2. 从 HTML 中提取图片（仅在没有图片文件时，避免重复）
+          const dataUrls = [];
+          const httpUrls = [];
+          if (html && files.length === 0) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            const imgs = Array.from(tmp.querySelectorAll('img'));
+            imgs.forEach(img => {
+              const src = img.getAttribute('src') || '';
+              if (src.indexOf('data:image/') === 0) dataUrls.push(src);
+              else if (/^https?:\/\//i.test(src)) httpUrls.push(src);
+            });
+          }
+
+          const hasImages = files.length > 0 || dataUrls.length > 0 || httpUrls.length > 0;
+
+          if (!hasImages) {
+            e.preventDefault();
+            if (html) document.execCommand('insertHTML', false, sanitizeHtml(html));
+            else document.execCommand('insertText', false, text);
+            return;
+          }
+
           e.preventDefault();
-          const html = (e.clipboardData || window.clipboardData).getData('text/html');
-          const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-          if (html) document.execCommand('insertHTML', false, sanitizeHtml(html));
-          else document.execCommand('insertText', false, text);
+
+          // 若剪贴板里同时有文字，则插入去掉图片后的文字
+          if (html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            Array.from(tmp.querySelectorAll('img')).forEach(n => n.remove());
+            const strippedHtml = tmp.innerHTML;
+            if (htmlToPlainText(strippedHtml)) {
+              document.execCommand('insertHTML', false, sanitizeHtml(strippedHtml));
+            }
+          }
+
+          if (onPasteImages) {
+            onPasteImages({ files, dataUrls, httpUrls });
+          } else {
+            showToast('请切换到「录入」模式后再粘贴图片', true);
+          }
         });
 
         editor.addEventListener('focus', () => {
@@ -4960,7 +5177,7 @@
         const container = document.getElementById(containerId);
         if (!container) return;
         if (resolved.length === 0) {
-          container.innerHTML = '<div class="no-images-hint">暂无图片</div>';
+          container.innerHTML = '<div class="no-images-hint">暂无图片（可点击右上角 + 添加，或直接粘贴图片）</div>';
           return;
         }
         container.innerHTML = resolved.map((src, i) => `
@@ -4981,6 +5198,7 @@
           for (const file of files) {
             await new Promise((resolve) => {
               compressImage(file, async (dataUrl) => {
+                if (!dataUrl) { resolve(); return; }
                 try {
                   const imgId = generateId();
                   await saveImage(imgId, dataUrl);
@@ -5023,10 +5241,10 @@
             if (dataUrl.length > 800 * 1024) dataUrl = canvas.toDataURL('image/jpeg', 0.6);
             callback(dataUrl);
           };
-          img.onerror = () => showToast('图片加载失败', true);
+          img.onerror = () => { showToast('图片加载失败', true); callback(null); };
           img.src = e.target.result;
         };
-        reader.onerror = () => showToast('图片读取失败', true);
+        reader.onerror = () => { showToast('图片读取失败', true); callback(null); };
         reader.readAsDataURL(file);
       }
 
@@ -5131,7 +5349,7 @@
         const isNewSession = state.editingSessionId !== sessionId;
         if (isNewSession) {
           state.editingSessionId = sessionId;
-          state.editDirty = false;   // 【修复1】切换会话时重置脏标记
+          state.editDirty = false;
           state.draftImages = state.isCreatingNew
             ? []
             : ((activeItem && activeItem.images) ? activeItem.images.slice() : []);
@@ -5184,7 +5402,9 @@
           `;
 
           const newEditor = document.getElementById('newContentEditor');
-          initRichEditor('newContentEditor');
+          initRichEditor('newContentEditor', {
+            onPasteImages: (payload) => handlePastedImages(payload, 'newImageList')
+          });
           renderImageSection(state.draftImages, 'newImageList');
           renderTagEditor('newTagEditor');
           bindTagEditorEvents('newTagEditor');
@@ -5311,7 +5531,9 @@
         `;
 
         const editEditor = document.getElementById('editContentEditor');
-        initRichEditor('editContentEditor');
+        initRichEditor('editContentEditor', {
+          onPasteImages: (payload) => handlePastedImages(payload, 'editImageList')
+        });
         renderImageSection(state.draftImages, 'editImageList');
         renderTagEditor('editTagEditor');
         bindTagEditorEvents('editTagEditor');
@@ -5654,7 +5876,7 @@
       el.importModal.addEventListener('click', (e) => { if (e.target === el.importModal) closeImportModal(); });
 
       // ============================================================
-      // 【新增】Word (.docx) 导出
+      // Word (.docx) 导出
       // ============================================================
 
       // ---------- ZIP (store 模式) ----------
@@ -5845,7 +6067,7 @@
 
             if (tag === 'B' || tag === 'STRONG') nf.bold = true;
             if (tag === 'I' || tag === 'EM') nf.italic = true;
-            if (tag === 'U') nf.underline = true;
+            if (tag === 'U' || tag === 'INS') nf.underline = true;
 
             if (tag === 'FONT') {
               const c = child.getAttribute('color');
@@ -5865,7 +6087,7 @@
               }
               const fsM = /(?:^|;)\s*font-style\s*:\s*([^;]+)/i.exec(style);
               if (fsM && /italic|oblique/i.test(fsM[1])) nf.italic = true;
-              const tdM = /text-decoration[^:;]*:\s*([^;]+)/i.exec(style);
+              const tdM = /text-decoration[a-z-]*\s*:\s*([^;]+)/i.exec(style);
               if (tdM && /underline/i.test(tdM[1])) nf.underline = true;
             }
 
@@ -5923,7 +6145,7 @@
         const zipFiles = [];
         const relsEntries = [];
         const mediaEntries = [];
-        let relIdCounter = 1; // rId1 = styles
+        let relIdCounter = 1;
         let docPrId = 1;
 
         relsEntries.push(
@@ -5935,11 +6157,9 @@
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
 
-          // 标题
           body += `<w:p><w:pPr><w:pStyle w:val="Heading1"/><w:spacing w:before="${i === 0 ? 0 : 360}" w:after="120"/></w:pPr>`
                 + `<w:r><w:t xml:space="preserve">${xmlEscape(item.title)}</w:t></w:r></w:p>`;
 
-          // 元信息
           const meta = [];
           if (item.group) meta.push('目录：' + item.group);
           if (item.tags && item.tags.length) meta.push('标签：' + item.tags.map(t => '#' + t).join(' '));
@@ -5948,7 +6168,6 @@
                   + `<w:t xml:space="preserve">${xmlEscape(meta.join('    '))}</w:t></w:r></w:p>`;
           }
 
-          // 正文
           const lines = parseHtmlToWordLines(item.content);
           if (lines.length === 0) {
             body += '<w:p/>';
@@ -5961,7 +6180,6 @@
             });
           }
 
-          // 图片
           let resolvedImages = [];
           try { resolvedImages = await resolveImageArray(item.images); } catch (e) {}
 
@@ -5986,7 +6204,7 @@
             );
 
             const dim = await getImageNaturalSize(src);
-            const MAX_W = 6000000; // ≈6.56 英寸
+            const MAX_W = 6000000;
             let cx = Math.round((dim.w || 600) * 9525);
             let cy = Math.round((dim.h || 400) * 9525);
             if (cx > MAX_W) {
