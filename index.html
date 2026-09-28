@@ -1846,8 +1846,91 @@
       font-weight: 700;
     }
 
-    .export-scope-detail { padding: 0 4px 2px 4px; }
-    .export-scope-detail .filter-select { max-width: none; width: 100%; padding: 9px 28px 9px 12px; }
+    /* 多选目录 / 多选标签 */
+    .export-scope-detail { padding: 0 2px 2px; margin-top: -2px; }
+
+    .multi-select-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 2px 2px 8px;
+    }
+    .multi-select-toolbar .selected-hint {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .multi-select-toolbar .selected-hint b { color: var(--primary-text); }
+    .multi-select-toolbar .ms-actions { display: flex; gap: 6px; }
+    .multi-select-toolbar .ms-actions button {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      color: var(--text-primary-soft);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .multi-select-toolbar .ms-actions button:hover {
+      background: var(--bg-accent);
+      border-color: var(--border-accent);
+      color: var(--primary-text);
+    }
+
+    .multi-select-list {
+      max-height: 170px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg-surface-2);
+      -webkit-overflow-scrolling: touch;
+    }
+    .multi-select-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border-light);
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+    .multi-select-item:last-child { border-bottom: none; }
+    .multi-select-item:hover { background: var(--bg-accent); }
+    .multi-select-item input[type="checkbox"] {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--primary);
+      flex-shrink: 0;
+      margin: 0;
+    }
+    .multi-select-item .ms-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .multi-select-item .ms-count {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      background: var(--bg-subtle);
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .multi-select-empty {
+      padding: 16px 12px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-faint);
+      font-style: italic;
+    }
 
     /* 状态提示 */
     .status-msg {
@@ -2082,6 +2165,9 @@
       .tag-editor { padding: 8px 10px; border-radius: 14px; }
       .tag-editor .tag-pill { font-size: 0.72rem; }
       .tag-editor .tag-input { font-size: 0.82rem; }
+
+      .multi-select-list { max-height: 140px; }
+      .multi-select-item { padding: 8px 10px; font-size: 0.8rem; }
     }
 
     @media (max-width: 380px) {
@@ -2151,9 +2237,9 @@
     </div>
   </div>
 
-  <!-- Word 导出弹窗 -->
+  <!-- Word 导出弹窗（支持多选目录 / 多选标签，合并导出为一个文件） -->
   <div class="modal-overlay" id="wordExportModal">
-    <div class="modal" style="max-width: 480px;">
+    <div class="modal" style="max-width: 520px;">
       <div class="modal-header">
         <h3>📄 导出为 Word</h3>
         <button class="modal-close" id="wordExportModalClose">✕</button>
@@ -2171,19 +2257,37 @@
             <span class="scope-title">当前知识点</span>
             <span class="scope-count" id="wordScopeCurrentCount">0</span>
           </label>
+
           <label class="export-scope-option" data-scope="group">
             <input type="radio" name="wordExportScope" value="group">
-            <span class="scope-title">按目录导出</span>
+            <span class="scope-title">按目录导出（可多选）</span>
+            <span class="scope-count" id="wordScopeGroupCount">0</span>
           </label>
           <div class="export-scope-detail" id="wordGroupDetail" style="display:none;">
-            <select class="filter-select" id="wordExportGroupSelect"></select>
+            <div class="multi-select-toolbar">
+              <span class="selected-hint">已选 <b id="wordGroupSelCount">0</b> 个目录</span>
+              <div class="ms-actions">
+                <button type="button" id="wordGroupSelectAll">全选</button>
+                <button type="button" id="wordGroupClearAll">清空</button>
+              </div>
+            </div>
+            <div class="multi-select-list" id="wordGroupCheckList"></div>
           </div>
+
           <label class="export-scope-option" data-scope="tag">
             <input type="radio" name="wordExportScope" value="tag">
-            <span class="scope-title">按标签导出</span>
+            <span class="scope-title">按标签导出（可多选）</span>
+            <span class="scope-count" id="wordScopeTagCount">0</span>
           </label>
           <div class="export-scope-detail" id="wordTagDetail" style="display:none;">
-            <select class="filter-select" id="wordExportTagSelect"></select>
+            <div class="multi-select-toolbar">
+              <span class="selected-hint">已选 <b id="wordTagSelCount">0</b> 个标签</span>
+              <div class="ms-actions">
+                <button type="button" id="wordTagSelectAll">全选</button>
+                <button type="button" id="wordTagClearAll">清空</button>
+              </div>
+            </div>
+            <div class="multi-select-list" id="wordTagCheckList"></div>
           </div>
         </div>
         <div class="status-msg" id="wordExportStatus"></div>
@@ -2355,7 +2459,10 @@
         theme: 'auto',
 
         editDirty: false,
-        wordExportScope: 'all'
+
+        wordExportScope: 'all',
+        wordExportGroups: new Set(),
+        wordExportTags: new Set()
       };
 
       const $ = (sel) => document.querySelector(sel);
@@ -2672,7 +2779,6 @@
         };
       }
 
-      // 【P0-1 修改】loadFromStorage：解析失败时备份原始字符串，避免用户数据被默认数据覆盖
       function loadFromStorage() {
         try {
           const stored = localStorage.getItem(STORAGE_KEY_ITEMS);
@@ -2681,7 +2787,6 @@
             try {
               parsed = JSON.parse(stored);
             } catch (parseErr) {
-              // JSON 损坏：先把原始字符串备份到独立 key，避免后续写入覆盖用户数据
               try {
                 localStorage.setItem(STORAGE_KEY_ITEMS + '_corrupt_backup', stored);
               } catch (backupErr) { /* 存储已满，忽略 */ }
@@ -2696,7 +2801,6 @@
                 .map(normalizeItem);
             }
 
-            // 结构异常（非数组）：同样备份
             try {
               localStorage.setItem(STORAGE_KEY_ITEMS + '_corrupt_backup', stored);
             } catch (backupErr) { /* 忽略 */ }
@@ -2825,8 +2929,6 @@
         return val;
       }
 
-      // 【P0-2 修改】resolveImageArray：为 pendingImageLoads 加 catch/finally，
-      // 避免 getDB() 拒绝时 Promise 永久驻留在 Map 中
       async function resolveImageArray(images) {
         if (!Array.isArray(images) || images.length === 0) return [];
         const results = [];
@@ -3717,8 +3819,6 @@
         bindGlobalToolbarEvents();
       }
 
-      // 【P0-4 新增】筛选变化时把 selectedIds 中已不可见的 id 移除，
-      // 避免后续批量操作误伤不可见条目。非选择模式直接返回，无副作用。
       function pruneSelectionToVisible() {
         if (!state.selectionMode) return;
         const visible = new Set(getFilteredItems().map(i => i.id));
@@ -4125,8 +4225,6 @@
         };
       }
 
-      // 【P0-3 修改】updateDataOrderFromDOM：把"数量一致"升级为"集合完全一致且无重复"，
-      // 异常时不再静默 return，而是提示并回滚 DOM 到数据层状态
       function updateDataOrderFromDOM() {
         const sections = el.contentArea.querySelectorAll('.global-group-section');
         const newOrderedIds = [];
@@ -4142,7 +4240,6 @@
           });
         });
 
-        // 校验：DOM 中不能出现重复 id，且 id 集合必须与 state.items 完全一致
         const seen = new Set();
         let hasDup = false;
         for (const id of newOrderedIds) {
@@ -4155,7 +4252,6 @@
                         newOrderedIds.every(id => stateIds.has(id));
 
         if (!sameSet) {
-          // DOM 与数据已不一致（并发操作或渲染异常），回滚到数据层视图并提示
           showToast('排序未保存：数据已变化，请重试', true);
           renderGlobalBody();
           return;
@@ -6140,7 +6236,12 @@
           + `</w:drawing></w:r></w:p>`;
       }
 
-      async function buildDocxBlob(items) {
+      /**
+       * 生成 docx
+       * @param {Array<{item:Object, section:(string|null)}>} entries
+       *        section 变化时会插入一个分节标题（用于多目录 / 多标签合并导出）
+       */
+      async function buildDocxBlob(entries) {
         const encoder = new TextEncoder();
         const zipFiles = [];
         const relsEntries = [];
@@ -6153,13 +6254,32 @@
         );
 
         let body = '';
+        let hasOutput = false;      // 是否已经输出过任何块
+        let justWroteSection = false;
+        let lastSection = null;
 
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
+        for (let i = 0; i < entries.length; i++) {
+          const entry = entries[i];
+          const item = entry.item;
+          const section = (entry.section === undefined ? null : entry.section);
 
-          body += `<w:p><w:pPr><w:pStyle w:val="Heading1"/><w:spacing w:before="${i === 0 ? 0 : 360}" w:after="120"/></w:pPr>`
+          // ---- 分节标题（按目录 / 按标签 多选导出时） ----
+          if (section && section !== lastSection) {
+            body += `<w:p><w:pPr><w:pStyle w:val="SectionTitle"/><w:spacing w:before="${hasOutput ? 480 : 0}" w:after="180"/></w:pPr>`
+                  + `<w:r><w:t xml:space="preserve">${xmlEscape(section)}</w:t></w:r></w:p>`;
+            lastSection = section;
+            hasOutput = true;
+            justWroteSection = true;
+          }
+
+          // ---- 知识点标题 ----
+          const titleBefore = !hasOutput ? 0 : (justWroteSection ? 120 : 360);
+          body += `<w:p><w:pPr><w:pStyle w:val="Heading1"/><w:spacing w:before="${titleBefore}" w:after="120"/></w:pPr>`
                 + `<w:r><w:t xml:space="preserve">${xmlEscape(item.title)}</w:t></w:r></w:p>`;
+          hasOutput = true;
+          justWroteSection = false;
 
+          // ---- 元信息：目录 / 标签 ----
           const meta = [];
           if (item.group) meta.push('目录：' + item.group);
           if (item.tags && item.tags.length) meta.push('标签：' + item.tags.map(t => '#' + t).join(' '));
@@ -6168,6 +6288,7 @@
                   + `<w:t xml:space="preserve">${xmlEscape(meta.join('    '))}</w:t></w:r></w:p>`;
           }
 
+          // ---- 正文 ----
           const lines = parseHtmlToWordLines(item.content);
           if (lines.length === 0) {
             body += '<w:p/>';
@@ -6180,6 +6301,7 @@
             });
           }
 
+          // ---- 图片 ----
           let resolvedImages = [];
           try { resolvedImages = await resolveImageArray(item.images); } catch (e) {}
 
@@ -6228,7 +6350,7 @@
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relsEntries.join('')}</Relationships>`;
 
         const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Segoe UI" w:hAnsi="Segoe UI" w:eastAsia="微软雅黑" w:cs="Segoe UI"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="300" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="360" w:after="120"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="1E3A8A"/><w:sz w:val="30"/><w:szCs w:val="30"/></w:rPr></w:style></w:styles>`;
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Segoe UI" w:hAnsi="Segoe UI" w:eastAsia="微软雅黑" w:cs="Segoe UI"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="300" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style><w:style w:type="paragraph" w:styleId="SectionTitle"><w:name w:val="Section Title"/><w:basedOn w:val="Normal"/><w:next w:val="Heading1"/><w:qFormat/><w:pPr><w:keepNext/><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="4" w:color="93C5FD"/></w:pBdr><w:spacing w:before="480" w:after="180"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="1E40AF"/><w:sz w:val="36"/><w:szCs w:val="36"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="360" w:after="120"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="1E3A8A"/><w:sz w:val="30"/><w:szCs w:val="30"/></w:rPr></w:style></w:styles>`;
 
         zipFiles.push({ name: '[Content_Types].xml', data: encoder.encode(contentTypes) });
         zipFiles.push({ name: '_rels/.rels', data: encoder.encode(rootRels) });
@@ -6243,7 +6365,82 @@
         });
       }
 
-      // ---------- Word 导出弹窗 ----------
+      // ---------- Word 导出弹窗（多选目录 / 多选标签） ----------
+      const WORD_UNGROUPED_KEY = '__ungrouped__';
+
+      function getWordGroupMatchedItems() {
+        if (state.wordExportGroups.size === 0) return [];
+        const sel = state.wordExportGroups;
+        return state.items.filter(it => sel.has(((it.group || '').trim()) || WORD_UNGROUPED_KEY));
+      }
+
+      function getWordTagMatchedItems() {
+        if (state.wordExportTags.size === 0) return [];
+        const sel = new Set(Array.from(state.wordExportTags).map(t => t.toLowerCase()));
+        return state.items.filter(it =>
+          (it.tags || []).some(x => sel.has(normalizeTag(x).toLowerCase()))
+        );
+      }
+
+      function updateWordScopeCounts() {
+        const gCount = document.getElementById('wordScopeGroupCount');
+        if (gCount) gCount.textContent = getWordGroupMatchedItems().length;
+        const tCount = document.getElementById('wordScopeTagCount');
+        if (tCount) tCount.textContent = getWordTagMatchedItems().length;
+        const gSel = document.getElementById('wordGroupSelCount');
+        if (gSel) gSel.textContent = state.wordExportGroups.size;
+        const tSel = document.getElementById('wordTagSelCount');
+        if (tSel) tSel.textContent = state.wordExportTags.size;
+      }
+
+      function buildWordGroupCheckList() {
+        const list = document.getElementById('wordGroupCheckList');
+        if (!list) return;
+        const groups = getAllGroups();
+        const ungroupedCount = state.items.filter(it => !(it.group || '').trim()).length;
+        let html = '';
+        if (ungroupedCount > 0) {
+          html += `
+            <label class="multi-select-item">
+              <input type="checkbox" value="${WORD_UNGROUPED_KEY}" ${state.wordExportGroups.has(WORD_UNGROUPED_KEY) ? 'checked' : ''}>
+              <span class="ms-name">📄 未分组</span>
+              <span class="ms-count">${ungroupedCount}</span>
+            </label>`;
+        }
+        groups.forEach(g => {
+          const count = state.items.filter(it => (it.group || '').trim() === g).length;
+          html += `
+            <label class="multi-select-item">
+              <input type="checkbox" value="${escapeHtml(g)}" ${state.wordExportGroups.has(g) ? 'checked' : ''}>
+              <span class="ms-name">📁 ${escapeHtml(g)}</span>
+              <span class="ms-count">${count}</span>
+            </label>`;
+        });
+        list.innerHTML = html || '<div class="multi-select-empty">暂无目录</div>';
+      }
+
+      function buildWordTagCheckList() {
+        const list = document.getElementById('wordTagCheckList');
+        if (!list) return;
+        const tags = getAllTags();
+        if (tags.length === 0) {
+          list.innerHTML = '<div class="multi-select-empty">暂无标签</div>';
+          return;
+        }
+        list.innerHTML = tags.map(t => {
+          const tl = t.toLowerCase();
+          const count = state.items.filter(it =>
+            (it.tags || []).some(x => normalizeTag(x).toLowerCase() === tl)
+          ).length;
+          return `
+            <label class="multi-select-item">
+              <input type="checkbox" value="${escapeHtml(t)}" ${state.wordExportTags.has(t) ? 'checked' : ''}>
+              <span class="ms-name"># ${escapeHtml(t)}</span>
+              <span class="ms-count">${count}</span>
+            </label>`;
+        }).join('');
+      }
+
       function setWordExportScope(scope) {
         state.wordExportScope = scope;
         document.querySelectorAll('#wordExportScopeList .export-scope-option').forEach(o => {
@@ -6259,20 +6456,28 @@
       }
 
       function openWordExportModal() {
-        const groupSel = document.getElementById('wordExportGroupSelect');
-        const groups = getAllGroups();
-        groupSel.innerHTML = '<option value="">（未分组）</option>' +
-          groups.map(g => `<option value="${escapeHtml(g)}">${escapeHtml(g)}</option>`).join('');
+        // 清理已经不存在于数据中的选择
+        const validGroups = new Set(getAllGroups());
+        const hasUngrouped = state.items.some(it => !(it.group || '').trim());
+        Array.from(state.wordExportGroups).forEach(g => {
+          if (g === WORD_UNGROUPED_KEY) {
+            if (!hasUngrouped) state.wordExportGroups.delete(g);
+          } else if (!validGroups.has(g)) {
+            state.wordExportGroups.delete(g);
+          }
+        });
+        const validTags = new Set(getAllTags());
+        Array.from(state.wordExportTags).forEach(t => {
+          if (!validTags.has(t)) state.wordExportTags.delete(t);
+        });
 
-        const tagSel = document.getElementById('wordExportTagSelect');
-        const tags = getAllTags();
-        tagSel.innerHTML = tags.length
-          ? tags.map(t => `<option value="${escapeHtml(t)}"># ${escapeHtml(t)}</option>`).join('')
-          : '<option value="">（暂无标签）</option>';
+        buildWordGroupCheckList();
+        buildWordTagCheckList();
 
         document.getElementById('wordScopeAllCount').textContent = state.items.length;
         const cur = state.items.find(i => i.id === state.activeId);
         document.getElementById('wordScopeCurrentCount').textContent = cur ? '1' : '0';
+        updateWordScopeCounts();
 
         setWordExportScope(cur ? 'current' : 'all');
 
@@ -6288,46 +6493,65 @@
 
       async function performWordExport() {
         const scope = state.wordExportScope || 'all';
-        let items = [];
+        const statusEl = document.getElementById('wordExportStatus');
+        let entries = [];   // { item, section }
         let namePart = '全部';
 
         if (scope === 'all') {
-          items = state.items.slice();
+          entries = state.items.map(it => ({ item: it, section: null }));
           namePart = '全部知识点';
         } else if (scope === 'current') {
           const cur = state.items.find(i => i.id === state.activeId);
           if (!cur) { showToast('没有可导出的知识点', true); return; }
-          items = [cur];
+          entries = [{ item: cur, section: null }];
           namePart = cur.title;
         } else if (scope === 'group') {
-          const g = document.getElementById('wordExportGroupSelect').value;
-          items = state.items.filter(i => (i.group || '').trim() === g);
-          namePart = g ? g : '未分组';
+          const chosen = getAllGroups().filter(g => state.wordExportGroups.has(g));
+          const withUngrouped = state.wordExportGroups.has(WORD_UNGROUPED_KEY);
+          const totalSel = chosen.length + (withUngrouped ? 1 : 0);
+          if (totalSel === 0) { showToast('请至少选择一个目录', true); return; }
+
+          const multi = totalSel > 1;
+          chosen.forEach(g => {
+            const list = state.items.filter(it => (it.group || '').trim() === g);
+            list.forEach(it => entries.push({ item: it, section: multi ? '📁 ' + g : null }));
+          });
+          if (withUngrouped) {
+            const list = state.items.filter(it => !(it.group || '').trim());
+            list.forEach(it => entries.push({ item: it, section: multi ? '📄 未分组' : null }));
+          }
+          namePart = totalSel === 1
+            ? (chosen[0] || '未分组')
+            : `目录合集_${totalSel}个`;
         } else if (scope === 'tag') {
-          const t = document.getElementById('wordExportTagSelect').value;
-          if (!t) { showToast('请选择标签', true); return; }
-          const tl = t.toLowerCase();
-          items = state.items.filter(i =>
-            (i.tags || []).some(x => normalizeTag(x).toLowerCase() === tl)
-          );
-          namePart = '标签_' + t;
+          const chosen = getAllTags().filter(t => state.wordExportTags.has(t));
+          if (chosen.length === 0) { showToast('请至少选择一个标签', true); return; }
+
+          const multi = chosen.length > 1;
+          chosen.forEach(t => {
+            const tl = t.toLowerCase();
+            const list = state.items.filter(it =>
+              (it.tags || []).some(x => normalizeTag(x).toLowerCase() === tl)
+            );
+            list.forEach(it => entries.push({ item: it, section: multi ? '# ' + t : null }));
+          });
+          namePart = chosen.length === 1 ? '标签_' + chosen[0] : `标签合集_${chosen.length}个`;
         }
 
-        if (items.length === 0) { showToast('没有符合条件的知识点', true); return; }
+        if (entries.length === 0) { showToast('没有符合条件的知识点', true); return; }
 
-        const statusEl = document.getElementById('wordExportStatus');
         statusEl.textContent = '正在生成 Word 文档…';
         statusEl.className = 'status-msg';
 
         try {
-          const blob = await buildDocxBlob(items);
+          const blob = await buildDocxBlob(entries);
           const date = new Date();
           const stamp = `${date.getFullYear()}${String(date.getMonth()+1).padStart(2,'0')}${String(date.getDate()).padStart(2,'0')}`;
           const safeName = String(namePart).replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40) || '知识点';
           downloadBlob(blob, `知识点_${safeName}_${stamp}.docx`);
-          statusEl.textContent = `✓ 已导出 ${items.length} 个知识点`;
+          statusEl.textContent = `✓ 已导出 ${entries.length} 条知识点`;
           statusEl.className = 'status-msg';
-          showToast(`已导出 ${items.length} 个知识点`);
+          showToast(`已导出 ${entries.length} 条知识点`);
           setTimeout(closeWordExportModal, 900);
         } catch (e) {
           console.error('Word 导出失败', e);
@@ -6343,6 +6567,66 @@
             if (e.target.name === 'wordExportScope') setWordExportScope(e.target.value);
           });
         }
+
+        // 目录多选
+        const groupList = document.getElementById('wordGroupCheckList');
+        if (groupList) {
+          groupList.addEventListener('change', (e) => {
+            const cb = e.target.closest('input[type="checkbox"]');
+            if (!cb) return;
+            if (cb.checked) state.wordExportGroups.add(cb.value);
+            else state.wordExportGroups.delete(cb.value);
+            updateWordScopeCounts();
+          });
+        }
+        const gAll = document.getElementById('wordGroupSelectAll');
+        if (gAll) {
+          gAll.addEventListener('click', () => {
+            getAllGroups().forEach(g => state.wordExportGroups.add(g));
+            if (state.items.some(it => !(it.group || '').trim())) {
+              state.wordExportGroups.add(WORD_UNGROUPED_KEY);
+            }
+            buildWordGroupCheckList();
+            updateWordScopeCounts();
+          });
+        }
+        const gClear = document.getElementById('wordGroupClearAll');
+        if (gClear) {
+          gClear.addEventListener('click', () => {
+            state.wordExportGroups.clear();
+            buildWordGroupCheckList();
+            updateWordScopeCounts();
+          });
+        }
+
+        // 标签多选
+        const tagList = document.getElementById('wordTagCheckList');
+        if (tagList) {
+          tagList.addEventListener('change', (e) => {
+            const cb = e.target.closest('input[type="checkbox"]');
+            if (!cb) return;
+            if (cb.checked) state.wordExportTags.add(cb.value);
+            else state.wordExportTags.delete(cb.value);
+            updateWordScopeCounts();
+          });
+        }
+        const tAll = document.getElementById('wordTagSelectAll');
+        if (tAll) {
+          tAll.addEventListener('click', () => {
+            getAllTags().forEach(t => state.wordExportTags.add(t));
+            buildWordTagCheckList();
+            updateWordScopeCounts();
+          });
+        }
+        const tClear = document.getElementById('wordTagClearAll');
+        if (tClear) {
+          tClear.addEventListener('click', () => {
+            state.wordExportTags.clear();
+            buildWordTagCheckList();
+            updateWordScopeCounts();
+          });
+        }
+
         const closeBtn = document.getElementById('wordExportModalClose');
         const cancelBtn = document.getElementById('wordExportCancelBtn');
         const doBtn = document.getElementById('doWordExportBtn');
