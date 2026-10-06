@@ -266,7 +266,7 @@
     /* ============================================================
        布局
        ============================================================ */
-    .main-container { display: flex; flex: 1; overflow: hidden; }
+    .main-container { display: flex; flex: 1; overflow: hidden; position: relative; }
 
     .sidebar {
       width: 268px;
@@ -2063,6 +2063,12 @@
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     .toast.error { background: rgba(220,38,38,0.95); color: #fff; }
 
+    /* ============================================================
+       移动端浮动目录（默认隐藏，仅小屏启用）
+       ============================================================ */
+    .mobile-sidebar-toggle,
+    .mobile-sidebar-backdrop { display: none; }
+
     /* 触屏：常显操作按钮 */
     @media (hover: none) {
       .group-actions { opacity: 1; }
@@ -2079,39 +2085,126 @@
       .mode-btn { flex: 1; text-align: center; padding: 6px 3px; font-size: 0.68rem; }
       .theme-toggle-btn { width: 32px; height: 32px; font-size: 0.9rem; }
 
-      /* 侧边栏：加宽 + 提高可读性 */
-      .sidebar { width: 108px; }
+      /* ---------- 侧边栏 → 浮动可折叠抽屉（不占页面宽度） ---------- */
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: min(82vw, 320px);
+        z-index: 1600;
+        transform: translateX(-102%);
+        transition: transform 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+        padding-top: var(--safe-top);
+        padding-bottom: var(--safe-bottom);
+        border-right: none;
+        border-radius: 0 18px 18px 0;
+        box-shadow: 10px 0 34px rgba(0, 0, 0, 0.22);
+        will-change: transform;
+      }
+      .sidebar.mobile-open { transform: translateX(0); }
+      .sidebar.hidden-sidebar { display: none; }
+
       .sidebar-header {
-        padding: 10px 6px 6px;
-        font-size: 0.6rem;
-        gap: 3px;
-        justify-content: center;
+        padding: 14px 14px 8px;
+        font-size: 0.72rem;
+        gap: 8px;
+        justify-content: space-between;
       }
-      .sidebar-header > span:first-child { display: none; }
-      .sidebar-header .count-badge { padding: 2px 6px; font-size: 0.62rem; }
-      .sidebar-icon-btn { width: 24px; height: 24px; font-size: 0.85rem; }
-      .sidebar-icon-btn.add-btn { font-size: 1rem; padding-bottom: 2px; }
+      .sidebar-header > span:first-child { display: inline; }
+      .sidebar-header .count-badge { padding: 2px 8px; font-size: 0.68rem; }
+      .sidebar-icon-btn { width: 30px; height: 30px; font-size: 1rem; }
+      .sidebar-icon-btn.add-btn { font-size: 1.15rem; padding-bottom: 2px; }
 
-      .knowledge-list { padding: 4px 5px 12px; }
-      .group-header { font-size: 0.66rem; padding: 6px 5px; gap: 4px; }
-      .knowledge-item {
-        padding: 9px 8px;
-        font-size: 0.78rem;
-        border-radius: 9px;
-        margin: 3px 0;
-        gap: 4px;
+      .knowledge-list { padding: 6px 10px 14px; }
+      .group-header { font-size: 0.74rem; padding: 9px 10px; gap: 6px; }
+      .sidebar .knowledge-item {
+        padding: 11px 12px;
+        font-size: 0.88rem;
+        border-radius: 11px;
+        margin: 4px 0;
+        gap: 6px;
       }
-      .group-items .knowledge-item { font-size: 0.75rem; padding: 8px 6px; }
+      .sidebar .group-items .knowledge-item { font-size: 0.86rem; padding: 10px 11px; }
       .item-actions { opacity: 1; }
-      .delete-btn { width: 18px; height: 18px; font-size: 0.7rem; }
-      .ungrouped-label { font-size: 0.58rem; }
-      .item-checkbox { width: 15px; height: 15px; font-size: 0.6rem; }
-      .selection-header { font-size: 0.7rem; padding: 8px 8px; flex-direction: column; gap: 4px; align-items: stretch; }
-      .selection-header button { font-size: 0.65rem; padding: 4px 6px; }
-      .selection-bar { padding: 5px; gap: 3px; }
-      .selection-bar button { padding: 6px 3px; font-size: 0.6rem; border-radius: 8px; }
-      .selection-bar button .ico { font-size: 0.85rem; }
+      .delete-btn { width: 24px; height: 24px; font-size: 0.8rem; }
+      .ungrouped-label { font-size: 0.66rem; }
+      .item-checkbox { width: 18px; height: 18px; font-size: 0.66rem; }
+      .selection-header {
+        font-size: 0.78rem;
+        padding: 12px;
+        flex-direction: row;
+        gap: 6px;
+        align-items: center;
+      }
+      .selection-header button { font-size: 0.72rem; padding: 5px 10px; }
+      .selection-bar { padding: 8px; gap: 5px; }
+      .selection-bar button { padding: 9px 4px; font-size: 0.68rem; border-radius: 10px; }
+      .selection-bar button .ico { font-size: 1rem; }
 
+      /* 浮动目录按钮 */
+      .mobile-sidebar-toggle {
+        position: fixed;
+        left: 14px;
+        bottom: calc(var(--safe-bottom) + 16px);
+        z-index: 1400;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        width: 54px;
+        height: 54px;
+        padding: 0;
+        border-radius: 50%;
+        border: none;
+        background: var(--primary-gradient);
+        color: var(--text-on-primary);
+        font-size: 1.2rem;
+        line-height: 1;
+        box-shadow: 0 8px 22px rgba(30, 58, 138, 0.38);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+        transition: transform 0.15s;
+      }
+      .mobile-sidebar-toggle:active { transform: scale(0.93); }
+      body[data-mode="edit"] .mobile-sidebar-toggle { display: inline-flex; }
+      body[data-mode="edit"] .content-area {
+        padding-bottom: calc(var(--safe-bottom) + 84px);
+      }
+
+      .mobile-sidebar-toggle .mst-badge {
+        position: absolute;
+        top: -3px;
+        right: -3px;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 5px;
+        border-radius: 10px;
+        background: var(--bg-warning);
+        color: var(--text-warning);
+        font-size: 0.66rem;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        border: 2px solid var(--bg-page);
+      }
+
+      .mobile-sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 1550;
+        background: var(--overlay);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.22s ease;
+        backdrop-filter: blur(2px);
+      }
+      .mobile-sidebar-backdrop.show { opacity: 1; pointer-events: auto; }
+
+      /* ---------- 内容区：录入模式占满整屏 ---------- */
       .content-area { padding: 12px 8px 24px; }
       .content-area.full-width { padding: 0; }
       .content-area.recite-full { padding: 0; }
@@ -2173,9 +2266,7 @@
     @media (max-width: 380px) {
       .app-header h1 { font-size: 0.78rem; }
       .mode-btn { font-size: 0.62rem; padding: 5px 2px; }
-      .sidebar { width: 96px; }
-      .knowledge-item { font-size: 0.72rem; padding: 8px 6px; }
-      .group-items .knowledge-item { font-size: 0.7rem; padding: 7px 5px; }
+      .sidebar { width: min(88vw, 320px); }
       .global-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
       .global-card { padding: 6px 6px; height: 95px; }
       .global-card .card-title { font-size: 0.62rem; }
@@ -2206,6 +2297,13 @@
       <button class="theme-toggle-btn" id="themeToggleBtn" title="切换主题">🌙</button>
     </div>
   </header>
+
+  <!-- 移动端浮动目录按钮 + 遮罩 -->
+  <button class="mobile-sidebar-toggle" id="mobileSidebarToggle" aria-label="打开目录" title="目录">
+    <span class="mst-icon">📚</span>
+    <span class="mst-badge" id="mobileSidebarBadge">0</span>
+  </button>
+  <div class="mobile-sidebar-backdrop" id="mobileSidebarBackdrop"></div>
 
   <div class="main-container">
     <aside class="sidebar" id="sidebar">
@@ -2398,6 +2496,7 @@
       const STORAGE_KEY_ITEMS = 'knowledge_card_items_v3';
       const STORAGE_KEY_COLLAPSED = 'knowledge_collapsed_groups_v3';
       const STORAGE_KEY_THEME = 'knowledge_theme_v1';
+      const MOBILE_BREAKPOINT = 700;
 
       const PRESET_TEXT_COLORS = [
         { name: '正红', value: '#D0021B' },
@@ -2495,7 +2594,10 @@
         moveGroupModal: $('#moveGroupModal'),
         moveGroupList: $('#moveGroupList'),
         moveGroupCount: $('#moveGroupCount'),
-        moveGroupNewInput: $('#moveGroupNewInput')
+        moveGroupNewInput: $('#moveGroupNewInput'),
+        mobileSidebarToggle: $('#mobileSidebarToggle'),
+        mobileSidebarBackdrop: $('#mobileSidebarBackdrop'),
+        mobileSidebarBadge: $('#mobileSidebarBadge')
       };
 
       // ============================================================
@@ -2579,6 +2681,62 @@
           if (out.length >= MAX_TAGS_PER_ITEM) break;
         }
         return out;
+      }
+
+      // ============================================================
+      // 移动端浮动目录抽屉
+      // ============================================================
+      function isMobileLayout() {
+        return window.matchMedia
+          ? window.matchMedia('(max-width: ' + MOBILE_BREAKPOINT + 'px)').matches
+          : window.innerWidth <= MOBILE_BREAKPOINT;
+      }
+
+      function isMobileSidebarOpen() {
+        return el.sidebar.classList.contains('mobile-open');
+      }
+
+      function openMobileSidebar() {
+        if (!isMobileLayout()) return;
+        el.sidebar.classList.add('mobile-open');
+        el.mobileSidebarBackdrop.classList.add('show');
+        bindMobileSidebarDismiss();
+      }
+
+      function closeMobileSidebar() {
+        if (!el.sidebar.classList.contains('mobile-open')) return;
+        el.sidebar.classList.remove('mobile-open');
+        el.mobileSidebarBackdrop.classList.remove('show');
+        unbindMobileSidebarDismiss();
+      }
+
+      function toggleMobileSidebar() {
+        if (isMobileSidebarOpen()) closeMobileSidebar();
+        else openMobileSidebar();
+      }
+
+      // 抽屉打开时：点击目录内的条目/操作后自动收起（选择模式除外）
+      let mobileDismissBound = false;
+      function bindMobileSidebarDismiss() {
+        if (mobileDismissBound) return;
+        mobileDismissBound = true;
+      }
+      function unbindMobileSidebarDismiss() {
+        mobileDismissBound = false;
+      }
+
+      el.mobileSidebarToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleMobileSidebar();
+      });
+      el.mobileSidebarBackdrop.addEventListener('click', () => closeMobileSidebar());
+
+      window.addEventListener('resize', debounce(() => {
+        if (!isMobileLayout()) closeMobileSidebar();
+      }, 180));
+
+      function updateMobileBadge(text) {
+        if (el.mobileSidebarBadge) el.mobileSidebarBadge.textContent = text;
       }
 
       // ============================================================
@@ -3350,6 +3508,7 @@
           el.knowledgeList.innerHTML = '<div class="empty-list-msg">暂无知识点</div>';
           const badge = document.getElementById('counterBadge');
           if (badge) badge.textContent = '0';
+          updateMobileBadge('0');
           return;
         }
 
@@ -3360,6 +3519,7 @@
           el.knowledgeList.innerHTML = `<div class="empty-list-msg">🔍 没有匹配项</div>`;
           const badge = document.getElementById('counterBadge');
           if (badge) badge.textContent = `0/${state.items.length}`;
+          updateMobileBadge(`0/${state.items.length}`);
           return;
         }
 
@@ -3391,10 +3551,10 @@
 
         el.knowledgeList.innerHTML = html;
 
+        const badgeText = isFilterActive() ? `${filtered.length}/${state.items.length}` : String(state.items.length);
         const badge = document.getElementById('counterBadge');
-        if (badge) {
-          badge.textContent = isFilterActive() ? `${filtered.length}/${state.items.length}` : String(state.items.length);
-        }
+        if (badge) badge.textContent = badgeText;
+        updateMobileBadge(badgeText);
       }
 
       function renderSelectionBar() {
@@ -3486,6 +3646,7 @@
           state.formatPainterEditorId = null;
           renderSidebar(true);
           renderContent();
+          closeMobileSidebar();
           setTimeout(() => {
             const t = document.getElementById('newTitleInput');
             if (t) t.focus();
@@ -3506,6 +3667,7 @@
         state.selectionMode = false;
         state.selectedIds = new Set();
         renderSidebar(true);
+        closeMobileSidebar();
       }
 
       function selectAllInSidebar() {
@@ -3662,9 +3824,12 @@
               clearPendingCardClick();
               if (state.mode === 'global') setMode('recite');
               else { updateSidebarActive(); renderContent(); }
+              // 移动端：选中后自动收起浮动目录
+              closeMobileSidebar();
             });
           } else if (state.mode === 'global') {
             setMode('recite');
+            closeMobileSidebar();
           }
         }
       });
@@ -3715,6 +3880,12 @@
       // ============================================================
       function renderContent() {
         validateActiveId();
+
+        // 记录当前模式到 body，用于控制移动端浮动目录按钮的显隐
+        document.body.dataset.mode = state.mode;
+
+        // 非录入模式下侧边栏整体隐藏，移动端抽屉也同步收起
+        if (state.mode !== 'edit') closeMobileSidebar();
 
         if (state.mode === 'global') {
           el.sidebar.classList.add('hidden-sidebar');
@@ -5714,6 +5885,7 @@
         if (state.speakingId) stopSpeaking();
         clearPendingCardClick();
         closeAllPalettes();
+        closeMobileSidebar();
 
         if (state.mode === 'edit' && mode !== 'edit') {
           state.editingSessionId = null;
@@ -6650,6 +6822,7 @@
           if (wordModal && wordModal.classList.contains('show')) closeWordExportModal();
           if (el.moveGroupModal.classList.contains('show')) el.moveGroupModal.classList.remove('show');
           if (el.confirmOverlay.classList.contains('show')) closeConfirm();
+          if (isMobileSidebarOpen()) { closeMobileSidebar(); return; }
           if (state.speakingId) stopSpeaking();
           if (state.selectionMode) exitSelectionMode();
           if (state.formatPainterArmed) {
