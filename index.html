@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1e3a8a">
   <meta name="format-detection" content="telephone=no">
-  <meta name="description" content="知识点记忆卡片，支持录入、背诵、全局浏览">
+  <meta name="description" content="知识点记忆卡片，支持录入、背诵、全局浏览、节点关系图">
 
   <link rel="apple-touch-icon" sizes="180x180" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231e3a8a'/%3E%3Cstop offset='1' stop-color='%232563eb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='40' fill='url(%23g)'/%3E%3Ctext x='90' y='125' font-size='100' text-anchor='middle' fill='white' font-family='system-ui,Apple Color Emoji'%3E%F0%9F%93%9A%3C/text%3E%3C/svg%3E">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%231e3a8a'/%3E%3Cstop offset='1' stop-color='%232563eb'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='180' height='180' rx='40' fill='url(%23g)'/%3E%3Ctext x='90' y='125' font-size='100' text-anchor='middle' fill='white' font-family='system-ui,Apple Color Emoji'%3E%F0%9F%93%9A%3C/text%3E%3C/svg%3E">
@@ -79,6 +79,8 @@
       --primary-text: #1e3a8a;
       --primary-gradient: linear-gradient(135deg, #1e3a8a, #2563eb);
 
+      --node-dot: #cbd5e1;
+
       --shadow-sm: 0 2px 6px rgba(0,0,0,0.02);
       --shadow-card: 0 12px 30px rgba(0,20,50,0.08), 0 4px 8px rgba(0,0,0,0.02);
       --shadow-modal: 0 24px 60px rgba(0,0,0,0.25);
@@ -132,6 +134,8 @@
       --primary-soft: #1e3a8a;
       --primary-text: #a5c8ff;
       --primary-gradient: linear-gradient(135deg, #3b82f6, #60a5fa);
+
+      --node-dot: #2d3a51;
 
       --shadow-sm: 0 2px 6px rgba(0,0,0,0.35);
       --shadow-card: 0 12px 30px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3);
@@ -598,6 +602,7 @@
 
     .content-area.full-width { padding: 0; align-items: stretch; }
     .content-area.recite-full { padding: 0; align-items: stretch; overflow: hidden; }
+    .content-area.node-full { padding: 0; align-items: stretch; overflow: hidden; position: relative; }
 
     .card-wrapper { width: 100%; max-width: 680px; margin: 0 auto; }
 
@@ -2064,6 +2069,362 @@
     .toast.error { background: rgba(220,38,38,0.95); color: #fff; }
 
     /* ============================================================
+       知识节点（关系图）模式
+       ============================================================ */
+    .node-wrap { position: absolute; inset: 0; overflow: hidden; }
+
+    .node-viewport {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      touch-action: none;
+      cursor: grab;
+      background-color: var(--bg-page);
+      background-image: radial-gradient(circle, var(--node-dot) 1.2px, transparent 1.2px);
+      background-size: 24px 24px;
+    }
+    .node-viewport.panning { cursor: grabbing; }
+
+    .node-world {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 0;
+      height: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+    }
+
+    .node-edge-svg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1px;
+      height: 1px;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .node-edge {
+      fill: none;
+      stroke: var(--border-strong);
+      stroke-width: 2;
+      stroke-linecap: round;
+      pointer-events: stroke;
+      cursor: pointer;
+      transition: stroke 0.15s, stroke-width 0.15s;
+    }
+    .node-edge.has-label { stroke: var(--primary-bright); }
+    .node-edge.hover { stroke: var(--primary-bright); stroke-width: 3.2; }
+
+    .node-edge-hit {
+      fill: none;
+      stroke: transparent;
+      stroke-width: 18;
+      pointer-events: stroke;
+      cursor: pointer;
+    }
+
+    .node-edge-temp {
+      fill: none;
+      stroke: var(--primary-bright);
+      stroke-width: 2.4;
+      stroke-dasharray: 7 5;
+      stroke-linecap: round;
+      pointer-events: none;
+    }
+
+    .edge-label-layer {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .edge-label {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      padding: 2px 9px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-accent);
+      border-radius: 10px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--primary-text);
+      white-space: nowrap;
+      cursor: pointer;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      box-shadow: var(--shadow-sm);
+      user-select: none;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .edge-label:hover { background: var(--bg-accent); }
+    .edge-label.empty { opacity: 0.5; padding: 1px 8px; font-weight: 700; }
+    .edge-label.empty:hover { opacity: 1; }
+
+    .edge-label-input {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      width: 140px;
+      padding: 4px 9px;
+      border: 1.5px solid var(--primary-bright);
+      border-radius: 10px;
+      background: var(--bg-surface);
+      color: var(--text);
+      font-size: 0.72rem;
+      font-family: inherit;
+      outline: none;
+      text-align: center;
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+      z-index: 10;
+    }
+
+    .node-layer { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+
+    .node-item {
+      position: absolute;
+      width: 232px;
+      background: var(--bg-surface);
+      border: 1.5px solid var(--border-strong);
+      border-radius: 14px;
+      box-shadow: var(--shadow-elevated);
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      touch-action: none;
+    }
+    .node-item:hover { border-color: var(--border-accent); }
+    .node-item.edge-target {
+      border-color: var(--primary-bright);
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.2), var(--shadow-elevated);
+    }
+
+    .node-head {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 5px 5px 5px 3px;
+      background: var(--bg-surface-2);
+      border-bottom: 1px solid var(--border-light);
+      border-radius: 12px 12px 0 0;
+    }
+
+    .node-grip {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-faint);
+      cursor: grab;
+      font-size: 0.95rem;
+      border-radius: 7px;
+      touch-action: none;
+      user-select: none;
+    }
+    .node-grip:hover { background: var(--bg-accent); color: var(--primary-text); }
+    .node-grip:active { cursor: grabbing; }
+
+    .node-title-input {
+      flex: 1;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-strong);
+      outline: none;
+      padding: 4px 3px;
+      font-family: inherit;
+      border-radius: 6px;
+    }
+    .node-title-input:focus { background: var(--bg-input); box-shadow: 0 0 0 2px var(--border-accent); }
+
+    .node-del-btn {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: transparent;
+      color: var(--text-faint);
+      cursor: pointer;
+      border-radius: 50%;
+      font-size: 0.72rem;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .node-del-btn:hover { background: var(--bg-danger); color: var(--text-danger); }
+
+    .node-body {
+      padding: 8px 11px;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      color: var(--text);
+      min-height: 46px;
+      max-height: 190px;
+      overflow-y: auto;
+      outline: none;
+      word-break: break-word;
+      -webkit-user-select: text;
+      user-select: text;
+      touch-action: pan-y;
+      cursor: text;
+    }
+    .node-body:empty::before {
+      content: attr(data-placeholder);
+      color: var(--text-faint);
+      pointer-events: none;
+    }
+    .node-body img { display: block; max-width: 100%; height: auto; border-radius: 8px; margin: 6px 0; }
+
+    .node-images { display: flex; flex-direction: column; gap: 4px; padding: 0 11px; }
+    .node-img-item { position: relative; border-radius: 8px; overflow: hidden; }
+    .node-img-item img { display: block; width: 100%; height: auto; }
+
+    .node-img-del {
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(220,38,38,0.9);
+      color: #fff;
+      font-size: 0.62rem;
+      cursor: pointer;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .node-img-del:active { transform: scale(0.9); }
+
+    .node-add-img {
+      margin: 6px 11px 10px;
+      padding: 5px;
+      border: 1px dashed var(--border-strong);
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .node-add-img:hover {
+      border-color: var(--primary-bright);
+      color: var(--primary-text);
+      background: var(--bg-accent);
+    }
+
+    .node-port {
+      position: absolute;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--bg-surface);
+      border: 2px solid var(--border-strong);
+      cursor: crosshair;
+      z-index: 3;
+      touch-action: none;
+      transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+    }
+    .node-port:hover {
+      background: var(--primary-bright);
+      border-color: var(--primary-bright);
+      box-shadow: 0 0 0 5px rgba(37,99,235,0.18);
+    }
+    .node-port[data-side="top"]    { left: 50%; top: -8px; margin-left: -7px; }
+    .node-port[data-side="bottom"] { left: 50%; bottom: -8px; margin-left: -7px; }
+    .node-port[data-side="left"]   { left: -8px; top: 50%; margin-top: -7px; }
+    .node-port[data-side="right"]  { right: -8px; top: 50%; margin-top: -7px; }
+
+    .node-toolbar {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      box-shadow: var(--shadow-elevated);
+    }
+
+    .node-tool-btn {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 50%;
+      background: var(--bg-subtle);
+      color: var(--text-primary-soft);
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s, color 0.15s;
+    }
+    .node-tool-btn:hover { background: var(--bg-accent); color: var(--primary-text); }
+    .node-tool-btn:active { transform: scale(0.92); }
+
+    .node-zoom-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      min-width: 42px;
+      text-align: center;
+      user-select: none;
+    }
+
+    .node-hint {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      z-index: 30;
+      max-width: calc(100% - 28px);
+      padding: 7px 16px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow-sm);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-align: center;
+      pointer-events: none;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .node-empty-tip {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: var(--text-faint);
+      font-size: 0.88rem;
+      line-height: 1.8;
+      pointer-events: none;
+    }
+    .node-empty-tip .big { font-size: 2rem; display: block; margin-bottom: 6px; }
+
+    /* ============================================================
        移动端浮动目录（默认隐藏，仅小屏启用）
        ============================================================ */
     .mobile-sidebar-toggle,
@@ -2208,6 +2569,7 @@
       .content-area { padding: 12px 8px 24px; }
       .content-area.full-width { padding: 0; }
       .content-area.recite-full { padding: 0; }
+      .content-area.node-full { padding: 0; }
 
       /* 全局工具栏：移动端也保持同一行，筛选栏可横向滑动 */
       .global-toolbar { padding: 10px 10px 8px; gap: 6px; }
@@ -2261,6 +2623,14 @@
 
       .multi-select-list { max-height: 140px; }
       .multi-select-item { padding: 8px 10px; font-size: 0.8rem; }
+
+      /* 节点模式移动端 */
+      .node-toolbar { top: 8px; left: 8px; padding: 4px 6px; gap: 4px; }
+      .node-tool-btn { width: 30px; height: 30px; font-size: 0.85rem; }
+      .node-zoom-label { min-width: 36px; font-size: 0.66rem; }
+      .node-item { width: 200px; }
+      .node-body { font-size: 0.74rem; max-height: 150px; }
+      .node-hint { font-size: 0.62rem; padding: 6px 12px; bottom: 10px; }
     }
 
     @media (max-width: 380px) {
@@ -2292,6 +2662,7 @@
       <div class="mode-toggle">
         <button class="mode-btn" data-mode="global" id="globalModeBtn">全局</button>
         <button class="mode-btn active" data-mode="recite" id="reciteModeBtn">背诵</button>
+        <button class="mode-btn" data-mode="node" id="nodeModeBtn">节点</button>
         <button class="mode-btn" data-mode="edit" id="editModeBtn">录入</button>
       </div>
       <button class="theme-toggle-btn" id="themeToggleBtn" title="切换主题">🌙</button>
@@ -2496,7 +2867,13 @@
       const STORAGE_KEY_ITEMS = 'knowledge_card_items_v3';
       const STORAGE_KEY_COLLAPSED = 'knowledge_collapsed_groups_v3';
       const STORAGE_KEY_THEME = 'knowledge_theme_v1';
+      const STORAGE_KEY_NODES = 'knowledge_graph_nodes_v1';
+      const STORAGE_KEY_EDGES = 'knowledge_graph_edges_v1';
+      const STORAGE_KEY_NODE_VIEW = 'knowledge_graph_view_v1';
       const MOBILE_BREAKPOINT = 700;
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+      const NODE_DEFAULT_W = 232;
+      const NODE_SIDES = ['top', 'right', 'bottom', 'left'];
 
       const PRESET_TEXT_COLORS = [
         { name: '正红', value: '#D0021B' },
@@ -2561,7 +2938,12 @@
 
         wordExportScope: 'all',
         wordExportGroups: new Set(),
-        wordExportTags: new Set()
+        wordExportTags: new Set(),
+
+        /* ---- 节点关系图 ---- */
+        nodes: [],
+        edges: [],
+        nodeView: { x: 60, y: 60, scale: 1 }
       };
 
       const $ = (sel) => document.querySelector(sel);
@@ -2572,6 +2954,7 @@
         contentArea: $('#contentArea'),
         globalModeBtn: $('#globalModeBtn'),
         reciteModeBtn: $('#reciteModeBtn'),
+        nodeModeBtn: $('#nodeModeBtn'),
         editModeBtn: $('#editModeBtn'),
         themeToggleBtn: $('#themeToggleBtn'),
         sidebar: $('#sidebar'),
@@ -2700,29 +3083,17 @@
         if (!isMobileLayout()) return;
         el.sidebar.classList.add('mobile-open');
         el.mobileSidebarBackdrop.classList.add('show');
-        bindMobileSidebarDismiss();
       }
 
       function closeMobileSidebar() {
         if (!el.sidebar.classList.contains('mobile-open')) return;
         el.sidebar.classList.remove('mobile-open');
         el.mobileSidebarBackdrop.classList.remove('show');
-        unbindMobileSidebarDismiss();
       }
 
       function toggleMobileSidebar() {
         if (isMobileSidebarOpen()) closeMobileSidebar();
         else openMobileSidebar();
-      }
-
-      // 抽屉打开时：点击目录内的条目/操作后自动收起（选择模式除外）
-      let mobileDismissBound = false;
-      function bindMobileSidebarDismiss() {
-        if (mobileDismissBound) return;
-        mobileDismissBound = true;
-      }
-      function unbindMobileSidebarDismiss() {
-        mobileDismissBound = false;
       }
 
       el.mobileSidebarToggle.addEventListener('click', (e) => {
@@ -2763,7 +3134,6 @@
           const val = decl.slice(idx + 1).trim();
           if (!ALLOWED_STYLE_PROPS.has(prop)) return;
           if (/expression|javascript:|url\s*\(/i.test(val)) return;
-          // 把 text-decoration-line / -webkit-text-decoration 归一化为 text-decoration
           if (prop === 'text-decoration-line' || prop === '-webkit-text-decoration') {
             prop = 'text-decoration';
           }
@@ -2851,6 +3221,8 @@
         else if (state.mode === 'global') {
           const body = document.getElementById('globalBody');
           if (body) renderGlobalBody();
+        } else if (state.mode === 'node') {
+          renderAllEdges();
         }
       });
 
@@ -3125,11 +3497,15 @@
       async function cleanupImages(refs) {
         if (!Array.isArray(refs) || refs.length === 0) return;
         const stillUsed = new Set();
-        state.items.forEach(item => {
-          (item.images || []).forEach(ref => {
-            if (typeof ref === 'string' && ref.startsWith('img://')) stillUsed.add(ref.slice(6));
+        const collect = (list) => {
+          (list || []).forEach(item => {
+            (item.images || []).forEach(ref => {
+              if (typeof ref === 'string' && ref.startsWith('img://')) stillUsed.add(ref.slice(6));
+            });
           });
-        });
+        };
+        collect(state.items);
+        collect(state.nodes);
         for (const ref of refs) {
           if (typeof ref !== 'string' || !ref.startsWith('img://')) continue;
           const imgId = ref.slice(6);
@@ -3149,11 +3525,15 @@
             req.onerror = () => reject(req.error);
           });
           const usedIds = new Set();
-          state.items.forEach(item => {
-            (item.images || []).forEach(ref => {
-              if (typeof ref === 'string' && ref.startsWith('img://')) usedIds.add(ref.slice(6));
+          const collect = (list) => {
+            (list || []).forEach(item => {
+              (item.images || []).forEach(ref => {
+                if (typeof ref === 'string' && ref.startsWith('img://')) usedIds.add(ref.slice(6));
+              });
             });
-          });
+          };
+          collect(state.items);
+          collect(state.nodes);
           for (const key of keys) {
             if (!usedIds.has(key)) await deleteImage(key);
           }
@@ -3446,23 +3826,6 @@
       // 侧边栏
       // ============================================================
       let sidebarRendered = false;
-
-      function renderSidebarHeader() {
-        el.sidebarHeader.classList.add('sidebar-header');
-        el.sidebarHeader.classList.remove('selection-header');
-        el.sidebarHeader.innerHTML = `
-          <span>目录</span>
-          <div class="sidebar-header-right">
-            <span class="count-badge" id="counterBadge">0</span>
-            <button class="sidebar-icon-btn add-btn" id="sidebarAddBtn" title="新建知识点">＋</button>
-            <button class="sidebar-icon-btn" id="selectModeBtn" title="批量选择">☰</button>
-          </div>
-        `;
-        const selectBtn = document.getElementById('selectModeBtn');
-        if (selectBtn) selectBtn.addEventListener('click', enterSelectionMode);
-        const addBtn = document.getElementById('sidebarAddBtn');
-        if (addBtn) addBtn.addEventListener('click', handleSidebarAddClick);
-      }
 
       function renderSidebar(force) {
         if (!force && sidebarRendered) { updateSidebarActive(); return; }
@@ -3824,7 +4187,6 @@
               clearPendingCardClick();
               if (state.mode === 'global') setMode('recite');
               else { updateSidebarActive(); renderContent(); }
-              // 移动端：选中后自动收起浮动目录
               closeMobileSidebar();
             });
           } else if (state.mode === 'global') {
@@ -3881,30 +4243,37 @@
       function renderContent() {
         validateActiveId();
 
-        // 记录当前模式到 body，用于控制移动端浮动目录按钮的显隐
         document.body.dataset.mode = state.mode;
 
-        // 非录入模式下侧边栏整体隐藏，移动端抽屉也同步收起
         if (state.mode !== 'edit') closeMobileSidebar();
 
         if (state.mode === 'global') {
           el.sidebar.classList.add('hidden-sidebar');
           el.contentArea.classList.add('full-width');
-          el.contentArea.classList.remove('recite-full');
+          el.contentArea.classList.remove('recite-full', 'node-full');
         } else if (state.mode === 'recite') {
           el.sidebar.classList.add('hidden-sidebar');
           el.contentArea.classList.add('recite-full');
-          el.contentArea.classList.remove('full-width');
+          el.contentArea.classList.remove('full-width', 'node-full');
+        } else if (state.mode === 'node') {
+          el.sidebar.classList.add('hidden-sidebar');
+          el.contentArea.classList.add('node-full');
+          el.contentArea.classList.remove('full-width', 'recite-full');
         } else {
           el.sidebar.classList.remove('hidden-sidebar');
-          el.contentArea.classList.remove('full-width');
-          el.contentArea.classList.remove('recite-full');
+          el.contentArea.classList.remove('full-width', 'recite-full', 'node-full');
+        }
+
+        // 非全局/节点模式：清空内容区模式标记，避免复用过期的 DOM
+        if (state.mode !== 'global' && state.mode !== 'node') {
+          el.contentArea.dataset.mode = '';
         }
 
         if (state.speakingId) stopSpeaking();
 
         if (state.mode === 'global') renderGlobalMode();
         else if (state.mode === 'recite') renderReciteMode();
+        else if (state.mode === 'node') renderNodeMode();
         else renderEditMode();
       }
 
@@ -4184,7 +4553,7 @@
       }
 
       // ============================================================
-      // 拖拽
+      // 拖拽排序（全局模式）
       // ============================================================
       let globalDragCleanup = null;
 
@@ -4844,7 +5213,6 @@
         });
       }
 
-      // 把剪贴板中的图片存进 IndexedDB，返回引用数组（img://id 或 http(s) URL）
       async function storePastedImages(payload) {
         const added = [];
         const files = (payload && payload.files) || [];
@@ -4881,7 +5249,6 @@
         return added;
       }
 
-      // 把粘贴到的图片写入当前草稿图片列表并刷新 UI
       async function handlePastedImages(payload, imageListId) {
         const added = await storePastedImages(payload);
         if (added.length === 0) {
@@ -5357,7 +5724,6 @@
           const cd = e.clipboardData || window.clipboardData;
           if (!cd) return;
 
-          // 1. 收集剪贴板里的图片文件
           const files = [];
           if (cd.items && cd.items.length) {
             for (let i = 0; i < cd.items.length; i++) {
@@ -5378,7 +5744,6 @@
           const html = cd.getData ? (cd.getData('text/html') || '') : '';
           const text = cd.getData ? (cd.getData('text/plain') || '') : '';
 
-          // 2. 从 HTML 中提取图片（仅在没有图片文件时，避免重复）
           const dataUrls = [];
           const httpUrls = [];
           if (html && files.length === 0) {
@@ -5403,7 +5768,6 @@
 
           e.preventDefault();
 
-          // 若剪贴板里同时有文字，则插入去掉图片后的文字
           if (html) {
             const tmp = document.createElement('div');
             tmp.innerHTML = html;
@@ -5912,7 +6276,7 @@
 
         state.mode = mode;
         if (mode !== 'edit') state.isCreatingNew = false;
-        [el.globalModeBtn, el.reciteModeBtn, el.editModeBtn].forEach(btn => {
+        [el.globalModeBtn, el.reciteModeBtn, el.nodeModeBtn, el.editModeBtn].forEach(btn => {
           btn.classList.toggle('active', btn.dataset.mode === mode);
         });
         validateActiveId();
@@ -5922,6 +6286,7 @@
 
       el.globalModeBtn.addEventListener('click', () => setMode('global'));
       el.reciteModeBtn.addEventListener('click', () => setMode('recite'));
+      el.nodeModeBtn.addEventListener('click', () => setMode('node'));
       el.editModeBtn.addEventListener('click', () => setMode('edit'));
 
       // ============================================================
@@ -6146,8 +6511,6 @@
       // ============================================================
       // Word (.docx) 导出
       // ============================================================
-
-      // ---------- ZIP (store 模式) ----------
       const CRC32_TABLE = (() => {
         const table = new Uint32Array(256);
         for (let n = 0; n < 256; n++) {
@@ -6248,7 +6611,6 @@
         return concatUint8([...localParts, ...centralParts, eocd]);
       }
 
-      // ---------- 工具 ----------
       function xmlEscape(s) {
         return String(s == null ? '' : s)
           .replace(/&/g, '&amp;')
@@ -6310,7 +6672,6 @@
         setTimeout(() => URL.revokeObjectURL(url), 1500);
       }
 
-      // ---------- HTML → Word 行（保留加粗/斜体/下划线/颜色/高亮） ----------
       function parseHtmlToWordLines(html) {
         const container = document.createElement('div');
         container.innerHTML = sanitizeHtml(html || '');
@@ -6408,11 +6769,6 @@
           + `</w:drawing></w:r></w:p>`;
       }
 
-      /**
-       * 生成 docx
-       * @param {Array<{item:Object, section:(string|null)}>} entries
-       *        section 变化时会插入一个分节标题（用于多目录 / 多标签合并导出）
-       */
       async function buildDocxBlob(entries) {
         const encoder = new TextEncoder();
         const zipFiles = [];
@@ -6426,7 +6782,7 @@
         );
 
         let body = '';
-        let hasOutput = false;      // 是否已经输出过任何块
+        let hasOutput = false;
         let justWroteSection = false;
         let lastSection = null;
 
@@ -6435,7 +6791,6 @@
           const item = entry.item;
           const section = (entry.section === undefined ? null : entry.section);
 
-          // ---- 分节标题（按目录 / 按标签 多选导出时） ----
           if (section && section !== lastSection) {
             body += `<w:p><w:pPr><w:pStyle w:val="SectionTitle"/><w:spacing w:before="${hasOutput ? 480 : 0}" w:after="180"/></w:pPr>`
                   + `<w:r><w:t xml:space="preserve">${xmlEscape(section)}</w:t></w:r></w:p>`;
@@ -6444,14 +6799,12 @@
             justWroteSection = true;
           }
 
-          // ---- 知识点标题 ----
           const titleBefore = !hasOutput ? 0 : (justWroteSection ? 120 : 360);
           body += `<w:p><w:pPr><w:pStyle w:val="Heading1"/><w:spacing w:before="${titleBefore}" w:after="120"/></w:pPr>`
                 + `<w:r><w:t xml:space="preserve">${xmlEscape(item.title)}</w:t></w:r></w:p>`;
           hasOutput = true;
           justWroteSection = false;
 
-          // ---- 元信息：目录 / 标签 ----
           const meta = [];
           if (item.group) meta.push('目录：' + item.group);
           if (item.tags && item.tags.length) meta.push('标签：' + item.tags.map(t => '#' + t).join(' '));
@@ -6460,7 +6813,6 @@
                   + `<w:t xml:space="preserve">${xmlEscape(meta.join('    '))}</w:t></w:r></w:p>`;
           }
 
-          // ---- 正文 ----
           const lines = parseHtmlToWordLines(item.content);
           if (lines.length === 0) {
             body += '<w:p/>';
@@ -6473,7 +6825,6 @@
             });
           }
 
-          // ---- 图片 ----
           let resolvedImages = [];
           try { resolvedImages = await resolveImageArray(item.images); } catch (e) {}
 
@@ -6537,7 +6888,6 @@
         });
       }
 
-      // ---------- Word 导出弹窗（多选目录 / 多选标签） ----------
       const WORD_UNGROUPED_KEY = '__ungrouped__';
 
       function getWordGroupMatchedItems() {
@@ -6628,7 +6978,6 @@
       }
 
       function openWordExportModal() {
-        // 清理已经不存在于数据中的选择
         const validGroups = new Set(getAllGroups());
         const hasUngrouped = state.items.some(it => !(it.group || '').trim());
         Array.from(state.wordExportGroups).forEach(g => {
@@ -6666,7 +7015,7 @@
       async function performWordExport() {
         const scope = state.wordExportScope || 'all';
         const statusEl = document.getElementById('wordExportStatus');
-        let entries = [];   // { item, section }
+        let entries = [];
         let namePart = '全部';
 
         if (scope === 'all') {
@@ -6740,7 +7089,6 @@
           });
         }
 
-        // 目录多选
         const groupList = document.getElementById('wordGroupCheckList');
         if (groupList) {
           groupList.addEventListener('change', (e) => {
@@ -6771,7 +7119,6 @@
           });
         }
 
-        // 标签多选
         const tagList = document.getElementById('wordTagCheckList');
         if (tagList) {
           tagList.addEventListener('change', (e) => {
@@ -6812,6 +7159,830 @@
       }
 
       // ============================================================
+      // 知识节点（关系图）模式
+      // ============================================================
+      let nodeSaveTimer = null;
+
+      function normalizeNode(n) {
+        return {
+          id: sanitizeId(n.id),
+          x: Number.isFinite(n.x) ? n.x : 80,
+          y: Number.isFinite(n.y) ? n.y : 80,
+          title: (typeof n.title === 'string' && n.title) ? n.title : '新节点',
+          content: toHtmlContent(n.content || ''),
+          images: Array.isArray(n.images) ? n.images.filter(x => typeof x === 'string' && x) : [],
+          linkedItemId: (typeof n.linkedItemId === 'string') ? n.linkedItemId : null
+        };
+      }
+
+      function loadNodes() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_NODES);
+          if (!raw) return [];
+          const arr = JSON.parse(raw);
+          if (!Array.isArray(arr)) return [];
+          return arr.filter(n => n && typeof n === 'object').map(normalizeNode);
+        } catch (e) { return []; }
+      }
+
+      function loadEdges() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_EDGES);
+          if (!raw) return [];
+          const arr = JSON.parse(raw);
+          if (!Array.isArray(arr)) return [];
+          return arr.filter(e => e && e.from && e.to).map(e => ({
+            id: sanitizeId(e.id),
+            from: String(e.from),
+            to: String(e.to),
+            fromSide: NODE_SIDES.includes(e.fromSide) ? e.fromSide : 'right',
+            toSide: NODE_SIDES.includes(e.toSide) ? e.toSide : 'left',
+            label: typeof e.label === 'string' ? e.label : ''
+          }));
+        } catch (e) { return []; }
+      }
+
+      function loadNodeView() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY_NODE_VIEW);
+          if (!raw) return;
+          const v = JSON.parse(raw);
+          if (!v || typeof v !== 'object') return;
+          state.nodeView = {
+            x: Number.isFinite(v.x) ? v.x : 60,
+            y: Number.isFinite(v.y) ? v.y : 60,
+            scale: Number.isFinite(v.scale) ? Math.min(2.5, Math.max(0.25, v.scale)) : 1
+          };
+        } catch (e) {}
+      }
+
+      function saveNodes() {
+        if (nodeSaveTimer) clearTimeout(nodeSaveTimer);
+        nodeSaveTimer = setTimeout(() => {
+          nodeSaveTimer = null;
+          try {
+            localStorage.setItem(STORAGE_KEY_NODES, JSON.stringify(state.nodes));
+            localStorage.setItem(STORAGE_KEY_EDGES, JSON.stringify(state.edges));
+            localStorage.setItem(STORAGE_KEY_NODE_VIEW, JSON.stringify(state.nodeView));
+          } catch (e) {
+            showToast('⚠️ 节点数据保存失败', true);
+          }
+        }, 260);
+      }
+
+      function flushNodesSave() {
+        if (nodeSaveTimer) { clearTimeout(nodeSaveTimer); nodeSaveTimer = null; }
+        try {
+          localStorage.setItem(STORAGE_KEY_NODES, JSON.stringify(state.nodes));
+          localStorage.setItem(STORAGE_KEY_EDGES, JSON.stringify(state.edges));
+          localStorage.setItem(STORAGE_KEY_NODE_VIEW, JSON.stringify(state.nodeView));
+        } catch (e) {}
+      }
+
+      function renderNodeMode() {
+        if (el.contentArea.dataset.mode !== 'node') {
+          el.contentArea.innerHTML = `
+            <div class="node-wrap">
+              <div class="node-viewport" id="nodeViewport">
+                <div class="node-world" id="nodeWorld">
+                  <svg class="node-edge-svg" id="nodeEdgeSvg"></svg>
+                  <div class="edge-label-layer" id="edgeLabelLayer"></div>
+                  <div class="node-layer" id="nodeLayer"></div>
+                </div>
+              </div>
+              <div class="node-toolbar">
+                <button class="node-tool-btn" id="nodeAddBtn" title="新建节点">➕</button>
+                <button class="node-tool-btn" id="nodeImportBtn" title="把知识点导入为节点">📥</button>
+                <button class="node-tool-btn" id="nodeZoomOut" title="缩小">−</button>
+                <span class="node-zoom-label" id="nodeZoomLabel">100%</span>
+                <button class="node-tool-btn" id="nodeZoomIn" title="放大">＋</button>
+                <button class="node-tool-btn" id="nodeFitBtn" title="适应画布">⤢</button>
+              </div>
+              <div class="node-hint" id="nodeHint">拖动节点顶部 ⠿ 移动 · 拖动节点边缘圆点拉出连线 · 点击连线上的文字编辑关系 · 拖拽空白处平移画布</div>
+            </div>
+          `;
+          el.contentArea.dataset.mode = 'node';
+          bindNodeCanvasEvents();
+          bindNodeToolbar();
+          mountAllNodes();
+        }
+        updateNodeView();
+        renderAllEdges();
+        updateNodeEmptyTip();
+      }
+
+      function updateNodeEmptyTip() {
+        const layer = document.getElementById('nodeLayer');
+        if (!layer) return;
+        const existing = layer.querySelector('.node-empty-tip');
+        if (state.nodes.length === 0) {
+          if (!existing) {
+            const tip = document.createElement('div');
+            tip.className = 'node-empty-tip';
+            tip.innerHTML = '<span class="big">🕸️</span>还没有节点<br>点击左上角 ➕ 新建节点，或点 📥 把已有知识点导入';
+            layer.appendChild(tip);
+          }
+        } else if (existing) {
+          existing.remove();
+        }
+      }
+
+      function bindNodeToolbar() {
+        const addBtn = document.getElementById('nodeAddBtn');
+        if (addBtn) addBtn.addEventListener('click', () => addNodeAtCenter());
+        const impBtn = document.getElementById('nodeImportBtn');
+        if (impBtn) impBtn.addEventListener('click', importItemsAsNodes);
+        const zi = document.getElementById('nodeZoomIn');
+        if (zi) zi.addEventListener('click', () => zoomBy(1.15));
+        const zo = document.getElementById('nodeZoomOut');
+        if (zo) zo.addEventListener('click', () => zoomBy(1 / 1.15));
+        const fit = document.getElementById('nodeFitBtn');
+        if (fit) fit.addEventListener('click', fitNodes);
+      }
+
+      function mountAllNodes() {
+        const layer = document.getElementById('nodeLayer');
+        if (!layer) return;
+        layer.innerHTML = '';
+        state.nodes.forEach(n => {
+          layer.appendChild(createNodeEl(n));
+        });
+        updateNodeEmptyTip();
+      }
+
+      function createNodeEl(node) {
+        const div = document.createElement('div');
+        div.className = 'node-item';
+        div.dataset.nodeId = node.id;
+        div.style.left = node.x + 'px';
+        div.style.top = node.y + 'px';
+        div.innerHTML = `
+          <div class="node-head">
+            <span class="node-grip" title="按住拖动节点">⠿</span>
+            <input class="node-title-input" type="text" value="${escapeHtml(node.title)}" placeholder="节点标题" autocorrect="off" autocapitalize="off" spellcheck="false">
+            <button class="node-del-btn" type="button" title="删除节点">✕</button>
+          </div>
+          <div class="node-body" contenteditable="true" data-placeholder="输入文字说明…">${node.content || ''}</div>
+          <div class="node-images"></div>
+          <button class="node-add-img" type="button" title="插入图片">🖼 图片</button>
+          <span class="node-port" data-side="top" title="拖出连线"></span>
+          <span class="node-port" data-side="right" title="拖出连线"></span>
+          <span class="node-port" data-side="bottom" title="拖出连线"></span>
+          <span class="node-port" data-side="left" title="拖出连线"></span>
+        `;
+        const imgBox = div.querySelector('.node-images');
+        renderNodeImages(node, imgBox);
+        return div;
+      }
+
+      async function renderNodeImages(node, container) {
+        if (!container) return;
+        const entries = [];
+        for (let i = 0; i < node.images.length; i++) {
+          const resolved = await resolveImageArray([node.images[i]]);
+          if (resolved.length) entries.push({ idx: i, src: resolved[0] });
+        }
+        if (!container.isConnected) return;
+        if (entries.length === 0) { container.innerHTML = ''; return; }
+        container.innerHTML = entries.map(e =>
+          `<div class="node-img-item"><img src="${e.src}" alt=""><button type="button" class="node-img-del" data-idx="${e.idx}" title="移除图片">✕</button></div>`
+        ).join('');
+      }
+
+      function bindNodeCanvasEvents() {
+        const viewport = document.getElementById('nodeViewport');
+        const layer = document.getElementById('nodeLayer');
+        if (!viewport || !layer) return;
+
+        let panState = null;
+        let pinchState = null;
+
+        // ---------- 平移 ----------
+        viewport.addEventListener('pointerdown', (e) => {
+          if (e.button !== 0) return;
+          if (pinchState) return;
+          if (e.target.closest('.node-item')) return;
+          if (e.target.closest('.node-toolbar')) return;
+          if (e.target.closest('.edge-label')) return;
+          if (panState) return;
+
+          panState = {
+            id: e.pointerId,
+            sx: e.clientX,
+            sy: e.clientY,
+            vx: state.nodeView.x,
+            vy: state.nodeView.y,
+            moved: false
+          };
+          viewport.classList.add('panning');
+        });
+
+        viewport.addEventListener('pointermove', (e) => {
+          if (!panState || e.pointerId !== panState.id) return;
+          const dx = e.clientX - panState.sx;
+          const dy = e.clientY - panState.sy;
+          if (Math.abs(dx) > 3 || Math.abs(dy) > 3) panState.moved = true;
+          state.nodeView.x = panState.vx + dx;
+          state.nodeView.y = panState.vy + dy;
+          updateNodeView();
+        });
+
+        const endPan = (e) => {
+          if (!panState) return;
+          if (e && e.pointerId !== undefined && e.pointerId !== panState.id) return;
+          if (panState.moved) saveNodes();
+          panState = null;
+          viewport.classList.remove('panning');
+        };
+        viewport.addEventListener('pointerup', endPan);
+        viewport.addEventListener('pointercancel', endPan);
+        viewport.addEventListener('pointerleave', endPan);
+
+        // ---------- 滚轮缩放 ----------
+        viewport.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+          zoomAt(e.clientX, e.clientY, factor);
+        }, { passive: false });
+
+        // ---------- 双指缩放 ----------
+        viewport.addEventListener('touchstart', (e) => {
+          if (e.touches.length === 2) {
+            endPan(null);
+            const a = e.touches[0], b = e.touches[1];
+            pinchState = {
+              dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+              cx: (a.clientX + b.clientX) / 2,
+              cy: (a.clientY + b.clientY) / 2,
+              scale: state.nodeView.scale,
+              vx: state.nodeView.x,
+              vy: state.nodeView.y
+            };
+          }
+        }, { passive: true });
+
+        viewport.addEventListener('touchmove', (e) => {
+          if (!pinchState || e.touches.length !== 2) return;
+          e.preventDefault();
+          const a = e.touches[0], b = e.touches[1];
+          const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+          const cx = (a.clientX + b.clientX) / 2;
+          const cy = (a.clientY + b.clientY) / 2;
+          const rect = viewport.getBoundingClientRect();
+          const lx = pinchState.cx - rect.left;
+          const ly = pinchState.cy - rect.top;
+          const worldX = (lx - pinchState.vx) / pinchState.scale;
+          const worldY = (ly - pinchState.vy) / pinchState.scale;
+          let ns = pinchState.scale * (dist / (pinchState.dist || 1));
+          ns = Math.min(2.5, Math.max(0.25, ns));
+          state.nodeView.scale = ns;
+          state.nodeView.x = (cx - rect.left) - worldX * ns;
+          state.nodeView.y = (cy - rect.top) - worldY * ns;
+          updateNodeView();
+        }, { passive: false });
+
+        const endPinch = () => {
+          if (pinchState) { pinchState = null; saveNodes(); }
+        };
+        viewport.addEventListener('touchend', endPinch);
+        viewport.addEventListener('touchcancel', endPinch);
+
+        // ---------- 节点内交互 ----------
+        layer.addEventListener('pointerdown', (e) => {
+          const grip = e.target.closest('.node-grip');
+          if (grip) {
+            const nodeEl = grip.closest('.node-item');
+            if (nodeEl) startNodeDrag(e, nodeEl);
+            return;
+          }
+          const port = e.target.closest('.node-port');
+          if (port) {
+            const nodeEl = port.closest('.node-item');
+            if (nodeEl) startEdgeDraw(e, nodeEl.dataset.nodeId, port.dataset.side);
+            return;
+          }
+        });
+
+        layer.addEventListener('click', (e) => {
+          const delImg = e.target.closest('.node-img-del');
+          if (delImg) {
+            const nodeEl = delImg.closest('.node-item');
+            const node = state.nodes.find(n => n.id === nodeEl.dataset.nodeId);
+            if (!node) return;
+            const idx = parseInt(delImg.dataset.idx, 10);
+            if (!isNaN(idx)) {
+              node.images.splice(idx, 1);
+              saveNodes();
+              renderNodeImages(node, nodeEl.querySelector('.node-images'));
+            }
+            return;
+          }
+
+          const addImg = e.target.closest('.node-add-img');
+          if (addImg) {
+            const nodeEl = addImg.closest('.node-item');
+            const node = state.nodes.find(n => n.id === nodeEl.dataset.nodeId);
+            if (!node) return;
+            pickAndAddImages(async (ref) => {
+              node.images.push(ref);
+              saveNodes();
+              await renderNodeImages(node, nodeEl.querySelector('.node-images'));
+            });
+            return;
+          }
+
+          const delNode = e.target.closest('.node-del-btn');
+          if (delNode) {
+            const nodeEl = delNode.closest('.node-item');
+            if (nodeEl) deleteNode(nodeEl.dataset.nodeId);
+            return;
+          }
+        });
+
+        const rerenderEdgesDebounced = debounce(() => renderAllEdges(), 180);
+
+        layer.addEventListener('input', (e) => {
+          const body = e.target.closest('.node-body');
+          if (body) {
+            const nodeEl = body.closest('.node-item');
+            const node = state.nodes.find(n => n.id === nodeEl.dataset.nodeId);
+            if (node) {
+              node.content = sanitizeHtml(body.innerHTML);
+              saveNodes();
+              rerenderEdgesDebounced();
+            }
+            return;
+          }
+          const titleInp = e.target.closest('.node-title-input');
+          if (titleInp) {
+            const nodeEl = titleInp.closest('.node-item');
+            const node = state.nodes.find(n => n.id === nodeEl.dataset.nodeId);
+            if (node) {
+              node.title = titleInp.value;
+              saveNodes();
+            }
+          }
+        });
+      }
+
+      function screenToWorld(clientX, clientY) {
+        const viewport = document.getElementById('nodeViewport');
+        if (!viewport) return { x: 0, y: 0 };
+        const r = viewport.getBoundingClientRect();
+        const lx = clientX - r.left;
+        const ly = clientY - r.top;
+        return {
+          x: (lx - state.nodeView.x) / state.nodeView.scale,
+          y: (ly - state.nodeView.y) / state.nodeView.scale
+        };
+      }
+
+      function updateNodeView() {
+        const world = document.getElementById('nodeWorld');
+        const vp = document.getElementById('nodeViewport');
+        if (!world) return;
+        const v = state.nodeView;
+        world.style.transform = `translate(${v.x}px, ${v.y}px) scale(${v.scale})`;
+        const label = document.getElementById('nodeZoomLabel');
+        if (label) label.textContent = Math.round(v.scale * 100) + '%';
+        if (vp) {
+          const size = 24 * v.scale;
+          vp.style.backgroundSize = `${size}px ${size}px`;
+          vp.style.backgroundPosition = `${v.x}px ${v.y}px`;
+        }
+      }
+
+      function zoomAt(clientX, clientY, factor) {
+        const viewport = document.getElementById('nodeViewport');
+        if (!viewport) return;
+        const r = viewport.getBoundingClientRect();
+        const lx = clientX - r.left;
+        const ly = clientY - r.top;
+        const v = state.nodeView;
+        const ns = Math.min(2.5, Math.max(0.25, v.scale * factor));
+        if (Math.abs(ns - v.scale) < 0.0001) return;
+        const wx = (lx - v.x) / v.scale;
+        const wy = (ly - v.y) / v.scale;
+        v.scale = ns;
+        v.x = lx - wx * ns;
+        v.y = ly - wy * ns;
+        updateNodeView();
+        saveNodes();
+      }
+
+      function zoomBy(factor) {
+        const viewport = document.getElementById('nodeViewport');
+        if (!viewport) return;
+        const r = viewport.getBoundingClientRect();
+        zoomAt(r.left + r.width / 2, r.top + r.height / 2, factor);
+      }
+
+      function fitNodes() {
+        const viewport = document.getElementById('nodeViewport');
+        if (!viewport) return;
+        if (state.nodes.length === 0) {
+          state.nodeView = { x: 60, y: 60, scale: 1 };
+          updateNodeView();
+          saveNodes();
+          return;
+        }
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        state.nodes.forEach(n => {
+          const nodeEl = document.querySelector(`.node-item[data-node-id="${n.id}"]`);
+          const w = nodeEl ? nodeEl.offsetWidth : NODE_DEFAULT_W;
+          const h = nodeEl ? nodeEl.offsetHeight : 140;
+          minX = Math.min(minX, n.x);
+          minY = Math.min(minY, n.y);
+          maxX = Math.max(maxX, n.x + w);
+          maxY = Math.max(maxY, n.y + h);
+        });
+        if (!isFinite(minX)) return;
+        const pad = 60;
+        const r = viewport.getBoundingClientRect();
+        const availW = Math.max(80, r.width - pad * 2);
+        const availH = Math.max(80, r.height - pad * 2);
+        const bw = Math.max(1, maxX - minX);
+        const bh = Math.max(1, maxY - minY);
+        const scale = Math.min(2, Math.max(0.25, Math.min(availW / bw, availH / bh)));
+        state.nodeView.scale = scale;
+        state.nodeView.x = pad + (availW - bw * scale) / 2 - minX * scale;
+        state.nodeView.y = pad + (availH - bh * scale) / 2 - minY * scale;
+        updateNodeView();
+        saveNodes();
+      }
+
+      function startNodeDrag(e, nodeEl) {
+        const nodeId = nodeEl.dataset.nodeId;
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const startX = e.clientX, startY = e.clientY;
+        const ox = node.x, oy = node.y;
+        const scale = state.nodeView.scale || 1;
+        const pid = e.pointerId;
+
+        nodeEl.parentNode.appendChild(nodeEl);
+
+        const move = (ev) => {
+          if (ev.pointerId !== pid) return;
+          node.x = Math.round(ox + (ev.clientX - startX) / scale);
+          node.y = Math.round(oy + (ev.clientY - startY) / scale);
+          nodeEl.style.left = node.x + 'px';
+          nodeEl.style.top = node.y + 'px';
+          renderAllEdges();
+        };
+        const up = (ev) => {
+          if (ev.pointerId !== pid) return;
+          document.removeEventListener('pointermove', move);
+          document.removeEventListener('pointerup', up);
+          document.removeEventListener('pointercancel', up);
+          saveNodes();
+        };
+        document.addEventListener('pointermove', move);
+        document.addEventListener('pointerup', up);
+        document.addEventListener('pointercancel', up);
+      }
+
+      function oppositeSide(s) {
+        return { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[s] || 'left';
+      }
+
+      function offsetPoint(p, side, d) {
+        if (side === 'top') return { x: p.x, y: p.y - d };
+        if (side === 'bottom') return { x: p.x, y: p.y + d };
+        if (side === 'left') return { x: p.x - d, y: p.y };
+        return { x: p.x + d, y: p.y };
+      }
+
+      function buildCurve(a, b, fromSide, toSide) {
+        const dist = Math.hypot(b.x - a.x, b.y - a.y);
+        const d = Math.max(48, Math.min(170, dist * 0.45));
+        const c1 = offsetPoint(a, fromSide, d);
+        const c2 = offsetPoint(b, toSide, d);
+        return `M ${a.x} ${a.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${b.x} ${b.y}`;
+      }
+
+      function getAnchorPoint(nodeEl, side) {
+        const nodeId = nodeEl.dataset.nodeId;
+        const node = state.nodes.find(n => n.id === nodeId);
+        const x = node ? node.x : (parseFloat(nodeEl.style.left) || 0);
+        const y = node ? node.y : (parseFloat(nodeEl.style.top) || 0);
+        const w = nodeEl.offsetWidth || NODE_DEFAULT_W;
+        const h = nodeEl.offsetHeight || 120;
+        switch (side) {
+          case 'top': return { x: x + w / 2, y };
+          case 'bottom': return { x: x + w / 2, y: y + h };
+          case 'left': return { x, y: y + h / 2 };
+          case 'right': return { x: x + w, y: y + h / 2 };
+          default: return { x: x + w / 2, y: y + h / 2 };
+        }
+      }
+
+      function nearestSide(nodeEl, worldPoint) {
+        const nodeId = nodeEl.dataset.nodeId;
+        const node = state.nodes.find(n => n.id === nodeId);
+        const x = node ? node.x : (parseFloat(nodeEl.style.left) || 0);
+        const y = node ? node.y : (parseFloat(nodeEl.style.top) || 0);
+        const w = nodeEl.offsetWidth || NODE_DEFAULT_W;
+        const h = nodeEl.offsetHeight || 120;
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+        const dx = worldPoint.x - cx;
+        const dy = worldPoint.y - cy;
+        if (Math.abs(dx) / Math.max(1, w) > Math.abs(dy) / Math.max(1, h)) {
+          return dx > 0 ? 'right' : 'left';
+        }
+        return dy > 0 ? 'bottom' : 'top';
+      }
+
+      function renderAllEdges() {
+        const svg = document.getElementById('nodeEdgeSvg');
+        const labelLayer = document.getElementById('edgeLabelLayer');
+        if (!svg || !labelLayer) return;
+
+        svg.querySelectorAll('.node-edge-group').forEach(g => g.remove());
+
+        const editing = document.activeElement && document.activeElement.classList &&
+          document.activeElement.classList.contains('edge-label-input');
+        if (!editing) labelLayer.innerHTML = '';
+
+        state.edges.forEach(edge => {
+          const aEl = document.querySelector(`.node-item[data-node-id="${edge.from}"]`);
+          const bEl = document.querySelector(`.node-item[data-node-id="${edge.to}"]`);
+          if (!aEl || !bEl) return;
+
+          const a = getAnchorPoint(aEl, edge.fromSide);
+          const b = getAnchorPoint(bEl, edge.toSide);
+          const dist = Math.hypot(b.x - a.x, b.y - a.y);
+          const d = Math.max(48, Math.min(170, dist * 0.45));
+          const c1 = offsetPoint(a, edge.fromSide, d);
+          const c2 = offsetPoint(b, edge.toSide, d);
+          const dAttr = `M ${a.x} ${a.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${b.x} ${b.y}`;
+
+          const g = document.createElementNS(SVG_NS, 'g');
+          g.setAttribute('class', 'node-edge-group');
+          g.dataset.edgeId = edge.id;
+
+          const path = document.createElementNS(SVG_NS, 'path');
+          path.setAttribute('class', 'node-edge' + (edge.label ? ' has-label' : ''));
+          path.setAttribute('d', dAttr);
+          g.appendChild(path);
+
+          const hit = document.createElementNS(SVG_NS, 'path');
+          hit.setAttribute('class', 'node-edge-hit');
+          hit.setAttribute('d', dAttr);
+          g.appendChild(hit);
+
+          g.addEventListener('mouseenter', () => path.classList.add('hover'));
+          g.addEventListener('mouseleave', () => path.classList.remove('hover'));
+          g.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            editEdgeLabel(edge.id);
+          });
+
+          svg.appendChild(g);
+
+          if (!editing) {
+            const mid = {
+              x: (a.x + 3 * c1.x + 3 * c2.x + b.x) / 8,
+              y: (a.y + 3 * c1.y + 3 * c2.y + b.y) / 8
+            };
+            const lab = document.createElement('div');
+            lab.className = 'edge-label' + (edge.label ? '' : ' empty');
+            lab.dataset.edgeId = edge.id;
+            lab.style.left = mid.x + 'px';
+            lab.style.top = mid.y + 'px';
+            lab.textContent = edge.label || '＋';
+            lab.title = edge.label || '点击添加关系说明';
+            lab.addEventListener('click', (ev) => {
+              ev.stopPropagation();
+              editEdgeLabel(edge.id);
+            });
+            labelLayer.appendChild(lab);
+          }
+        });
+      }
+
+      function getEdgeMidpoint(edge) {
+        const aEl = document.querySelector(`.node-item[data-node-id="${edge.from}"]`);
+        const bEl = document.querySelector(`.node-item[data-node-id="${edge.to}"]`);
+        if (!aEl || !bEl) return null;
+        const a = getAnchorPoint(aEl, edge.fromSide);
+        const b = getAnchorPoint(bEl, edge.toSide);
+        const dist = Math.hypot(b.x - a.x, b.y - a.y);
+        const d = Math.max(48, Math.min(170, dist * 0.45));
+        const c1 = offsetPoint(a, edge.fromSide, d);
+        const c2 = offsetPoint(b, edge.toSide, d);
+        return {
+          x: (a.x + 3 * c1.x + 3 * c2.x + b.x) / 8,
+          y: (a.y + 3 * c1.y + 3 * c2.y + b.y) / 8
+        };
+      }
+
+      function editEdgeLabel(edgeId) {
+        const edge = state.edges.find(e => e.id === edgeId);
+        if (!edge) return;
+        const labelLayer = document.getElementById('edgeLabelLayer');
+        if (!labelLayer) return;
+
+        const existing = labelLayer.querySelector('.edge-label-input');
+        if (existing) existing.blur();
+
+        labelLayer.innerHTML = '';
+
+        const pos = getEdgeMidpoint(edge);
+        if (!pos) return;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'edge-label-input';
+        input.value = edge.label || '';
+        input.placeholder = '关系说明…';
+        input.style.left = pos.x + 'px';
+        input.style.top = pos.y + 'px';
+        input.autocorrect = 'off';
+        input.autocapitalize = 'off';
+        input.spellcheck = false;
+        labelLayer.appendChild(input);
+
+        setTimeout(() => { input.focus(); input.select(); }, 0);
+
+        let done = false;
+        const commit = () => {
+          if (done) return;
+          done = true;
+          edge.label = input.value.trim().slice(0, 40);
+          saveNodes();
+          renderAllEdges();
+        };
+        input.addEventListener('blur', commit);
+        input.addEventListener('keydown', (ev) => {
+          ev.stopPropagation();
+          if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+          else if (ev.key === 'Escape') {
+            ev.preventDefault();
+            edge.label = edge.label;
+            done = true;
+            renderAllEdges();
+          }
+        });
+      }
+
+      function startEdgeDraw(e, nodeId, side) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const svg = document.getElementById('nodeEdgeSvg');
+        const fromEl = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
+        if (!svg || !fromEl) return;
+
+        const temp = document.createElementNS(SVG_NS, 'path');
+        temp.setAttribute('class', 'node-edge-temp');
+        svg.appendChild(temp);
+
+        const pid = e.pointerId;
+        let hoverEl = null;
+
+        const move = (ev) => {
+          if (ev.pointerId !== pid) return;
+          const p = screenToWorld(ev.clientX, ev.clientY);
+          const a = getAnchorPoint(fromEl, side);
+          temp.setAttribute('d', buildCurve(a, p, side, oppositeSide(side)));
+
+          const under = document.elementFromPoint(ev.clientX, ev.clientY);
+          const target = (under && under.closest) ? under.closest('.node-item') : null;
+          const validTarget = (target && target !== fromEl) ? target : null;
+          if (hoverEl && hoverEl !== validTarget) hoverEl.classList.remove('edge-target');
+          hoverEl = validTarget;
+          if (hoverEl) hoverEl.classList.add('edge-target');
+        };
+
+        const up = (ev) => {
+          if (ev.pointerId !== pid) return;
+          document.removeEventListener('pointermove', move);
+          document.removeEventListener('pointerup', up);
+          document.removeEventListener('pointercancel', up);
+          temp.remove();
+
+          if (hoverEl) {
+            hoverEl.classList.remove('edge-target');
+            const toId = hoverEl.dataset.nodeId;
+            if (toId && toId !== nodeId) {
+              const p = screenToWorld(ev.clientX, ev.clientY);
+              const toSide = nearestSide(hoverEl, p);
+              addEdge(nodeId, side, toId, toSide);
+            }
+          }
+          hoverEl = null;
+        };
+
+        document.addEventListener('pointermove', move);
+        document.addEventListener('pointerup', up);
+        document.addEventListener('pointercancel', up);
+      }
+
+      function addEdge(from, fromSide, to, toSide) {
+        const dup = state.edges.some(e =>
+          (e.from === from && e.to === to) || (e.from === to && e.to === from)
+        );
+        if (dup) { showToast('这两个节点已经连接了'); return; }
+        state.edges.push({
+          id: generateId(),
+          from, to, fromSide, toSide, label: ''
+        });
+        saveNodes();
+        renderAllEdges();
+        showToast('已连接，点击连线上的＋可编辑关系说明');
+      }
+
+      function deleteNode(nodeId) {
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+        showConfirm('删除节点', `确定删除节点「${node.title || '未命名'}」吗？\n与它相连的连线也会一并删除。`, () => {
+          state.nodes = state.nodes.filter(n => n.id !== nodeId);
+          state.edges = state.edges.filter(e => e.from !== nodeId && e.to !== nodeId);
+          const nodeEl = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
+          if (nodeEl) nodeEl.remove();
+          saveNodes();
+          renderAllEdges();
+          updateNodeEmptyTip();
+          showToast('已删除节点');
+        });
+      }
+
+      function addNodeAtCenter() {
+        const viewport = document.getElementById('nodeViewport');
+        if (!viewport) return;
+        const rect = viewport.getBoundingClientRect();
+        const center = screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        const node = {
+          id: generateId(),
+          x: Math.round(center.x - NODE_DEFAULT_W / 2),
+          y: Math.round(center.y - 70),
+          title: '新节点',
+          content: '',
+          images: [],
+          linkedItemId: null
+        };
+        state.nodes.push(node);
+
+        const layer = document.getElementById('nodeLayer');
+        const nodeEl = createNodeEl(node);
+        const tip = layer.querySelector('.node-empty-tip');
+        if (tip) tip.remove();
+        layer.appendChild(nodeEl);
+
+        saveNodes();
+        updateNodeEmptyTip();
+
+        setTimeout(() => {
+          const input = nodeEl.querySelector('.node-title-input');
+          if (input) { input.focus(); input.select(); }
+        }, 60);
+      }
+
+      function importItemsAsNodes() {
+        const linked = new Set(state.nodes.map(n => n.linkedItemId).filter(Boolean));
+        const pending = state.items.filter(it => !linked.has(it.id));
+        if (pending.length === 0) {
+          showToast('所有知识点都已导入为节点');
+          return;
+        }
+
+        // 放在已有节点右侧的空位上
+        let baseX = 60;
+        if (state.nodes.length > 0) {
+          let maxX = -Infinity;
+          state.nodes.forEach(n => { maxX = Math.max(maxX, n.x); });
+          baseX = (isFinite(maxX) ? maxX : 60) + 320;
+        }
+        const startY = 60;
+        const colW = 280;
+        const rowH = 250;
+        const cols = 3;
+
+        pending.forEach((it, i) => {
+          const node = {
+            id: generateId(),
+            x: Math.round(baseX + (i % cols) * colW),
+            y: Math.round(startY + Math.floor(i / cols) * rowH),
+            title: it.title,
+            content: it.content || '',
+            images: (it.images || []).slice(),
+            linkedItemId: it.id
+          };
+          state.nodes.push(node);
+        });
+
+        mountAllNodes();
+        renderAllEdges();
+        saveNodes();
+        showToast(`已导入 ${pending.length} 个节点`);
+      }
+
+      // ============================================================
       // 键盘
       // ============================================================
       document.addEventListener('keydown', (e) => {
@@ -6845,11 +8016,13 @@
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
           flushSave();
+          flushNodesSave();
           if (state.speakingId) stopSpeaking();
         }
       });
       window.addEventListener('pagehide', () => {
         flushSave();
+        flushNodesSave();
         if (state.speakingId) stopSpeaking();
       });
 
@@ -6870,6 +8043,10 @@
         state.collapsedGroups = loadCollapsedState();
         state.activeId = state.items.length > 0 ? state.items[0].id : null;
         validateActiveId();
+
+        state.nodes = loadNodes();
+        state.edges = loadEdges();
+        loadNodeView();
 
         el.sidebarHeader.innerHTML = `
           <span>目录</span>
