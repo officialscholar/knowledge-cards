@@ -556,6 +556,47 @@
 
     .group-items .knowledge-item { margin-left: 4px; font-size: 0.9rem; padding: 10px 12px; }
 
+    /* 目录层级输入提示 */
+    .group-level-hint {
+      margin-top: 6px;
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      min-height: 1em;
+    }
+
+    /* 导入面板：已被上级目录覆盖的子目录行 */
+    .multi-select-item.is-covered { opacity: 0.6; }
+    .multi-select-item.is-covered .ms-count {
+      background: transparent;
+      color: var(--text-faint);
+      font-weight: 400;
+    }
+
+    /* 隐藏状态提示条 */
+    .hidden-notice {
+      margin-bottom: 14px;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: var(--bg-subtle);
+      border: 1px dashed var(--border-strong);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      line-height: 1.6;
+    }
+    .hidden-notice b { color: var(--text-danger); }
+
+    /* 隐藏的知识点（仅在录入模式列出，方便恢复） */
+    .knowledge-item.is-hidden { opacity: 0.62; }
+    .knowledge-item.is-hidden .item-body { font-style: italic; }
+    .hidden-badge {
+      font-size: 0.65rem;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      padding: 1px 5px;
+      border-radius: 10px;
+      margin-right: 3px;
+    }
+
     .item-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.1s; flex-shrink: 0; }
     .knowledge-item:hover .item-actions,
     .knowledge-item.active .item-actions { opacity: 1; }
@@ -797,6 +838,10 @@
       font-weight: 600;
     }
 
+    .global-group-divider .divider-crumb {
+      color: var(--text-faint);
+      font-weight: 400;
+    }
     .global-group-divider .divider-line {
       flex: 1;
       height: 1px;
@@ -1937,6 +1982,55 @@
       font-style: italic;
     }
 
+    /* 节点导入面板：实时命中概览 */
+    .import-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      background: var(--bg-subtle);
+      border-radius: 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .import-summary b {
+      color: var(--primary-text);
+      font-size: 0.95rem;
+      margin-right: 2px;
+    }
+    .import-summary .is-warn b { color: var(--text-danger); }
+    .import-summary .is-ok b { color: var(--text-green); }
+
+    /* 选项副标题（如「覆盖并刷新」下方的说明） */
+    .scope-title .scope-sub {
+      display: block;
+      font-size: 0.68rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin-top: 2px;
+      line-height: 1.35;
+    }
+
+    /* 知识点搜索框 */
+    .node-imp-search {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg-input);
+      color: var(--text);
+      font-size: 0.82rem;
+      font-family: inherit;
+      outline: none;
+    }
+    .node-imp-search:focus {
+      border-color: var(--border-accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
     /* 状态提示 */
     .status-msg {
       font-size: 0.85rem;
@@ -2116,6 +2210,43 @@
     }
     .node-edge.has-label { stroke: var(--primary-bright); }
     .node-edge.hover { stroke: var(--primary-bright); stroke-width: 3.2; }
+    .node-edge.selected { stroke: var(--primary-bright); stroke-width: 3.4; }
+
+    /* 连线选中后浮出的操作条：删除 / 改标签 / 换向 */
+    .edge-toolbar {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 3px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-accent);
+      border-radius: 20px;
+      box-shadow: var(--shadow-elevated);
+      z-index: 12;
+      white-space: nowrap;
+    }
+    .edge-tool-btn {
+      min-width: 26px;
+      height: 26px;
+      padding: 0 7px;
+      border: none;
+      border-radius: 14px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      font-family: inherit;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .edge-tool-btn:hover { background: var(--bg-accent); color: var(--primary-text); }
+    .edge-tool-btn.danger { color: var(--text-danger); }
+    .edge-tool-btn.danger:hover { background: var(--bg-danger); color: var(--text-danger); }
 
     .node-edge-hit {
       fill: none;
@@ -2194,11 +2325,229 @@
       display: flex;
       flex-direction: column;
       transition: border-color 0.15s, box-shadow 0.15s;
-      touch-action: none;
+      /* pan-y 而不是 none：否则会吃掉 .node-body 的垂直滚动；
+         抓手与连接点各自声明 touch-action:none，拖拽仍然正常 */
+      touch-action: pan-y;
     }
+    /* 节点头部：知识点状态标签（点它打开转换菜单） */
     .node-item:hover { border-color: var(--border-accent); }
-    .node-item.edge-target {
+    .node-status {
+      flex-shrink: 0;
+      border: none;
+      border-radius: 9px;
+      padding: 2px 6px;
+      font-size: 0.63rem;
+      font-family: inherit;
+      font-weight: 700;
+      line-height: 1.5;
+      cursor: pointer;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s, color 0.15s;
+    }
+    .node-status.linked {
+      background: var(--bg-green-strong);
+      color: var(--text-green);
+    }
+    .node-status.hidden-item {
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+    }
+    .node-status.plain {
+      background: transparent;
+      color: var(--text-faint);
+      border: 1px dashed var(--border-strong);
+    }
+    .node-status:hover { filter: brightness(0.96); }
+    /* 已隐藏的知识点对应的节点：整卡降调，和普通节点区分开 */
+    .node-item.item-hidden { opacity: 0.72; }
+    .node-item.item-hidden .node-body { color: var(--text-muted); }
+    /* 已关联知识点的节点正文：只读，靠左侧色条与光标表明「跟随知识点」 */
+    .node-body.is-readonly {
+      cursor: default;
+      background:
+        linear-gradient(90deg, var(--bg-accent) 0, transparent 3px) no-repeat,
+        var(--bg-surface);
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    /* 节点操作浮层菜单 */
+    .node-menu {
+      position: absolute;
+      z-index: 60;
+      min-width: 176px;
+      padding: 5px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow-elevated);
+    }
+    .node-menu button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 8px 10px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.78rem;
+      font-family: inherit;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+    .node-menu button:hover { background: var(--bg-accent); color: var(--primary-text); }
+    .node-menu button.danger:hover { background: var(--bg-danger); color: var(--text-danger); }
+    .node-menu .menu-sep {
+      height: 1px;
+      margin: 4px 6px;
+      background: var(--border-light);
+    }
+    .node-menu .menu-hint {
+      padding: 6px 10px 4px;
+      font-size: 0.68rem;
+      color: var(--text-faint);
+    }
+
+    .node-item.selected {
       border-color: var(--primary-bright);
+      box-shadow: 0 0 0 2px var(--border-accent), var(--shadow-elevated);
+    }
+    .node-item.dragging {
+      z-index: 50;
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22), var(--shadow-elevated);
+      cursor: grabbing;
+    }
+    /* 多选：被框选/点选中的节点 */
+    .node-item.multi-selected {
+      border-color: var(--primary-bright);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3), var(--shadow-elevated);
+    }
+
+    /* 框选矩形 */
+    .node-marquee {
+      position: absolute;
+      z-index: 40;
+      border: 1.5px dashed var(--primary-bright);
+      background: rgba(37, 99, 235, 0.12);
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    /* 多选数量 + 批量操作条 */
+    .node-batch-bar {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      z-index: 35;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-accent);
+      border-radius: 40px;
+      box-shadow: var(--shadow-elevated);
+      max-width: calc(100% - 24px);
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .node-batch-count {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--primary-text);
+      padding: 0 8px;
+      white-space: nowrap;
+    }
+    .node-batch-btn {
+      border: none;
+      border-radius: 16px;
+      padding: 6px 10px;
+      background: var(--bg-subtle);
+      color: var(--text-primary-soft);
+      font-size: 0.72rem;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s, color 0.15s;
+    }
+    .node-batch-btn:hover { background: var(--bg-accent); color: var(--primary-text); }
+    .node-batch-btn.danger { color: var(--text-danger); }
+    .node-batch-btn.danger:hover { background: var(--bg-danger); color: var(--text-danger); }
+    .node-batch-btn.primary { background: var(--primary-bright); color: #fff; }
+    .node-batch-btn.primary:hover { filter: brightness(1.08); }
+
+    /* 节点筛选（按标签 / 按目录）面板 */
+    .node-filter-panel {
+      position: absolute;
+      left: 12px;
+      top: 62px;
+      z-index: 55;
+      width: 250px;
+      max-height: 60vh;
+      overflow-y: auto;
+      padding: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow-elevated);
+    }
+    .node-filter-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      padding: 6px 6px 4px;
+    }
+    .node-filter-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      font-size: 0.76rem;
+      cursor: pointer;
+    }
+    .node-filter-row:hover { background: var(--bg-accent); }
+    .node-filter-row .f-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .node-filter-row .f-count {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      background: var(--bg-subtle);
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .node-filter-hint {
+      padding: 6px 8px;
+      font-size: 0.68rem;
+      color: var(--text-faint);
+      line-height: 1.5;
+    }
+    .node-filter-close {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 22px;
+      height: 22px;
+      border: none;
+      border-radius: 50%;
+      background: var(--bg-subtle);
+      color: var(--text-faint);
+      font-size: 0.68rem;
+      cursor: pointer;
+    }
+
+    .node-item.edge-target {      border-color: var(--primary-bright);
       box-shadow: 0 0 0 4px rgba(37,99,235,0.2), var(--shadow-elevated);
     }
 
@@ -2275,6 +2624,7 @@
       user-select: text;
       touch-action: pan-y;
       cursor: text;
+      overscroll-behavior: contain;
     }
     .node-body:empty::before {
       content: attr(data-placeholder);
@@ -2410,12 +2760,35 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    /* 提示条可关闭：关闭按钮需要单独恢复指针事件 */
+    .node-hint .hint-close {
+      pointer-events: auto;
+      margin-left: 8px;
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: var(--bg-subtle);
+      color: var(--text-faint);
+      font-size: 0.62rem;
+      line-height: 1;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .node-hint .hint-close:hover { background: var(--bg-danger); color: var(--text-danger); }
 
+    /* 空状态提示：挂在视口上（不受画布平移/缩放影响），而不是 0×0 的 node-layer */
     .node-empty-tip {
       position: absolute;
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
+      z-index: 5;
       text-align: center;
       color: var(--text-faint);
       font-size: 0.88rem;
@@ -2815,6 +3188,96 @@
     </div>
   </div>
 
+  <!-- 节点模式：把知识点导入为节点（支持按单个/目录/标签/全部选择范围） -->
+  <div class="modal-overlay" id="nodeImportModal">
+    <div class="modal" style="max-width: 560px;">
+      <div class="modal-header">
+        <h3>📥 导入知识点为节点</h3>
+        <button class="modal-close" id="nodeImportModalClose">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="import-summary" id="nodeImportSummary"></div>
+
+        <p style="font-weight:600; color: var(--text-primary-soft); margin: 4px 0 10px;">选择导入范围：</p>
+        <div class="export-scope-list" id="nodeImportScopeList">
+          <label class="export-scope-option" data-scope="all">
+            <input type="radio" name="nodeImportScope" value="all">
+            <span class="scope-title">全部知识点</span>
+            <span class="scope-count" id="nodeImpScopeAllCount">0</span>
+          </label>
+
+          <label class="export-scope-option" data-scope="single">
+            <input type="radio" name="nodeImportScope" value="single">
+            <span class="scope-title">单个知识点（可多选）</span>
+            <span class="scope-count" id="nodeImpScopeSingleCount">0</span>
+          </label>
+          <div class="export-scope-detail" id="nodeImpSingleDetail" style="display:none;">
+            <input type="text" class="node-imp-search" id="nodeImpSearch" placeholder="搜索标题、内容或标签…"
+                   autocorrect="off" autocapitalize="off" spellcheck="false">
+            <div class="multi-select-toolbar">
+              <span class="selected-hint">已选 <b id="nodeImpSingleSelCount">0</b> 条</span>
+              <div class="ms-actions">
+                <button type="button" id="nodeImpSingleSelectAll">全选</button>
+                <button type="button" id="nodeImpSingleClearAll">清空</button>
+              </div>
+            </div>
+            <div class="multi-select-list" id="nodeImpItemList"></div>
+          </div>
+
+          <label class="export-scope-option" data-scope="group">
+            <input type="radio" name="nodeImportScope" value="group">
+            <span class="scope-title">按目录（可多选，含子目录）</span>
+            <span class="scope-count" id="nodeImpScopeGroupCount">0</span>
+          </label>
+          <div class="export-scope-detail" id="nodeImpGroupDetail" style="display:none;">
+            <div class="multi-select-toolbar">
+              <span class="selected-hint">已选 <b id="nodeImpGroupSelCount">0</b> 个目录</span>
+              <div class="ms-actions">
+                <button type="button" id="nodeImpGroupSelectAll">全选</button>
+                <button type="button" id="nodeImpGroupClearAll">清空</button>
+              </div>
+            </div>
+            <div class="multi-select-list" id="nodeImpGroupList"></div>
+          </div>
+
+          <label class="export-scope-option" data-scope="tag">
+            <input type="radio" name="nodeImportScope" value="tag">
+            <span class="scope-title">按标签（可多选）</span>
+            <span class="scope-count" id="nodeImpScopeTagCount">0</span>
+          </label>
+          <div class="export-scope-detail" id="nodeImpTagDetail" style="display:none;">
+            <div class="multi-select-toolbar">
+              <span class="selected-hint">已选 <b id="nodeImpTagSelCount">0</b> 个标签</span>
+              <div class="ms-actions">
+                <button type="button" id="nodeImpTagSelectAll">全选</button>
+                <button type="button" id="nodeImpTagClearAll">清空</button>
+              </div>
+            </div>
+            <div class="multi-select-list" id="nodeImpTagList"></div>
+          </div>
+        </div>
+
+        <p style="font-weight:600; color: var(--text-primary-soft); margin: 16px 0 8px;">已导入过的知识点：</p>
+        <div class="export-scope-list">
+          <label class="export-scope-option selected" data-conflict="skip">
+            <input type="radio" name="nodeImportConflict" value="skip" checked>
+            <span class="scope-title">跳过<span class="scope-sub">只导入还没建立链接的知识点</span></span>
+          </label>
+          <label class="export-scope-option" data-conflict="refresh">
+            <input type="radio" name="nodeImportConflict" value="refresh">
+            <span class="scope-title">覆盖并刷新<span class="scope-sub">用知识点当前内容更新已有节点，节点位置与连线保留</span></span>
+          </label>
+        </div>
+
+        <div class="status-msg" id="nodeImportStatus"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="nodeImportDoBtn">✅ 确认导入</button>
+        <button class="btn btn-secondary" id="nodeImportCancelBtn">取消</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 移动分组弹窗 -->
   <div class="modal-overlay" id="moveGroupModal">
     <div class="modal" style="max-width: 420px;">
@@ -2870,9 +3333,21 @@
       const STORAGE_KEY_NODES = 'knowledge_graph_nodes_v1';
       const STORAGE_KEY_EDGES = 'knowledge_graph_edges_v1';
       const STORAGE_KEY_NODE_VIEW = 'knowledge_graph_view_v1';
+      const STORAGE_KEY_NODE_HINT = 'knowledge_graph_hint_dismissed_v1';
       const MOBILE_BREAKPOINT = 700;
       const SVG_NS = 'http://www.w3.org/2000/svg';
       const NODE_DEFAULT_W = 232;
+      const NODE_DEFAULT_H = 140;
+      const NODE_MIN_SCALE = 0.25;
+      const NODE_MAX_SCALE = 2.5;
+      const NODE_EDGE_LABEL_MAX = 40;
+      const NODE_IMPORT_COL_W = 280;
+      const NODE_IMPORT_ROW_H = 250;
+      const NODE_IMPORT_COLS = 3;
+      const NODE_IMPORT_GAP_Y = 240;
+      const NODE_DUP_OFFSET = 30;
+      // 拉线时至少要拖动这么多屏幕像素，才认为是「有意拉线」而不是误触
+      const NODE_EDGE_MIN_DRAG = 12;
       const NODE_SIDES = ['top', 'right', 'bottom', 'left'];
 
       const PRESET_TEXT_COLORS = [
@@ -2910,6 +3385,8 @@
         isCreatingNew: false,
         collapsedGroups: {},
         reciteIndex: 0,
+        // 背诵渲染时实际使用的列表（已排除隐藏条目），供 n/N 与上一个/下一个共用
+        reciteList: [],
         importMode: 'merge',
         speakingId: null,
         confirmCallback: null,
@@ -2943,7 +3420,23 @@
         /* ---- 节点关系图 ---- */
         nodes: [],
         edges: [],
-        nodeView: { x: 60, y: 60, scale: 1 }
+        nodeView: { x: 60, y: 60, scale: 1 },
+        nodeSelection: { nodeId: null, edgeId: null },
+        // 多选：框选 / Ctrl 点选 / 全选 / 按标签 / 按目录
+        nodeMultiSelect: new Set(),
+        nodeSelectAnchor: null,
+        // 节点筛选面板
+        nodeFilterOpen: false,
+        // 正在编辑中的连线标签输入框（显式登记，避免被重绘清掉）
+        activeEdgeEditor: null,
+        nodeHintDismissed: false,
+        nodeEdgeDrawActive: false,
+
+        /* ---- 节点导入面板 ---- */
+        nodeImportScope: 'all',                       // all | single | group | tag
+        nodeImportConflict: 'skip',                   // skip | refresh
+        nodeImportSelection: { items: new Set(), groups: new Set(), tags: new Set() },
+        nodeImportSearch: ''
       };
 
       const $ = (sel) => document.querySelector(sel);
@@ -3305,8 +3798,26 @@
           group: item.group || '',
           masteryLevel: level,
           images,
-          tags: normalizeTags(item.tags)
+          tags: normalizeTags(item.tags),
+          // 仅供节点模式使用：true = 不参与全局/背诵/侧栏列表，数据与掌握度保留
+          hidden: item.hidden === true
         };
+      }
+
+      // 可见知识点：所有「面向用户的列表 / 背诵导航 / 计数」都必须走这里。
+      // 隐藏条目仍然留在 state.items 里（数据与掌握度不丢），只是不展示。
+      function getVisibleItems(includeHidden) {
+        if (includeHidden) return state.items.slice();
+        return state.items.filter(it => !it.hidden);
+      }
+
+      function isItemVisible(item) {
+        return !!item && !item.hidden;
+      }
+
+      // 背诵导航等需要「序号 / 总数」的地方统一用这两个
+      function getReciteItems() {
+        return getVisibleItems();
       }
 
       function loadFromStorage() {
@@ -3552,6 +4063,180 @@
         return Array.from(groups).sort();
       }
 
+      // ============================================================
+      // 目录层级（路径式：父/子/孙）
+      // ============================================================
+      // 归一化目录路径：去掉首尾与多余斜杠、逐段去空白
+      function normalizeGroupPath(raw) {
+        return String(raw || '')
+          .split('/')
+          .map(s => s.trim())
+          .filter(Boolean)
+          .join('/');
+      }
+
+      function getGroupDepth(group) {
+        const p = normalizeGroupPath(group);
+        return p ? p.split('/').length - 1 : 0;
+      }
+
+      function getGroupLeafName(group) {
+        const parts = normalizeGroupPath(group).split('/').filter(Boolean);
+        return parts.length ? parts[parts.length - 1] : '';
+      }
+
+      function isValidGroupName(seg) {
+        const s = String(seg || '').trim();
+        if (!s) return false;
+        if (s.length > 20) return false;
+        // 排除会干扰路径解析或 HTML 属性的字符
+        return !/[\/\\<>"'&]/.test(s);
+      }
+
+      // 判断 child 是否属于 parent 的子树（严格下级）
+      function isDescendantGroup(child, parent) {
+        const c = normalizeGroupPath(child);
+        const p = normalizeGroupPath(parent);
+        if (!c || !p) return false;
+        if (c === p) return false;
+        // 允许中间层不存在（如 a/b/c 视为 a 的后代）
+        return c.startsWith(p + '/');
+      }
+
+      // 目录树：补齐不存在的中间层级，保证 a/b/c 也能在 a 下正确缩进显示
+      function buildGroupTree(filtered) {
+        const byPath = new Map();
+        const ensure = (path, name, parent) => {
+          if (byPath.has(path)) return byPath.get(path);
+          const node = { path, name, parent, depth: path.split('/').length - 1, items: [], children: [], total: 0 };
+          byPath.set(path, node);
+          if (parent) parent.children.push(node);
+          return node;
+        };
+        const roots = [];
+        const usedPaths = new Set();
+        (filtered || []).forEach(item => {
+          const path = normalizeGroupPath(item.group);
+          if (!path) return;
+          usedPaths.add(path);
+        });
+        Array.from(usedPaths).sort().forEach(path => {
+          const segs = path.split('/');
+          let parent = null;
+          let acc = '';
+          segs.forEach(seg => {
+            acc = acc ? acc + '/' + seg : seg;
+            parent = ensure(acc, seg, parent);
+          });
+        });
+        byPath.forEach(n => { if (!n.parent) roots.push(n); });
+        const sortRec = (list) => {
+          list.sort((a, b) => a.name.localeCompare(b.name, 'zh'));
+          list.forEach(n => sortRec(n.children));
+        };
+        sortRec(roots);
+        return { roots, byPath };
+      }
+
+      // 目录树 + 已挂载条目 + 计数：渲染侧统一入口
+      // （buildGroupTree 只建骨架，计数必须在挂上条目之后才能算）
+      function buildGroupTreeWithItems(items) {
+        const filtered = items || [];
+        const tree = buildGroupTree(filtered);
+        filtered.forEach(it => {
+          const path = normalizeGroupPath(it.group);
+          if (!path) return;
+          const node = tree.byPath.get(path);
+          if (node) node.items.push(it);
+        });
+        const tally = (node) => {
+          node.total = node.items.length;
+          node.children.forEach(ch => { node.total += tally(ch); });
+          return node.total;
+        };
+        tree.roots.forEach(tally);
+        return tree;
+      }
+
+      // 把某目录整体升降一级（连带它的所有子目录一起移动）
+      function adjustGroupLevel(groupPath, delta) {        const target = normalizeGroupPath(groupPath);
+        if (!target) return false;
+        const segs = target.split('/');
+        let dest;
+        if (delta < 0) {
+          if (segs.length <= 1) { showToast('已经是第 1 级，无法再升级', true); return false; }
+          dest = segs.slice(0, -1).join('/');
+        } else {
+          const parentPath = segs.slice(0, -1).join('/');
+          const leaf = segs[segs.length - 1];
+          // 同级目录 = 同一个父目录下的其它直接子目录
+          const seenSiblings = new Set();
+          state.items.forEach(i => {
+            const p = normalizeGroupPath(i.group);
+            if (!p || p === target) return;
+            if (parentPath) {
+              if (!p.startsWith(parentPath + '/')) return;
+            }
+            const rel = parentPath ? p.slice(parentPath.length + 1) : p;
+            const head = rel.split('/')[0];
+            if (head && head !== leaf) seenSiblings.add(head);
+          });
+          const siblings = Array.from(seenSiblings);
+          let newParent;
+          if (siblings.length === 0) {
+            showToast('同级下没有别的目录，无法降级到它里面', true);
+            return false;
+          } else if (siblings.length === 1) {
+            newParent = parentPath ? parentPath + '/' + siblings[0] : siblings[0];
+          } else {
+            const pick = window.prompt('降级到哪个同级目录里？请输入序号：\n' +
+              siblings.map((s, i) => `${i + 1}. ${s}`).join('\n'));
+            const idx = parseInt(pick, 10) - 1;
+            if (isNaN(idx) || idx < 0 || idx >= siblings.length) return false;
+            newParent = parentPath ? parentPath + '/' + siblings[idx] : siblings[idx];
+          }
+          dest = newParent + '/' + leaf;
+        }
+        if (!dest || dest === target) return false;
+        return moveGroupPath(target, dest);
+      }
+
+      // 把 target 及其子树整体迁移到 dest
+      function moveGroupPath(target, dest) {
+        let moved = 0;
+        state.items.forEach(item => {
+          const p = normalizeGroupPath(item.group);
+          if (p === target || isDescendantGroup(p, target)) {
+            const rest = p.slice(target.length);           // '' 或 '/x/y'
+            item.group = dest + rest;
+            moved++;
+          }
+        });
+        if (moved === 0) return false;
+        // 折叠状态用完整路径记录，迁移时一并搬走
+        Object.keys(state.collapsedGroups).forEach(k => {
+          const kp = normalizeGroupPath(k);
+          if (kp === target || isDescendantGroup(kp, target)) {
+            const rest = kp.slice(target.length);
+            const v = state.collapsedGroups[k];
+            delete state.collapsedGroups[k];
+            state.collapsedGroups[dest + rest] = v;
+          }
+        });
+        saveToStorage();
+        saveCollapsedState();
+        renderSidebar(true);
+        showToast(deltaTextForMove(target, dest));
+        return true;
+      }
+      function deltaTextForMove(target, dest) {
+        const oldDepth = target.split('/').length;
+        const newDepth = dest.split('/').length;
+        if (newDepth < oldDepth) return '已升级：' + dest;
+        if (newDepth > oldDepth) return '已降级：' + dest;
+        return '已移动到：' + dest;
+      }
+
       function getAllTags() {
         const tagMap = new Map();
         state.items.forEach(item => {
@@ -3582,16 +4267,17 @@
                   state.filterHasImage);
       }
 
-      function getFilteredItems() {
+      function getFilteredItems(includeHidden) {
         const q = state.searchQuery.trim().toLowerCase();
         const fg = state.filterGroup;
         const ft = state.filterTag ? state.filterTag.toLowerCase() : '';
         const fm = state.filterMastery;
         const fImg = state.filterHasImage;
 
-        if (!q && !fg && !ft && !fm && !fImg) return state.items.slice();
+        const base = getVisibleItems(includeHidden);
+        if (!q && !fg && !ft && !fm && !fImg) return base;
 
-        return state.items.filter(item => {
+        return base.filter(item => {
           if (q) {
             const hay = (item.title + ' ' + htmlToPlainText(item.content) + ' ' + (item.tags || []).join(' ')).toLowerCase();
             if (!hay.includes(q)) return false;
@@ -3875,46 +4561,58 @@
           return;
         }
 
-        const filtered = getFilteredItems();
-        const { groups, groupMap, ungrouped } = buildGroups(filtered);
+        // 录入模式带出隐藏条目，方便恢复；其它模式只显示可见条目
+        const includeHidden = state.mode === 'edit';
+        const filtered = getFilteredItems(includeHidden);
+        const visibleTotal = getVisibleItems().length;
+        const tree = buildGroupTreeWithItems(filtered);
+        const ungrouped = filtered.filter(it => !normalizeGroupPath(it.group));
 
         if (filtered.length === 0) {
           el.knowledgeList.innerHTML = `<div class="empty-list-msg">🔍 没有匹配项</div>`;
           const badge = document.getElementById('counterBadge');
-          if (badge) badge.textContent = `0/${state.items.length}`;
-          updateMobileBadge(`0/${state.items.length}`);
+          if (badge) badge.textContent = `0/${visibleTotal}`;
+          updateMobileBadge(`0/${visibleTotal}`);
           return;
         }
 
-        let html = '';
-        groups.forEach(groupName => {
-          const groupItems = groupMap.get(groupName) || [];
-          const isCollapsed = state.collapsedGroups[groupName] === true;
-          html += `
-            <div class="group-section ${isCollapsed ? 'collapsed' : ''}" data-group="${escapeHtml(groupName)}">
-              <div class="group-header" data-action="toggle-group" data-group="${escapeHtml(groupName)}">
+        // 递归渲染目录树：父级折叠时其所有子级一并隐藏
+        const renderGroupNode = (node, ancestorCollapsed) => {
+          const isCollapsed = state.collapsedGroups[node.path] === true;
+          const parentCollapsed = ancestorCollapsed || isCollapsed;
+          const childrenHtml = node.children.length
+            ? node.children.map(ch => renderGroupNode(ch, parentCollapsed)).join('')
+            : '';
+          return `
+            <div class="group-section ${parentCollapsed ? 'collapsed' : ''}" data-group="${escapeHtml(node.path)}" data-depth="${node.depth}">
+              <div class="group-header" data-action="toggle-group" data-group="${escapeHtml(node.path)}"
+                   style="padding-left:${10 + node.depth * 16}px;" title="${escapeHtml(node.path)}">
                 <span class="group-arrow">▼</span>
-                <span class="group-name">${escapeHtml(groupName)}</span>
-                <span class="group-count">${groupItems.length}</span>
+                <span class="group-name">${escapeHtml(node.name)}</span>
+                <span class="group-count">${node.total}</span>
                 <div class="group-actions">
-                  <button class="group-action-btn delete-group" data-action="delete-group" data-group="${escapeHtml(groupName)}" title="删除该组">✕</button>
+                  <button class="group-action-btn" data-action="group-up" data-group="${escapeHtml(node.path)}" title="升级为上一级">‹</button>
+                  <button class="group-action-btn" data-action="group-down" data-group="${escapeHtml(node.path)}" title="降级到同级目录里">›</button>
+                  <button class="group-action-btn delete-group" data-action="delete-group" data-group="${escapeHtml(node.path)}" title="删除该组（含子目录）">✕</button>
                 </div>
               </div>
               <div class="group-items">
-                ${groupItems.map(renderKnowledgeItem).join('')}
+                ${node.items.map(renderKnowledgeItem).join('')}
               </div>
+              ${childrenHtml}
             </div>
           `;
-        });
+        };
+        let html = tree.roots.map(n => renderGroupNode(n, false)).join('');
 
         if (ungrouped.length > 0) {
-          if (groups.length > 0) html += '<div class="ungrouped-label">未分组</div>';
+          if (tree.roots.length > 0) html += '<div class="ungrouped-label">未分组</div>';
           html += ungrouped.map(renderKnowledgeItem).join('');
         }
 
         el.knowledgeList.innerHTML = html;
 
-        const badgeText = isFilterActive() ? `${filtered.length}/${state.items.length}` : String(state.items.length);
+        const badgeText = isFilterActive() ? `${filtered.length}/${visibleTotal}` : String(visibleTotal);
         const badge = document.getElementById('counterBadge');
         if (badge) badge.textContent = badgeText;
         updateMobileBadge(badgeText);
@@ -3970,6 +4668,8 @@
         const isSelected = state.selectionMode && state.selectedIds.has(item.id);
         const masteredClass = (item.masteryLevel || 0) >= MASTERED_THRESHOLD ? 'mastered' : '';
         const masteredBadge = masteredClass ? '<span class="mastered-badge">✓</span>' : '';
+        // 隐藏条目：仅在「录入」模式下可见，方便用户恢复
+        const hiddenBadge = item.hidden ? '<span class="hidden-badge" title="已隐藏：不在全局与背诵模式显示">🚫</span>' : '';
 
         const checkboxHtml = state.selectionMode
           ? `<span class="item-checkbox">✓</span>`
@@ -3982,9 +4682,9 @@
         `;
 
         return `
-          <div class="knowledge-item ${isActive ? 'active' : ''} ${masteredClass} ${isSelected ? 'selected' : ''}" data-id="${item.id}" data-action="select-item" title="${escapeHtml(item.title)}">
+          <div class="knowledge-item ${isActive ? 'active' : ''} ${masteredClass} ${isSelected ? 'selected' : ''} ${item.hidden ? 'is-hidden' : ''}" data-id="${item.id}" data-action="select-item" title="${escapeHtml(item.title)}">
             ${checkboxHtml}
-            <span class="item-body">${masteredBadge}${escapeHtml(item.title)}</span>
+            <span class="item-body">${masteredBadge}${hiddenBadge}${escapeHtml(item.title)}</span>
             ${actionsHtml}
           </div>
         `;
@@ -4034,7 +4734,7 @@
       }
 
       function selectAllInSidebar() {
-        const filtered = getFilteredItems();
+        const filtered = getFilteredItems(state.mode === 'edit');
         state.selectedIds = new Set(filtered.map(i => i.id));
         renderSidebar(true);
       }
@@ -4115,7 +4815,7 @@
       }
 
       function doMoveToGroup(groupName) {
-        const target = String(groupName || '').trim();
+        const target = normalizeGroupPath(groupName);
         state.selectedIds.forEach(id => {
           const item = state.items.find(i => i.id === id);
           if (item) item.group = target;
@@ -4154,8 +4854,20 @@
           if (!groupName) return;
           state.collapsedGroups[groupName] = !state.collapsedGroups[groupName];
           saveCollapsedState();
-          const section = action.closest('.group-section');
-          if (section) section.classList.toggle('collapsed', state.collapsedGroups[groupName]);
+          // 父级折叠要连带隐藏整棵子树，所以整块重绘最可靠
+          renderSidebar(true);
+          return;
+        }
+
+        if (act === 'group-up') {
+          e.stopPropagation();
+          adjustGroupLevel(action.dataset.group, -1);
+          return;
+        }
+
+        if (act === 'group-down') {
+          e.stopPropagation();
+          adjustGroupLevel(action.dataset.group, 1);
           return;
         }
 
@@ -4197,20 +4909,32 @@
       });
 
       function deleteGroup(groupName) {
-        const target = String(groupName || '').trim();
+        const target = normalizeGroupPath(groupName);
         if (!target) return;
-        const count = state.items.filter(item => (item.group || '').trim() === target).length;
-        showConfirm('删除分组', `确定要删除分组「${target}」吗？\n组内 ${count} 个知识点将变为未分组状态。`, () => {
-          state.items.forEach(item => {
-            if ((item.group || '').trim() === target) item.group = '';
-          });
-          delete state.collapsedGroups[target];
-          saveCollapsedState();
-          saveToStorage();
-          renderSidebar(true);
-          renderContent();
-          showToast('已删除分组');
+        // 删除父目录会连带删除其所有子目录，条目全部变为未分组
+        const affected = state.items.filter(item => {
+          const p = normalizeGroupPath(item.group);
+          return p === target || isDescendantGroup(p, target);
         });
+        const subGroupCount = getAllGroups().filter(g => g !== target && isDescendantGroup(g, target)).length;
+        const extra = subGroupCount > 0 ? `\n其中包含 ${subGroupCount} 个子目录，也会一并删除。` : '';
+        showConfirm('删除目录',
+          `确定要删除目录「${target}」吗？${extra}\n涉及 ${affected.length} 个知识点，将变为未分组状态（不会删除知识点本身）。`,
+          () => {
+            state.items.forEach(item => {
+              const p = normalizeGroupPath(item.group);
+              if (p === target || isDescendantGroup(p, target)) item.group = '';
+            });
+            Object.keys(state.collapsedGroups).forEach(k => {
+              const kp = normalizeGroupPath(k);
+              if (kp === target || isDescendantGroup(kp, target)) delete state.collapsedGroups[k];
+            });
+            saveCollapsedState();
+            saveToStorage();
+            renderSidebar(true);
+            renderContent();
+            showToast('已删除目录');
+          });
       }
 
       function deleteKnowledgeItem(id) {
@@ -4222,7 +4946,8 @@
           const idx = state.items.findIndex(i => i.id === id);
           if (idx !== -1) state.items.splice(idx, 1);
           if (state.activeId === id) {
-            state.activeId = state.items.length > 0 ? state.items[0].id : null;
+            const visible = getReciteItems();
+            state.activeId = visible.length > 0 ? visible[0].id : null;
             state.isCreatingNew = false;
           }
           state.editingSessionId = null;
@@ -4267,6 +4992,9 @@
         // 非全局/节点模式：清空内容区模式标记，避免复用过期的 DOM
         if (state.mode !== 'global' && state.mode !== 'node') {
           el.contentArea.dataset.mode = '';
+          nodeDomReady = false;
+          state.activeEdgeEditor = null;
+          state.nodeSelection = { nodeId: null, edgeId: null };
         }
 
         if (state.speakingId) stopSpeaking();
@@ -4279,8 +5007,11 @@
 
       function validateActiveId() {
         if (state.isCreatingNew) return;
-        if (!state.items.some(item => item.id === state.activeId)) {
-          state.activeId = state.items.length > 0 ? state.items[0].id : null;
+        // 录入模式允许把隐藏条目设为当前条目，否则用户没有任何入口去「取消隐藏」。
+        // 其它模式（全局/背诵/节点）必须只认可见条目。
+        const pool = state.mode === 'edit' ? getVisibleItems(true) : getReciteItems();
+        if (!pool.some(item => item.id === state.activeId)) {
+          state.activeId = pool.length > 0 ? pool[0].id : null;
         }
       }
 
@@ -4295,6 +5026,7 @@
         const modeMatches = el.contentArea.dataset.mode === 'global';
 
         if (!existing || !modeMatches) {
+          releaseNodeCanvas();
           el.contentArea.innerHTML = `
             <div class="global-toolbar" id="globalToolbar">${buildGlobalToolbarHtml()}</div>
             <div class="global-body" id="globalBody"></div>
@@ -4437,7 +5169,7 @@
         if (!body) return;
 
         const filtered = getFilteredItems();
-        const total = state.items.length;
+        const total = getVisibleItems().length;
         const resultEl = document.getElementById('filterResult');
         if (resultEl) {
           if (!isFilterActive()) resultEl.textContent = `${total} 张`;
@@ -4464,24 +5196,31 @@
           return;
         }
 
-        const { groups, groupMap, ungrouped } = buildGroups(filtered);
+        // 全局模式按目录层级分区：分区标题显示完整路径，子目录整体缩进
+        const tree = buildGroupTreeWithItems(filtered);
+        const ungrouped = filtered.filter(it => !normalizeGroupPath(it.group));
         let html = '';
 
-        groups.forEach(groupName => {
-          const groupItems = groupMap.get(groupName) || [];
-          html += `
-            <div class="global-group-section" data-group="${escapeHtml(groupName)}">
-              <div class="global-group-divider">
-                <span class="divider-name"><span>📁</span>${escapeHtml(groupName)}</span>
-                <span class="divider-count">${groupItems.length}</span>
+        const renderGlobalGroup = (node) => {
+          const depth = node.depth;
+          const parentPath = node.path.slice(0, node.path.length - node.name.length).replace(/\/$/, '');
+          const crumb = parentPath
+            ? `<span class="divider-crumb">${escapeHtml(parentPath.split('/').join(' / '))} / </span>`
+            : '';
+          let out = `
+            <div class="global-group-section" data-group="${escapeHtml(node.path)}" data-depth="${depth}">
+              <div class="global-group-divider" style="margin-left:${depth * 18}px;">
+                <span class="divider-name"><span>📁</span>${crumb}${escapeHtml(node.name)}</span>
+                <span class="divider-count">${node.total}</span>
                 <span class="divider-line"></span>
               </div>
-              <div class="global-grid">
-                ${groupItems.map(renderGlobalCard).join('')}
-              </div>
+              ${node.items.length ? `<div class="global-grid">${node.items.map(renderGlobalCard).join('')}</div>` : ''}
             </div>
           `;
-        });
+          node.children.forEach(ch => { out += renderGlobalGroup(ch); });
+          return out;
+        };
+        tree.roots.forEach(n => { html += renderGlobalGroup(n); });
 
         if (ungrouped.length > 0) {
           html += `
@@ -4787,9 +5526,10 @@
           seen.add(id);
         }
         const stateIds = new Set(state.items.map(i => i.id));
-        const sameSet = !hasDup &&
-                        newOrderedIds.length === stateIds.size &&
-                        newOrderedIds.every(id => stateIds.has(id));
+        // DOM 里只会有「当前可见且未被筛选掉」的卡片，因此校验的是
+        // 「无重复」+「都存在于 state.items」，而不是数量相等
+        const allKnown = newOrderedIds.every(id => stateIds.has(id));
+        const sameSet = !hasDup && allKnown && newOrderedIds.length > 0;
 
         if (!sameSet) {
           showToast('排序未保存：数据已变化，请重试', true);
@@ -4806,6 +5546,12 @@
             newItems.push(item);
           }
         });
+        // 拖拽只覆盖「当前可见且已渲染」的卡片；隐藏条目与被筛选掉的条目
+        // 必须原样保留，否则会被静默删除
+        const placed = new Set(newItems.map(i => i.id));
+        state.items.forEach(item => {
+          if (!placed.has(item.id)) newItems.push(item);
+        });
         state.items = newItems;
         saveToStorage();
         renderSidebar(true);
@@ -4819,7 +5565,12 @@
       async function renderReciteMode() {
         clearPendingCardClick();
 
-        if (state.items.length === 0) {
+        // 背诵导航只遍历「可见」知识点：索引必须相对同一份列表，否则计数与边界会错位
+        const reciteList = getReciteItems();
+        state.reciteList = reciteList;
+
+        if (reciteList.length === 0) {
+          releaseNodeCanvas();
           el.contentArea.innerHTML = `
             <div class="card-wrapper">
               <div class="empty-state">
@@ -4831,12 +5582,13 @@
           return;
         }
 
-        const currentIndex = state.items.findIndex(item => item.id === state.activeId);
+        const currentIndex = reciteList.findIndex(item => item.id === state.activeId);
         state.reciteIndex = currentIndex >= 0 ? currentIndex : 0;
-        if (state.reciteIndex >= state.items.length) state.reciteIndex = state.items.length - 1;
+        if (state.reciteIndex >= reciteList.length) state.reciteIndex = reciteList.length - 1;
+        if (state.reciteIndex < 0) state.reciteIndex = 0;
 
         const token = ++reciteRenderToken;
-        const item = state.items[state.reciteIndex];
+        const item = reciteList[state.reciteIndex];
         const resolvedImages = await resolveImageArray(item.images);
         if (token !== reciteRenderToken) return;
 
@@ -4865,6 +5617,7 @@
           `;
         }
 
+        releaseNodeCanvas();
         el.contentArea.innerHTML = `
           <div class="recite-container">
             <div class="recite-slide">
@@ -4892,8 +5645,8 @@
                   </div>
                   <div class="slide-nav-row">
                     <button class="slide-nav-btn" data-action="nav-prev" title="上一个" ${idx === 0 ? 'disabled' : ''}>${prevArrowSvg}</button>
-                    <span class="slide-nav-position">${idx + 1} / ${state.items.length}</span>
-                    <button class="slide-nav-btn" data-action="nav-next" title="下一个" ${idx === state.items.length - 1 ? 'disabled' : ''}>${nextArrowSvg}</button>
+                    <span class="slide-nav-position">${idx + 1} / ${reciteList.length}</span>
+                    <button class="slide-nav-btn" data-action="nav-next" title="下一个" ${idx === reciteList.length - 1 ? 'disabled' : ''}>${nextArrowSvg}</button>
                   </div>
                 </div>
               </div>
@@ -4953,22 +5706,30 @@
         }
       }
 
+      function getReciteNavList() {
+        // 优先用渲染时保存的列表，保证与「n / N」显示完全一致
+        if (Array.isArray(state.reciteList) && state.reciteList.length > 0) return state.reciteList;
+        return getReciteItems();
+      }
+
       function goToPrev() {
         if (state.reciteIndex <= 0) return;
         clearPendingCardClick();
         if (state.speakingId) stopSpeaking();
+        const list = getReciteNavList();
         state.reciteIndex--;
-        state.activeId = state.items[state.reciteIndex].id;
+        if (list[state.reciteIndex]) state.activeId = list[state.reciteIndex].id;
         renderReciteMode();
         updateSidebarActive();
       }
 
       function goToNext() {
-        if (state.reciteIndex >= state.items.length - 1) return;
+        const list = getReciteNavList();
+        if (state.reciteIndex >= list.length - 1) return;
         clearPendingCardClick();
         if (state.speakingId) stopSpeaking();
         state.reciteIndex++;
-        state.activeId = state.items[state.reciteIndex].id;
+        if (list[state.reciteIndex]) state.activeId = list[state.reciteIndex].id;
         renderReciteMode();
         updateSidebarActive();
       }
@@ -5990,6 +6751,7 @@
         }
 
         if (state.isCreatingNew || !activeItem) {
+          releaseNodeCanvas();
           el.contentArea.innerHTML = `
             <div class="card-wrapper">
               <div class="edit-card">
@@ -5999,10 +6761,11 @@
                 </div>
                 <div class="input-group">
                   <label>📁 上级目录（可选）</label>
-                  <input type="text" id="newGroupInput" list="newGroupList" placeholder="输入分组名称，如：前端基础" value="">
+                  <input type="text" id="newGroupInput" list="newGroupList" placeholder="例如：前端基础/JavaScript（用 / 分层）" value="">
                   <datalist id="newGroupList">
                     ${getAllGroups().map(g => `<option value="${escapeHtml(g)}">`).join('')}
                   </datalist>
+                  <div class="group-level-hint" id="newGroupHint"></div>
                 </div>
                 <div class="input-group">
                   <label>🏷 标签（可选）</label>
@@ -6040,6 +6803,7 @@
           renderTagEditor('newTagEditor');
           bindTagEditorEvents('newTagEditor');
           bindEditDirtyTracking(['newTitleInput', 'newGroupInput', 'newContentEditor']);
+          bindGroupPathInput('newGroupInput', 'newGroupHint');
 
           document.getElementById('addNewImagesBtn').addEventListener('click', () => {
             pickAndAddImages(async (ref) => {
@@ -6070,7 +6834,7 @@
               tagInput.value = '';
             }
             const title = document.getElementById('newTitleInput').value.trim();
-            const group = document.getElementById('newGroupInput').value.trim();
+            const group = normalizeGroupPath(document.getElementById('newGroupInput').value);
             const rawHtml = newEditor.innerHTML.trim();
             const content = sanitizeHtml(rawHtml);
             const isEmpty = !htmlToPlainText(content);
@@ -6081,7 +6845,8 @@
               group,
               masteryLevel: 0,
               images: state.draftImages.slice(),
-              tags: state.draftTags.slice()
+              tags: state.draftTags.slice(),
+              hidden: false
             };
             state.items.push(newItem);
             state.activeId = newItem.id;
@@ -6108,7 +6873,8 @@
             state.formatPainterArmed = false;
             state.formatPainterClip = null;
             state.formatPainterEditorId = null;
-            state.activeId = state.items.length > 0 ? state.items[0].id : null;
+            const visibleLeft = getReciteItems();
+            state.activeId = visibleLeft.length > 0 ? visibleLeft[0].id : null;
             renderSidebar(true);
             renderContent();
           });
@@ -6119,19 +6885,25 @@
           return;
         }
 
+        releaseNodeCanvas();
+        const hiddenNow = activeItem.hidden === true;
         el.contentArea.innerHTML = `
           <div class="card-wrapper">
             <div class="edit-card">
+              ${hiddenNow ? `<div class="hidden-notice">
+                🚫 这个知识点已隐藏，<b>不会</b>出现在全局模式、背诵模式和侧栏列表中（掌握度与内容都已保留）。
+              </div>` : ''}
               <div class="input-group">
                 <label>✏️ 标题</label>
                 <input type="text" id="editTitleInput" value="${escapeHtml(activeItem.title)}" placeholder="知识点标题">
               </div>
               <div class="input-group">
                 <label>📁 上级目录（可选）</label>
-                <input type="text" id="editGroupInput" list="editGroupList" value="${escapeHtml(activeItem.group || '')}" placeholder="输入分组名称，留空为无分组">
+                <input type="text" id="editGroupInput" list="editGroupList" value="${escapeHtml(activeItem.group || '')}" placeholder="例如：前端基础/JavaScript（用 / 分层）">
                 <datalist id="editGroupList">
                   ${getAllGroups().map(g => `<option value="${escapeHtml(g)}">`).join('')}
                 </datalist>
+                <div class="group-level-hint" id="editGroupHint"></div>
               </div>
               <div class="input-group">
                 <label>🏷 标签（可选）</label>
@@ -6151,6 +6923,9 @@
               <div class="button-group">
                 <button class="btn btn-primary" id="saveEditBtn">💾 保存修改</button>
                 <button class="btn btn-secondary" id="cancelEditBtn">↩️ 取消</button>
+                <button class="btn btn-secondary" id="toggleHiddenBtn" title="隐藏后不参与全局、背诵与侧栏列表，数据与掌握度保留">
+                  ${hiddenNow ? '👁 取消隐藏' : '🚫 隐藏此知识点'}
+                </button>
               </div>
             </div>
             <div class="edit-data-actions">
@@ -6169,6 +6944,7 @@
         renderTagEditor('editTagEditor');
         bindTagEditorEvents('editTagEditor');
         bindEditDirtyTracking(['editTitleInput', 'editGroupInput', 'editContentEditor']);
+        bindGroupPathInput('editGroupInput', 'editGroupHint');
 
         document.getElementById('addEditImagesBtn').addEventListener('click', () => {
           pickAndAddImages(async (ref) => {
@@ -6199,7 +6975,7 @@
             tagInput.value = '';
           }
           const newTitle = document.getElementById('editTitleInput').value.trim();
-          const newGroup = document.getElementById('editGroupInput').value.trim();
+          const newGroup = normalizeGroupPath(document.getElementById('editGroupInput').value);
           const rawHtml = editEditor.innerHTML.trim();
           const newContent = sanitizeHtml(rawHtml);
           const isEmpty = !htmlToPlainText(newContent);
@@ -6212,6 +6988,8 @@
             item.images = state.draftImages.slice();
             item.tags = state.draftTags.slice();
             saveToStorage();
+            // 知识点 → 节点 单向同步：标题/内容/图片推给所有关联节点（位置与连线保留）
+            scheduleItemNodeSync(item);
             state.editingSessionId = null;
             state.editDirty = false;
             state.draftImages = [];
@@ -6235,9 +7013,28 @@
           state.formatPainterEditorId = null;
           renderContent();
         });
+        const toggleBtn = document.getElementById('toggleHiddenBtn');
+        if (toggleBtn) toggleBtn.addEventListener('click', () => toggleItemHidden(activeItem.id));
         document.getElementById('exportBtn').addEventListener('click', openExportModal);
         document.getElementById('importBtn').addEventListener('click', openImportModal);
         document.getElementById('wordExportBtn').addEventListener('click', openWordExportModal);
+      }
+
+      // 切换知识点可见性：隐藏 = 不进全局/背诵/侧栏列表，数据与掌握度都保留
+      function toggleItemHidden(itemId) {
+        const item = state.items.find(i => i.id === itemId);
+        if (!item) return;
+        const next = !(item.hidden === true);
+        item.hidden = next;
+        saveToStorage();
+        // 可见性变化要反映到关联节点的状态标签/样式上
+        syncItemToLinkedNodes(item);
+        state.nodes.forEach(n => { if (n.linkedItemId === item.id) refreshNodeStatus(n.id); });
+        renderSidebar(true);
+        renderContent();
+        showToast(next
+          ? '已隐藏：不再出现在全局与背诵模式，可随时取消隐藏'
+          : '已取消隐藏：重新出现在全局与背诵模式');
       }
 
       function setMode(mode) {
@@ -6792,7 +7589,10 @@
           const section = (entry.section === undefined ? null : entry.section);
 
           if (section && section !== lastSection) {
-            body += `<w:p><w:pPr><w:pStyle w:val="SectionTitle"/><w:spacing w:before="${hasOutput ? 480 : 0}" w:after="180"/></w:pPr>`
+            // 目录按层级使用不同标题样式，Word 里能生成大纲
+            const secDepth = normalizeGroupPath(section).split('/').filter(Boolean).length;
+            const secStyle = secDepth <= 1 ? 'SectionTitle' : (secDepth === 2 ? 'GroupLevel2' : 'GroupLevel3');
+            body += `<w:p><w:pPr><w:pStyle w:val="${secStyle}"/><w:spacing w:before="${hasOutput ? 480 : 0}" w:after="180"/></w:pPr>`
                   + `<w:r><w:t xml:space="preserve">${xmlEscape(section)}</w:t></w:r></w:p>`;
             lastSection = section;
             hasOutput = true;
@@ -6873,14 +7673,13 @@
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${relsEntries.join('')}</Relationships>`;
 
         const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Segoe UI" w:hAnsi="Segoe UI" w:eastAsia="微软雅黑" w:cs="Segoe UI"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="300" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style><w:style w:type="paragraph" w:styleId="SectionTitle"><w:name w:val="Section Title"/><w:basedOn w:val="Normal"/><w:next w:val="Heading1"/><w:qFormat/><w:pPr><w:keepNext/><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="4" w:color="93C5FD"/></w:pBdr><w:spacing w:before="480" w:after="180"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="1E40AF"/><w:sz w:val="36"/><w:szCs w:val="36"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="360" w:after="120"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="1E3A8A"/><w:sz w:val="30"/><w:szCs w:val="30"/></w:rPr></w:style></w:styles>`;
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Segoe UI" w:hAnsi="Segoe UI" w:eastAsia="微软雅黑" w:cs="Segoe UI"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="120" w:line="300" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style><w:style w:type="paragraph" w:styleId="SectionTitle"><w:name w:val="Section Title"/><w:basedOn w:val="Normal"/><w:next w:val="Heading1"/><w:qFormat/><w:pPr><w:keepNext/><w:pBdr><w:bottom w:val="single" w:sz="12" w:space="4" w:color="93C5FD"/></w:pBdr><w:spacing w:before="480" w:after="180"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="1E40AF"/><w:sz w:val="36"/><w:szCs w:val="36"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="360" w:after="120"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="1E3A8A"/><w:sz w:val="30"/><w:szCs w:val="30"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="GroupLevel2"><w:name w:val="Group Level 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="4" w:color="BFDBFE"/></w:pBdr><w:spacing w:before="320" w:after="140"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="1D4ED8"/><w:sz w:val="26"/><w:szCs w:val="26"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="GroupLevel3"><w:name w:val="Group Level 3"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="260" w:after="120"/><w:outlineLvl w:val="2"/></w:pPr><w:rPr><w:b/><w:color w:val="1E40AF"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:style></w:styles>`;
 
         zipFiles.push({ name: '[Content_Types].xml', data: encoder.encode(contentTypes) });
         zipFiles.push({ name: '_rels/.rels', data: encoder.encode(rootRels) });
         zipFiles.push({ name: 'word/document.xml', data: encoder.encode(documentXml) });
         zipFiles.push({ name: 'word/_rels/document.xml.rels', data: encoder.encode(docRels) });
-        zipFiles.push({ name: 'word/styles.xml', data: encoder.encode(stylesXml) });
-        mediaEntries.forEach(m => zipFiles.push(m));
+        zipFiles.push({ name: 'word/styles.xml', data: encoder.encode(stylesXml) });        mediaEntries.forEach(m => zipFiles.push(m));
 
         const zipBytes = buildZipBytes(zipFiles);
         return new Blob([zipBytes], {
@@ -7162,6 +7961,18 @@
       // 知识节点（关系图）模式
       // ============================================================
       let nodeSaveTimer = null;
+      // 节点画布 DOM 是否仍然存活。任何其它模式接管内容区后都必须清掉它，
+      // 否则切回节点模式会误判「画布还在」而不重建（表现为空白画布）。
+      let nodeDomReady = false;
+
+      // 其它模式接管内容区时调用：让节点画布知道自己已经不在文档里了
+      function releaseNodeCanvas() {
+        nodeDomReady = false;
+        state.activeEdgeEditor = null;
+        state.nodeSelection = { nodeId: null, edgeId: null };
+        state.nodeEdgeDrawActive = false;
+        state.cancelEdgeDraw = null;
+      }
 
       function normalizeNode(n) {
         return {
@@ -7191,14 +8002,28 @@
           if (!raw) return [];
           const arr = JSON.parse(raw);
           if (!Array.isArray(arr)) return [];
-          return arr.filter(e => e && e.from && e.to).map(e => ({
-            id: sanitizeId(e.id),
-            from: String(e.from),
-            to: String(e.to),
-            fromSide: NODE_SIDES.includes(e.fromSide) ? e.fromSide : 'right',
-            toSide: NODE_SIDES.includes(e.toSide) ? e.toSide : 'left',
-            label: typeof e.label === 'string' ? e.label : ''
-          }));
+          const nodeIds = new Set(state.nodes.map(n => n.id));
+          const seen = new Set();
+          const out = [];
+          arr.forEach(e => {
+            if (!e || typeof e !== 'object') return;
+            const from = sanitizeId(e.from);
+            const to = sanitizeId(e.to);
+            // 端点必须真实存在，且不允许自环；否则这条边永远渲染不出来也删不掉
+            if (!nodeIds.has(from) || !nodeIds.has(to) || from === to) return;
+            // 同一对节点可能有历史遗留的重复边
+            const key = from < to ? (from + '|' + to) : (to + '|' + from);
+            if (seen.has(key)) return;
+            seen.add(key);
+            out.push({
+              id: sanitizeId(e.id),
+              from, to,
+              fromSide: NODE_SIDES.includes(e.fromSide) ? e.fromSide : 'right',
+              toSide: NODE_SIDES.includes(e.toSide) ? e.toSide : 'left',
+              label: typeof e.label === 'string' ? e.label : ''
+            });
+          });
+          return out;
         } catch (e) { return []; }
       }
 
@@ -7211,7 +8036,7 @@
           state.nodeView = {
             x: Number.isFinite(v.x) ? v.x : 60,
             y: Number.isFinite(v.y) ? v.y : 60,
-            scale: Number.isFinite(v.scale) ? Math.min(2.5, Math.max(0.25, v.scale)) : 1
+            scale: Number.isFinite(v.scale) ? Math.min(NODE_MAX_SCALE, Math.max(NODE_MIN_SCALE, v.scale)) : 1
           };
         } catch (e) {}
       }
@@ -7240,7 +8065,9 @@
       }
 
       function renderNodeMode() {
-        if (el.contentArea.dataset.mode !== 'node') {
+        // 用本地标记而不是 dataset.mode 判断是否需要重建：
+        // dataset.mode 只在渲染成功后才写入，不能兼任「DOM 是否就绪」的判据
+        if (!nodeDomReady) {
           el.contentArea.innerHTML = `
             <div class="node-wrap">
               <div class="node-viewport" id="nodeViewport">
@@ -7249,55 +8076,90 @@
                   <div class="edge-label-layer" id="edgeLabelLayer"></div>
                   <div class="node-layer" id="nodeLayer"></div>
                 </div>
+                <div class="node-empty-tip" id="nodeEmptyTip" style="display:none;">
+                  <span class="big">🕸️</span>还没有节点<br>点击左上角 ➕ 新建节点，或点 📥 把已有知识点导入
+                </div>
               </div>
               <div class="node-toolbar">
                 <button class="node-tool-btn" id="nodeAddBtn" title="新建节点">➕</button>
                 <button class="node-tool-btn" id="nodeImportBtn" title="把知识点导入为节点">📥</button>
+                <button class="node-tool-btn" id="nodeSelectBtn" title="选择节点：全选、按标签、按目录">☑️</button>
                 <button class="node-tool-btn" id="nodeZoomOut" title="缩小">−</button>
                 <span class="node-zoom-label" id="nodeZoomLabel">100%</span>
                 <button class="node-tool-btn" id="nodeZoomIn" title="放大">＋</button>
                 <button class="node-tool-btn" id="nodeFitBtn" title="适应画布">⤢</button>
               </div>
-              <div class="node-hint" id="nodeHint">拖动节点顶部 ⠿ 移动 · 拖动节点边缘圆点拉出连线 · 点击连线上的文字编辑关系 · 拖拽空白处平移画布</div>
+              <div class="node-filter-panel" id="nodeFilterPanel" style="display:none;"></div>
+              <div class="node-batch-bar" id="nodeBatchBar" style="display:none;"></div>
+              <div class="node-hint" id="nodeHint">
+                <span>拖顶部 ⠿ 移动 · 拖边缘圆点拉线：碰到节点即连接，空白处松手即新建节点 · 点连线可选中 · 框选或 Ctrl 点选可多选</span>
+                <button type="button" class="hint-close" id="nodeHintClose" title="不再显示">✕</button>
+              </div>
+              <div class="node-menu" id="nodeMenu" style="display:none;"></div>
             </div>
           `;
           el.contentArea.dataset.mode = 'node';
+          el.contentArea.classList.add('node-full');
           bindNodeCanvasEvents();
           bindNodeToolbar();
+          bindNodeMenu();
           mountAllNodes();
+          applyNodeHintVisibility();
+          nodeDomReady = true;
         }
         updateNodeView();
-        renderAllEdges();
+        // 连线渲染失败不应让整个画布卡死：标记为未就绪，下次进入会重建
+        try {
+          renderAllEdges();
+        } catch (err) {
+          nodeDomReady = false;
+          console.warn('连线渲染失败', err);
+        }
+        el.contentArea.dataset.mode = 'node';
         updateNodeEmptyTip();
       }
 
+      // ---------- 底部提示条：可关闭并记忆 ----------
+      function applyNodeHintVisibility() {
+        const hint = document.getElementById('nodeHint');
+        if (!hint) return;
+        hint.style.display = state.nodeHintDismissed ? 'none' : '';
+      }
+
+      function dismissNodeHint() {
+        state.nodeHintDismissed = true;
+        try { localStorage.setItem(STORAGE_KEY_NODE_HINT, '1'); } catch (e) {}
+        applyNodeHintVisibility();
+      }
+
+      function loadNodeHintDismissed() {
+        try {
+          state.nodeHintDismissed = localStorage.getItem(STORAGE_KEY_NODE_HINT) === '1';
+        } catch (e) { state.nodeHintDismissed = false; }
+      }
+
       function updateNodeEmptyTip() {
-        const layer = document.getElementById('nodeLayer');
-        if (!layer) return;
-        const existing = layer.querySelector('.node-empty-tip');
-        if (state.nodes.length === 0) {
-          if (!existing) {
-            const tip = document.createElement('div');
-            tip.className = 'node-empty-tip';
-            tip.innerHTML = '<span class="big">🕸️</span>还没有节点<br>点击左上角 ➕ 新建节点，或点 📥 把已有知识点导入';
-            layer.appendChild(tip);
-          }
-        } else if (existing) {
-          existing.remove();
-        }
+        const tip = document.getElementById('nodeEmptyTip');
+        if (!tip) return;
+        tip.style.display = state.nodes.length === 0 ? '' : 'none';
       }
 
       function bindNodeToolbar() {
         const addBtn = document.getElementById('nodeAddBtn');
         if (addBtn) addBtn.addEventListener('click', () => addNodeAtCenter());
         const impBtn = document.getElementById('nodeImportBtn');
-        if (impBtn) impBtn.addEventListener('click', importItemsAsNodes);
+        if (impBtn) impBtn.addEventListener('click', openNodeImportPanel);
         const zi = document.getElementById('nodeZoomIn');
         if (zi) zi.addEventListener('click', () => zoomBy(1.15));
         const zo = document.getElementById('nodeZoomOut');
         if (zo) zo.addEventListener('click', () => zoomBy(1 / 1.15));
         const fit = document.getElementById('nodeFitBtn');
         if (fit) fit.addEventListener('click', fitNodes);
+        const hintClose = document.getElementById('nodeHintClose');
+        if (hintClose) hintClose.addEventListener('click', dismissNodeHint);
+        const selectBtn = document.getElementById('nodeSelectBtn');
+        if (selectBtn) selectBtn.addEventListener('click', toggleNodeFilterPanel);
+        bindNodeBatchBar();
       }
 
       function mountAllNodes() {
@@ -7308,11 +8170,53 @@
           layer.appendChild(createNodeEl(n));
         });
         updateNodeEmptyTip();
+        updateNodeSelectionUI();
+        syncMultiSelectClasses();
+        updateNodeBatchBar();
+      }
+
+      // 节点与知识点的关联状态：plain(纯节点) / linked(已同步为知识点) / hidden-item(知识点已隐藏)
+      function getNodeItemState(node) {
+        if (!node.linkedItemId) return { kind: 'plain', item: null };
+        const item = state.items.find(i => i.id === node.linkedItemId);
+        if (!item) return { kind: 'plain', item: null, dangling: true };
+        return { kind: item.hidden ? 'hidden-item' : 'linked', item };
+      }
+
+      function getNodeStatusChipHtml(node) {
+        const st = getNodeItemState(node);
+        if (st.kind === 'linked') {
+          return `<button type="button" class="node-status linked" data-node-status="1" title="已同步为知识点「${escapeHtml(st.item.title)}」，点击管理">✓ 知识点</button>`;
+        }
+        if (st.kind === 'hidden-item') {
+          return `<button type="button" class="node-status hidden-item" data-node-status="1" title="来源知识点已隐藏，不参与全局与背诵，点击管理">🚫 已隐藏</button>`;
+        }
+        return `<button type="button" class="node-status plain" data-node-status="1" title="这是普通节点，点击可转为知识点">○ 普通节点</button>`;
+      }
+
+      // 已关联知识点的节点：正文不再可独立编辑，改为跟随知识点（避免被静默覆盖）
+      function isNodeBodyReadonly(node) {
+        return getNodeItemState(node).kind !== 'plain';
+      }
+
+      const NODE_FOLLOW_HINT = '内容跟随知识点「{title}」，请到「录入」模式修改';
+
+      function applyNodeBodyMode(nodeEl, node) {
+        const body = nodeEl.querySelector('.node-body');
+        if (!body) return;
+        body.contentEditable = isNodeBodyReadonly(node) ? 'false' : 'true';
+        body.classList.toggle('is-readonly', body.contentEditable === 'false');
+        const st = getNodeItemState(node);
+        body.title = st.item ? NODE_FOLLOW_HINT.replace('{title}', st.item.title) : '';
+        body.dataset.placeholder = st.item
+          ? '内容跟随知识点，请到「录入」模式修改'
+          : '输入文字说明…';
       }
 
       function createNodeEl(node) {
+        const st = getNodeItemState(node);
         const div = document.createElement('div');
-        div.className = 'node-item';
+        div.className = 'node-item' + (st.kind === 'hidden-item' ? ' item-hidden' : '');
         div.dataset.nodeId = node.id;
         div.style.left = node.x + 'px';
         div.style.top = node.y + 'px';
@@ -7320,6 +8224,7 @@
           <div class="node-head">
             <span class="node-grip" title="按住拖动节点">⠿</span>
             <input class="node-title-input" type="text" value="${escapeHtml(node.title)}" placeholder="节点标题" autocorrect="off" autocapitalize="off" spellcheck="false">
+            ${getNodeStatusChipHtml(node)}
             <button class="node-del-btn" type="button" title="删除节点">✕</button>
           </div>
           <div class="node-body" contenteditable="true" data-placeholder="输入文字说明…">${node.content || ''}</div>
@@ -7332,7 +8237,33 @@
         `;
         const imgBox = div.querySelector('.node-images');
         renderNodeImages(node, imgBox);
+        applyNodeBodyMode(div, node);
         return div;
+      }
+
+      // 只刷新某个节点的状态标签与关联样式（不重建整个节点，避免打断正在编辑的正文）
+      function refreshNodeStatus(nodeId) {
+        const nodeEl = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!nodeEl || !node) return;
+        const head = nodeEl.querySelector('.node-head');
+        const oldChip = head && head.querySelector('.node-status');
+        if (oldChip) oldChip.remove();
+        const delBtn = head && head.querySelector('.node-del-btn');
+        if (head && delBtn) delBtn.insertAdjacentHTML('beforebegin', getNodeStatusChipHtml(node));
+        const st = getNodeItemState(node);
+        nodeEl.classList.toggle('item-hidden', st.kind === 'hidden-item');
+        applyNodeBodyMode(nodeEl, node);
+      }
+
+      // 合并同一帧内的多次边重绘请求（拖动、图片加载、正文输入都会触发）
+      let edgeRedrawRaf = null;
+      function scheduleEdgesRedraw() {
+        if (edgeRedrawRaf !== null) return;
+        edgeRedrawRaf = requestAnimationFrame(() => {
+          edgeRedrawRaf = null;
+          if (state.mode === 'node') renderAllEdges();
+        });
       }
 
       async function renderNodeImages(node, container) {
@@ -7347,6 +8278,78 @@
         container.innerHTML = entries.map(e =>
           `<div class="node-img-item"><img src="${e.src}" alt=""><button type="button" class="node-img-del" data-idx="${e.idx}" title="移除图片">✕</button></div>`
         ).join('');
+        // 图片撑高节点后必须重算连线锚点，否则连线会一直错位到下次拖动节点
+        scheduleEdgesRedraw();
+      }
+
+      // ---------- 选中态（节点 / 连线） ----------
+      function setNodeSelection(nodeId, edgeId) {
+        state.nodeSelection = { nodeId: nodeId || null, edgeId: edgeId || null };
+        updateNodeSelectionUI();
+      }
+
+      function selectNode(nodeId) {
+        // 单选与多选互斥，避免两个高亮同时出现造成误解
+        if (state.nodeMultiSelect.size > 0) clearNodeMultiSelect();
+        const cur = state.nodeSelection;
+        if (cur.nodeId === nodeId && !cur.edgeId) return;
+        setNodeSelection(nodeId, null);
+      }
+
+      function selectEdge(edgeId) {
+        const cur = state.nodeSelection;
+        if (cur.edgeId === edgeId && !cur.nodeId) return;
+        setNodeSelection(null, edgeId);
+      }
+
+      function clearNodeSelection() {
+        const cur = state.nodeSelection;
+        if (!cur.nodeId && !cur.edgeId) return;
+        setNodeSelection(null, null);
+      }
+
+      function updateNodeSelectionUI() {
+        const { nodeId, edgeId } = state.nodeSelection;
+
+        document.querySelectorAll('.node-item.selected').forEach(item => {
+          if (item.dataset.nodeId !== nodeId) item.classList.remove('selected');
+        });
+        if (nodeId) {
+          const el = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
+          if (el) el.classList.add('selected');
+        }
+
+        document.querySelectorAll('.node-edge.selected').forEach(p => p.classList.remove('selected'));
+        if (edgeId) {
+          const g = document.querySelector(`.node-edge-group[data-edge-id="${edgeId}"]`);
+          if (g) {
+            const path = g.querySelector('.node-edge');
+            if (path) path.classList.add('selected');
+          }
+        }
+
+        const labelLayer = document.getElementById('edgeLabelLayer');
+        if (labelLayer) {
+          labelLayer.querySelectorAll('.edge-toolbar').forEach(b => b.remove());
+          // 正在编辑标签时不叠加操作条，避免遮挡输入框
+          const editing = state.activeEdgeEditor && state.activeEdgeEditor.isConnected;
+          if (edgeId && !editing) {
+            const edge = state.edges.find(x => x.id === edgeId);
+            const pos = edge ? getEdgeMidpoint(edge) : null;
+            if (edge && pos) {
+              const bar = document.createElement('div');
+              bar.className = 'edge-toolbar';
+              bar.dataset.edgeId = edgeId;
+              bar.style.left = pos.x + 'px';
+              bar.style.top = pos.y + 'px';
+              bar.innerHTML =
+                '<button type="button" class="edge-tool-btn" data-action="label" title="编辑关系说明">✏️</button>' +
+                '<button type="button" class="edge-tool-btn" data-action="reverse" title="反转方向">⇄</button>' +
+                '<button type="button" class="edge-tool-btn danger" data-action="delete" title="删除这条连线">✕</button>';
+              labelLayer.appendChild(bar);
+            }
+          }
+        }
       }
 
       function bindNodeCanvasEvents() {
@@ -7356,6 +8359,7 @@
 
         let panState = null;
         let pinchState = null;
+        let marqueeState = null;
 
         // ---------- 平移 ----------
         viewport.addEventListener('pointerdown', (e) => {
@@ -7363,8 +8367,39 @@
           if (pinchState) return;
           if (e.target.closest('.node-item')) return;
           if (e.target.closest('.node-toolbar')) return;
+          if (e.target.closest('.node-filter-panel')) return;
+          if (e.target.closest('.node-batch-bar')) return;
           if (e.target.closest('.edge-label')) return;
-          if (panState) return;
+          if (e.target.closest('.edge-toolbar')) return;
+          if (e.target.closest('.node-menu')) return;
+          if (panState || marqueeState) return;
+
+          closeNodeMenu();
+
+          // Shift（或 Ctrl）在空白处按下 = 框选，否则是平移画布
+          if (e.shiftKey || e.ctrlKey || e.metaKey) {
+            const rect = viewport.getBoundingClientRect();
+            const box = document.createElement('div');
+            box.className = 'node-marquee';
+            box.style.left = (e.clientX - rect.left) + 'px';
+            box.style.top = (e.clientY - rect.top) + 'px';
+            box.style.width = '0px';
+            box.style.height = '0px';
+            viewport.appendChild(box);
+            marqueeState = {
+              id: e.pointerId,
+              startClientX: e.clientX,
+              startClientY: e.clientY,
+              rectLeft: rect.left,
+              rectTop: rect.top,
+              additive: e.shiftKey || e.ctrlKey || e.metaKey,
+              keep: new Set(state.nodeMultiSelect),
+              box,
+              moved: false
+            };
+            e.preventDefault();
+            return;
+          }
 
           panState = {
             id: e.pointerId,
@@ -7378,6 +8413,20 @@
         });
 
         viewport.addEventListener('pointermove', (e) => {
+          if (marqueeState && e.pointerId === marqueeState.id) {
+            const left = Math.min(marqueeState.startClientX, e.clientX);
+            const top = Math.min(marqueeState.startClientY, e.clientY);
+            const w = Math.abs(e.clientX - marqueeState.startClientX);
+            const h = Math.abs(e.clientY - marqueeState.startClientY);
+            if (w > 3 || h > 3) marqueeState.moved = true;
+            const box = marqueeState.box;
+            box.style.left = (left - marqueeState.rectLeft) + 'px';
+            box.style.top = (top - marqueeState.rectTop) + 'px';
+            box.style.width = w + 'px';
+            box.style.height = h + 'px';
+            applyMarqueeSelection({ left, top, right: left + w, bottom: top + h }, marqueeState);
+            return;
+          }
           if (!panState || e.pointerId !== panState.id) return;
           const dx = e.clientX - panState.sx;
           const dy = e.clientY - panState.sy;
@@ -7387,6 +8436,15 @@
           updateNodeView();
         });
 
+        const endMarquee = (e) => {
+          if (!marqueeState) return;
+          if (e && e.pointerId !== undefined && e.pointerId !== marqueeState.id) return;
+          marqueeState.box.remove();
+          const moved = marqueeState.moved;
+          marqueeState = null;
+          if (moved) saveNodes();
+        };
+
         const endPan = (e) => {
           if (!panState) return;
           if (e && e.pointerId !== undefined && e.pointerId !== panState.id) return;
@@ -7394,12 +8452,14 @@
           panState = null;
           viewport.classList.remove('panning');
         };
-        viewport.addEventListener('pointerup', endPan);
-        viewport.addEventListener('pointercancel', endPan);
-        viewport.addEventListener('pointerleave', endPan);
+        viewport.addEventListener('pointerup', (e) => { endMarquee(e); endPan(e); });
+        viewport.addEventListener('pointercancel', (e) => { endMarquee(e); endPan(e); });
+        viewport.addEventListener('pointerleave', (e) => { endMarquee(e); endPan(e); });
 
         // ---------- 滚轮缩放 ----------
         viewport.addEventListener('wheel', (e) => {
+          // 节点正文自己需要滚动时不要抢滚轮
+          if (e.target.closest && e.target.closest('.node-body')) return;
           e.preventDefault();
           const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
           zoomAt(e.clientX, e.clientY, factor);
@@ -7434,7 +8494,7 @@
           const worldX = (lx - pinchState.vx) / pinchState.scale;
           const worldY = (ly - pinchState.vy) / pinchState.scale;
           let ns = pinchState.scale * (dist / (pinchState.dist || 1));
-          ns = Math.min(2.5, Math.max(0.25, ns));
+          ns = Math.min(NODE_MAX_SCALE, Math.max(NODE_MIN_SCALE, ns));
           state.nodeView.scale = ns;
           state.nodeView.x = (cx - rect.left) - worldX * ns;
           state.nodeView.y = (cy - rect.top) - worldY * ns;
@@ -7449,15 +8509,52 @@
 
         // ---------- 节点内交互 ----------
         layer.addEventListener('pointerdown', (e) => {
+          const nodeEl = e.target.closest('.node-item');
+          const nodeId = nodeEl ? nodeEl.dataset.nodeId : null;
+
+          // 点击端口/状态标签时不参与（多）选逻辑：那两个是独立交互
+          const isPort = !!e.target.closest('.node-port');
+          const isChip = !!e.target.closest('.node-status');
+
+          if (nodeEl && !isPort && !isChip) {
+            if (e.ctrlKey || e.metaKey) {
+              // Ctrl/Cmd 点选：增减单个节点
+              toggleNodeMultiSelectAt(nodeId);
+            } else if (e.shiftKey) {
+              // Shift 点选：从锚点连续加选
+              extendNodeMultiSelect(nodeId);
+            } else if (state.nodeMultiSelect.has(nodeId)) {
+              // 已在多选中：保持多选，并把它设为本次拖动的主节点（可整体拖动）
+              state.nodeSelection = { nodeId: null, edgeId: null };
+              updateNodeSelectionUI();
+              state.nodeSelectAnchor = nodeId;
+            } else {
+              // 普通点击：清空多选，退化为单选
+              clearNodeMultiSelect();
+              selectNode(nodeId);
+            }
+          } else if (!nodeEl && !e.target.closest('.edge-label') && !e.target.closest('.edge-toolbar')
+                     && !e.target.closest('.node-menu') && !e.target.closest('.node-filter-panel')) {
+            clearNodeSelection();
+            if (!e.shiftKey && !e.ctrlKey && !e.metaKey) clearNodeMultiSelect();
+          }
+
           const grip = e.target.closest('.node-grip');
           if (grip) {
-            const nodeEl = grip.closest('.node-item');
-            if (nodeEl) startNodeDrag(e, nodeEl);
+            if (!nodeEl) return;
+            // 多选状态拖动其中一个 = 整体移动
+            if (state.nodeMultiSelect.size > 1 && state.nodeMultiSelect.has(nodeId)) {
+              const els = Array.from(state.nodeMultiSelect)
+                .map(id => document.querySelector(`.node-item[data-node-id="${id}"]`))
+                .filter(Boolean);
+              startMultiNodeDrag(e, nodeEl, els);
+              return;
+            }
+            startNodeDrag(e, nodeEl);
             return;
           }
           const port = e.target.closest('.node-port');
           if (port) {
-            const nodeEl = port.closest('.node-item');
             if (nodeEl) startEdgeDraw(e, nodeEl.dataset.nodeId, port.dataset.side);
             return;
           }
@@ -7497,9 +8594,47 @@
             if (nodeEl) deleteNode(nodeEl.dataset.nodeId);
             return;
           }
+
+          // 节点头部的状态标签：打开「转为知识点 / 隐藏 / 恢复」菜单
+          const statusChip = e.target.closest('.node-status');
+          if (statusChip) {
+            const nodeEl = statusChip.closest('.node-item');
+            if (nodeEl) {
+              e.stopPropagation();
+              openNodeMenu(nodeEl.dataset.nodeId, e.clientX, e.clientY);
+            }
+            return;
+          }
         });
 
-        const rerenderEdgesDebounced = debounce(() => renderAllEdges(), 180);
+        // ---------- 连线选中 / 浮出操作条 ----------
+        const labelLayer = document.getElementById('edgeLabelLayer');
+        if (labelLayer) {
+          labelLayer.addEventListener('click', (e) => {
+            const lab = e.target.closest('.edge-label');
+            if (!lab) return;
+            e.stopPropagation();
+            selectEdge(lab.dataset.edgeId);
+          });
+          labelLayer.addEventListener('dblclick', (e) => {
+            const lab = e.target.closest('.edge-label');
+            if (!lab) return;
+            e.stopPropagation();
+            editEdgeLabel(lab.dataset.edgeId);
+          });
+          // 操作条按钮委托（编辑标签 / 反转方向 / 删除）
+          labelLayer.addEventListener('click', (e) => {
+            const btn = e.target.closest('.edge-tool-btn');
+            if (!btn) return;
+            const bar = btn.closest('.edge-toolbar');
+            if (!bar) return;
+            e.stopPropagation();
+            const edgeId = bar.dataset.edgeId;
+            if (btn.dataset.action === 'delete') deleteEdge(edgeId);
+            else if (btn.dataset.action === 'label') editEdgeLabel(edgeId);
+            else if (btn.dataset.action === 'reverse') reverseEdge(edgeId);
+          });
+        }
 
         layer.addEventListener('input', (e) => {
           const body = e.target.closest('.node-body');
@@ -7507,9 +8642,16 @@
             const nodeEl = body.closest('.node-item');
             const node = state.nodes.find(n => n.id === nodeEl.dataset.nodeId);
             if (node) {
+              // 已关联知识点的节点正文只读：兜底阻止写入（避免节点侧改动被同步静默覆盖）
+              if (isNodeBodyReadonly(node)) {
+                e.preventDefault && e.preventDefault();
+                body.innerHTML = node.content || '';
+                return;
+              }
               node.content = sanitizeHtml(body.innerHTML);
               saveNodes();
-              rerenderEdgesDebounced();
+              // 正文高度变化会改变锚点，补一次对齐
+              scheduleEdgesRedraw();
             }
             return;
           }
@@ -7552,29 +8694,50 @@
         }
       }
 
+      // 传入的是视口内的局部坐标（各调用方自己换算），保证与屏幕位置一致
+      function zoomAtLocal(localX, localY, factor) {
+        const v = state.nodeView;
+        const ns = Math.min(NODE_MAX_SCALE, Math.max(NODE_MIN_SCALE, v.scale * factor));
+        if (Math.abs(ns - v.scale) < 0.0001) return;
+        const wx = (localX - v.x) / v.scale;
+        const wy = (localY - v.y) / v.scale;
+        v.scale = ns;
+        v.x = localX - wx * ns;
+        v.y = localY - wy * ns;
+        updateNodeView();
+        saveNodes();
+      }
+
       function zoomAt(clientX, clientY, factor) {
         const viewport = document.getElementById('nodeViewport');
         if (!viewport) return;
         const r = viewport.getBoundingClientRect();
-        const lx = clientX - r.left;
-        const ly = clientY - r.top;
-        const v = state.nodeView;
-        const ns = Math.min(2.5, Math.max(0.25, v.scale * factor));
-        if (Math.abs(ns - v.scale) < 0.0001) return;
-        const wx = (lx - v.x) / v.scale;
-        const wy = (ly - v.y) / v.scale;
-        v.scale = ns;
-        v.x = lx - wx * ns;
-        v.y = ly - wy * ns;
-        updateNodeView();
-        saveNodes();
+        zoomAtLocal(clientX - r.left, clientY - r.top, factor);
       }
 
       function zoomBy(factor) {
         const viewport = document.getElementById('nodeViewport');
         if (!viewport) return;
         const r = viewport.getBoundingClientRect();
-        zoomAt(r.left + r.width / 2, r.top + r.height / 2, factor);
+        zoomAtLocal(r.width / 2, r.height / 2, factor);
+      }
+
+      // 计算所有节点的包围盒（同时用于「适应画布」与「导入定位」）
+      function getNodesBBox() {
+        if (state.nodes.length === 0) return null;
+        const layer = document.getElementById('nodeLayer');
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        state.nodes.forEach(n => {
+          const nodeEl = layer ? layer.querySelector(`.node-item[data-node-id="${n.id}"]`) : null;
+          const w = nodeEl ? (nodeEl.offsetWidth || NODE_DEFAULT_W) : NODE_DEFAULT_W;
+          const h = nodeEl ? (nodeEl.offsetHeight || NODE_DEFAULT_H) : NODE_DEFAULT_H;
+          minX = Math.min(minX, n.x);
+          minY = Math.min(minY, n.y);
+          maxX = Math.max(maxX, n.x + w);
+          maxY = Math.max(maxY, n.y + h);
+        });
+        if (!isFinite(minX) || !isFinite(minY)) return null;
+        return { minX, minY, maxX, maxY, w: maxX - minX, h: maxY - minY };
       }
 
       function fitNodes() {
@@ -7586,27 +8749,18 @@
           saveNodes();
           return;
         }
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        state.nodes.forEach(n => {
-          const nodeEl = document.querySelector(`.node-item[data-node-id="${n.id}"]`);
-          const w = nodeEl ? nodeEl.offsetWidth : NODE_DEFAULT_W;
-          const h = nodeEl ? nodeEl.offsetHeight : 140;
-          minX = Math.min(minX, n.x);
-          minY = Math.min(minY, n.y);
-          maxX = Math.max(maxX, n.x + w);
-          maxY = Math.max(maxY, n.y + h);
-        });
-        if (!isFinite(minX)) return;
+        const box = getNodesBBox();
+        if (!box) return;
         const pad = 60;
         const r = viewport.getBoundingClientRect();
         const availW = Math.max(80, r.width - pad * 2);
         const availH = Math.max(80, r.height - pad * 2);
-        const bw = Math.max(1, maxX - minX);
-        const bh = Math.max(1, maxY - minY);
-        const scale = Math.min(2, Math.max(0.25, Math.min(availW / bw, availH / bh)));
+        const bw = Math.max(1, box.w);
+        const bh = Math.max(1, box.h);
+        const scale = Math.min(2, Math.max(NODE_MIN_SCALE, Math.min(availW / bw, availH / bh)));
         state.nodeView.scale = scale;
-        state.nodeView.x = pad + (availW - bw * scale) / 2 - minX * scale;
-        state.nodeView.y = pad + (availH - bh * scale) / 2 - minY * scale;
+        state.nodeView.x = pad + (availW - bw * scale) / 2 - box.minX * scale;
+        state.nodeView.y = pad + (availH - bh * scale) / 2 - box.minY * scale;
         updateNodeView();
         saveNodes();
       }
@@ -7624,25 +8778,80 @@
         const pid = e.pointerId;
 
         nodeEl.parentNode.appendChild(nodeEl);
+        // 提到 DOM 末尾只影响同级顺序，真正的置顶靠 z-index
+        nodeEl.classList.add('dragging');
 
-        const move = (ev) => {
-          if (ev.pointerId !== pid) return;
+        // 拖动期间用 rAF 合并边重绘，避免每个 pointermove 都全量重建
+        let rafId = null;
+        const scheduleEdges = () => {
+          if (rafId !== null) return;
+          rafId = requestAnimationFrame(() => {
+            rafId = null;
+            renderAllEdges();
+          });
+        };
+
+        let finished = false;
+        const finish = () => {
+          if (finished) return;
+          finished = true;
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          document.removeEventListener('pointercancel', onUp);
+          document.removeEventListener('lostpointercapture', onUp);
+          if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+          nodeEl.classList.remove('dragging');
+          renderAllEdges();
+          saveNodes();
+        };
+        const onMove = (ev) => {
+          if (finished || ev.pointerId !== pid) return;
           node.x = Math.round(ox + (ev.clientX - startX) / scale);
           node.y = Math.round(oy + (ev.clientY - startY) / scale);
           nodeEl.style.left = node.x + 'px';
           nodeEl.style.top = node.y + 'px';
-          renderAllEdges();
+          scheduleEdges();
         };
-        const up = (ev) => {
-          if (ev.pointerId !== pid) return;
-          document.removeEventListener('pointermove', move);
-          document.removeEventListener('pointerup', up);
-          document.removeEventListener('pointercancel', up);
-          saveNodes();
+        // pointerup / pointercancel / lostpointercapture 都走同一条收尾路径
+        const onUp = (ev) => {
+          if (ev.pointerId !== undefined && ev.pointerId !== pid) return;
+          finish();
         };
-        document.addEventListener('pointermove', move);
-        document.addEventListener('pointerup', up);
-        document.addEventListener('pointercancel', up);
+
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
+        document.addEventListener('pointercancel', onUp);
+        document.addEventListener('lostpointercapture', onUp);
+      }
+
+      // ---------- 连线删除 / 换向 ----------
+      function deleteEdge(edgeId) {
+        const edge = state.edges.find(x => x.id === edgeId);
+        if (!edge) return;
+        // 若正在编辑这条连线的标签，先丢弃编辑器
+        if (state.activeEdgeEditor && state.activeEdgeEditor.dataset.edgeId === edgeId) {
+          state.activeEdgeEditor = null;
+        }
+        state.edges = state.edges.filter(x => x.id !== edgeId);
+        if (state.nodeSelection.edgeId === edgeId) {
+          state.nodeSelection = { nodeId: null, edgeId: null };
+        }
+        saveNodes();
+        renderAllEdges();
+        showToast('已删除连线');
+      }
+
+      function reverseEdge(edgeId) {
+        const edge = state.edges.find(x => x.id === edgeId);
+        if (!edge) return;
+        const from = edge.from, fromSide = edge.fromSide;
+        edge.from = edge.to;
+        edge.fromSide = edge.toSide;
+        edge.to = from;
+        edge.toSide = fromSide;
+        saveNodes();
+        renderAllEdges();
+        showToast('已反转连线方向');
       }
 
       function oppositeSide(s) {
@@ -7670,7 +8879,7 @@
         const x = node ? node.x : (parseFloat(nodeEl.style.left) || 0);
         const y = node ? node.y : (parseFloat(nodeEl.style.top) || 0);
         const w = nodeEl.offsetWidth || NODE_DEFAULT_W;
-        const h = nodeEl.offsetHeight || 120;
+        const h = nodeEl.offsetHeight || NODE_DEFAULT_H;
         switch (side) {
           case 'top': return { x: x + w / 2, y };
           case 'bottom': return { x: x + w / 2, y: y + h };
@@ -7686,7 +8895,7 @@
         const x = node ? node.x : (parseFloat(nodeEl.style.left) || 0);
         const y = node ? node.y : (parseFloat(nodeEl.style.top) || 0);
         const w = nodeEl.offsetWidth || NODE_DEFAULT_W;
-        const h = nodeEl.offsetHeight || 120;
+        const h = nodeEl.offsetHeight || NODE_DEFAULT_H;
         const cx = x + w / 2;
         const cy = y + h / 2;
         const dx = worldPoint.x - cx;
@@ -7697,6 +8906,26 @@
         return dy > 0 ? 'bottom' : 'top';
       }
 
+      // 单点计算连线几何：SVG 路径 + 三次贝塞尔中点，供绘制与操作条共用
+      function getEdgePathData(edge) {
+        const aEl = document.querySelector(`.node-item[data-node-id="${edge.from}"]`);
+        const bEl = document.querySelector(`.node-item[data-node-id="${edge.to}"]`);
+        if (!aEl || !bEl) return null;
+        const a = getAnchorPoint(aEl, edge.fromSide);
+        const b = getAnchorPoint(bEl, edge.toSide);
+        const dist = Math.hypot(b.x - a.x, b.y - a.y);
+        const d = Math.max(48, Math.min(170, dist * 0.45));
+        const c1 = offsetPoint(a, edge.fromSide, d);
+        const c2 = offsetPoint(b, edge.toSide, d);
+        return {
+          dAttr: `M ${a.x} ${a.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${b.x} ${b.y}`,
+          mid: {
+            x: (a.x + 3 * c1.x + 3 * c2.x + b.x) / 8,
+            y: (a.y + 3 * c1.y + 3 * c2.y + b.y) / 8
+          }
+        };
+      }
+
       function renderAllEdges() {
         const svg = document.getElementById('nodeEdgeSvg');
         const labelLayer = document.getElementById('edgeLabelLayer');
@@ -7704,22 +8933,20 @@
 
         svg.querySelectorAll('.node-edge-group').forEach(g => g.remove());
 
-        const editing = document.activeElement && document.activeElement.classList &&
-          document.activeElement.classList.contains('edge-label-input');
-        if (!editing) labelLayer.innerHTML = '';
+        // 正在编辑的输入框由 state.activeEdgeEditor 显式登记（聚焦在下一个 tick 才发生）
+        const activeInput = state.activeEdgeEditor && state.activeEdgeEditor.isConnected
+          ? state.activeEdgeEditor : null;
+        if (!activeInput) state.activeEdgeEditor = null;
+        const editingEdgeId = activeInput ? activeInput.dataset.edgeId : null;
+        // 清掉旧的标签/操作条，但保留正在编辑的输入框本体，避免它被移除而丢掉编辑
+        Array.from(labelLayer.children).forEach(child => {
+          if (child !== activeInput) child.remove();
+        });
 
         state.edges.forEach(edge => {
-          const aEl = document.querySelector(`.node-item[data-node-id="${edge.from}"]`);
-          const bEl = document.querySelector(`.node-item[data-node-id="${edge.to}"]`);
-          if (!aEl || !bEl) return;
-
-          const a = getAnchorPoint(aEl, edge.fromSide);
-          const b = getAnchorPoint(bEl, edge.toSide);
-          const dist = Math.hypot(b.x - a.x, b.y - a.y);
-          const d = Math.max(48, Math.min(170, dist * 0.45));
-          const c1 = offsetPoint(a, edge.fromSide, d);
-          const c2 = offsetPoint(b, edge.toSide, d);
-          const dAttr = `M ${a.x} ${a.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${b.x} ${b.y}`;
+          const geo = getEdgePathData(edge);
+          if (!geo) return;
+          const dAttr = geo.dAttr;
 
           const g = document.createElementNS(SVG_NS, 'g');
           g.setAttribute('class', 'node-edge-group');
@@ -7735,50 +8962,41 @@
           hit.setAttribute('d', dAttr);
           g.appendChild(hit);
 
+          // 单击连线本身也选中它（命中区很宽，比点小标签容易得多）
+          hit.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            selectEdge(edge.id);
+          });
           g.addEventListener('mouseenter', () => path.classList.add('hover'));
           g.addEventListener('mouseleave', () => path.classList.remove('hover'));
-          g.addEventListener('click', (ev) => {
-            ev.stopPropagation();
-            editEdgeLabel(edge.id);
-          });
 
           svg.appendChild(g);
 
-          if (!editing) {
-            const mid = {
-              x: (a.x + 3 * c1.x + 3 * c2.x + b.x) / 8,
-              y: (a.y + 3 * c1.y + 3 * c2.y + b.y) / 8
-            };
+          // 正在编辑的那条边：跳过它的标签，避免和输入框重叠（输入框本体已在上面保留）
+          if (edge.id !== editingEdgeId) {
+            const mid = geo.mid;
             const lab = document.createElement('div');
             lab.className = 'edge-label' + (edge.label ? '' : ' empty');
             lab.dataset.edgeId = edge.id;
             lab.style.left = mid.x + 'px';
             lab.style.top = mid.y + 'px';
             lab.textContent = edge.label || '＋';
-            lab.title = edge.label || '点击添加关系说明';
-            lab.addEventListener('click', (ev) => {
-              ev.stopPropagation();
-              editEdgeLabel(edge.id);
-            });
+            lab.title = edge.label ? (edge.label + '（单击选中，双击编辑）') : '单击选中，双击添加关系说明';
             labelLayer.appendChild(lab);
+          } else if (activeInput) {
+            // 正在编辑的输入框要跟着连线走，否则拖动节点时它会停在旧位置
+            activeInput.style.left = geo.mid.x + 'px';
+            activeInput.style.top = geo.mid.y + 'px';
           }
         });
+
+        // 绘制完成后同步选中高亮与操作条
+        updateNodeSelectionUI();
       }
 
       function getEdgeMidpoint(edge) {
-        const aEl = document.querySelector(`.node-item[data-node-id="${edge.from}"]`);
-        const bEl = document.querySelector(`.node-item[data-node-id="${edge.to}"]`);
-        if (!aEl || !bEl) return null;
-        const a = getAnchorPoint(aEl, edge.fromSide);
-        const b = getAnchorPoint(bEl, edge.toSide);
-        const dist = Math.hypot(b.x - a.x, b.y - a.y);
-        const d = Math.max(48, Math.min(170, dist * 0.45));
-        const c1 = offsetPoint(a, edge.fromSide, d);
-        const c2 = offsetPoint(b, edge.toSide, d);
-        return {
-          x: (a.x + 3 * c1.x + 3 * c2.x + b.x) / 8,
-          y: (a.y + 3 * c1.y + 3 * c2.y + b.y) / 8
-        };
+        const geo = getEdgePathData(edge);
+        return geo ? geo.mid : null;
       }
 
       function editEdgeLabel(edgeId) {
@@ -7787,18 +9005,26 @@
         const labelLayer = document.getElementById('edgeLabelLayer');
         if (!labelLayer) return;
 
+        // 先把上一个编辑器收尾，避免它的 blur 提交覆盖当前操作
         const existing = labelLayer.querySelector('.edge-label-input');
         if (existing) existing.blur();
-
-        labelLayer.innerHTML = '';
 
         const pos = getEdgeMidpoint(edge);
         if (!pos) return;
 
+        // 只清掉旧标签，不整体清空（编辑中的输入框有专门的生命周期）
+        Array.from(labelLayer.children).forEach(child => {
+          if (!child.classList || !child.classList.contains('edge-label-input')) child.remove();
+        });
+
+        // 快照原值，供 Escape 真正回滚
+        const originalLabel = edge.label || '';
+
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'edge-label-input';
-        input.value = edge.label || '';
+        input.dataset.edgeId = edgeId;
+        input.value = originalLabel;
         input.placeholder = '关系说明…';
         input.style.left = pos.x + 'px';
         input.style.top = pos.y + 'px';
@@ -7807,27 +9033,110 @@
         input.spellcheck = false;
         labelLayer.appendChild(input);
 
-        setTimeout(() => { input.focus(); input.select(); }, 0);
+        // 显式登记当前编辑器：重绘靠它判断是否保留，而不是靠 document.activeElement
+        // （聚焦发生在下一个 tick，仅靠 activeElement 会导致输入框刚建好就被重绘清掉）
+        state.activeEdgeEditor = input;
 
         let done = false;
+        const finishEdit = () => {
+          done = true;
+          if (state.activeEdgeEditor === input) state.activeEdgeEditor = null;
+        };
         const commit = () => {
           if (done) return;
-          done = true;
-          edge.label = input.value.trim().slice(0, 40);
+          edge.label = input.value.trim().slice(0, NODE_EDGE_LABEL_MAX);
+          finishEdit();
           saveNodes();
           renderAllEdges();
+          updateNodeSelectionUI();
+        };
+        const cancel = () => {
+          if (done) return;
+          edge.label = originalLabel;
+          finishEdit();
+          input.blur();
+          renderAllEdges();
+          updateNodeSelectionUI();
         };
         input.addEventListener('blur', commit);
         input.addEventListener('keydown', (ev) => {
           ev.stopPropagation();
           if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
-          else if (ev.key === 'Escape') {
-            ev.preventDefault();
-            edge.label = edge.label;
-            done = true;
-            renderAllEdges();
-          }
+          else if (ev.key === 'Escape') { ev.preventDefault(); cancel(); }
         });
+
+        // 聚焦之后再重绘：此时登记已生效，输入框不会被清掉，且能对齐最新位置
+        setTimeout(() => {
+          input.focus();
+          input.select();
+          renderAllEdges();
+        }, 0);
+      }
+
+      // ---------- 新建节点 ----------
+      // 统一的节点放置入口：appendNodeEl 会自动挂 DOM、屏掉空状态提示
+      function finalizeNewNode(node) {
+        state.nodes.push(node);
+        const nodeEl = appendNodeEl(node);
+        saveNodes();
+        selectNode(node.id);
+        setTimeout(() => {
+          const input = nodeEl && nodeEl.querySelector('.node-title-input');
+          if (input) { input.focus(); input.select(); }
+        }, 60);
+        return nodeEl;
+      }
+
+      function makePlainNode(x, y) {
+        return {
+          id: generateId(),
+          x: Math.round(x),
+          y: Math.round(y),
+          title: '新节点',
+          content: '',
+          images: [],
+          linkedItemId: null
+        };
+      }
+
+      // 从连线端点松手处新建节点：让「朝向来源节点的那条边」正好落在松开的位置
+      // 新节点还没有 DOM，无法用 nearestSide（它要靠 DOM 量尺寸），所以直接按几何算。
+      // centerX/centerY 用来源锚点，px/py 是松开点：
+      // 来源在右 => 新节点用右边接；来源在左 => 用左边接；上下同理。
+      function sideFacingPoint(w, h, centerX, centerY, px, py) {
+        const relX = centerX - px;
+        const relY = centerY - py;
+        let side, ax, ay;
+        if (Math.abs(relX) >= Math.abs(relY)) {
+          side = relX >= 0 ? 'right' : 'left';
+          ax = relX >= 0 ? w : 0;
+          ay = h / 2;
+        } else {
+          side = relY >= 0 ? 'bottom' : 'top';
+          ax = w / 2;
+          ay = relY >= 0 ? h : 0;
+        }
+        return { side, x: px - ax, y: py - ay };
+      }
+
+      function createConnectedNode(prevNodeId, prevSide, worldPoint) {
+        const prevEl = document.querySelector(`.node-item[data-node-id="${prevNodeId}"]`);
+        const w = prevEl ? (prevEl.offsetWidth || NODE_DEFAULT_W) : NODE_DEFAULT_W;
+        const h = prevEl ? (prevEl.offsetHeight || NODE_DEFAULT_H) : NODE_DEFAULT_H;
+        // 来源方向：用「上一个节点的锚点」相对「松开点」的方位，决定新节点哪条边朝过去
+        let srcX = worldPoint.x, srcY = worldPoint.y;
+        if (prevEl) {
+          const anchor = getAnchorPoint(prevEl, prevSide);
+          srcX = anchor.x;
+          srcY = anchor.y;
+        }
+        const placed = sideFacingPoint(w, h, srcX, srcY, worldPoint.x, worldPoint.y);
+
+        const node = makePlainNode(placed.x, placed.y);
+        finalizeNewNode(node);
+        addEdge(prevNodeId, prevSide, node.id, placed.side);
+        renderAllEdges();
+        return node;
       }
 
       function startEdgeDraw(e, nodeId, side) {
@@ -7844,14 +9153,21 @@
 
         const pid = e.pointerId;
         let hoverEl = null;
+        let cancelled = false;
+        // 按下时的屏幕坐标：用于判断是否只是「点了一下」而不是真的拉线
+        const startClientX = e.clientX, startClientY = e.clientY;
+        state.nodeEdgeDrawActive = true;
 
         const move = (ev) => {
-          if (ev.pointerId !== pid) return;
+          if (cancelled || ev.pointerId !== pid) return;
           const p = screenToWorld(ev.clientX, ev.clientY);
           const a = getAnchorPoint(fromEl, side);
           temp.setAttribute('d', buildCurve(a, p, side, oppositeSide(side)));
 
-          const under = document.elementFromPoint(ev.clientX, ev.clientY);
+          // elementFromPoint 在极少数环境（如无头 DOM）不可用，此时视为空白处
+          const under = typeof document.elementFromPoint === 'function'
+            ? document.elementFromPoint(ev.clientX, ev.clientY)
+            : null;
           const target = (under && under.closest) ? under.closest('.node-item') : null;
           const validTarget = (target && target !== fromEl) ? target : null;
           if (hoverEl && hoverEl !== validTarget) hoverEl.classList.remove('edge-target');
@@ -7859,23 +9175,49 @@
           if (hoverEl) hoverEl.classList.add('edge-target');
         };
 
-        const up = (ev) => {
-          if (ev.pointerId !== pid) return;
+        const cleanup = () => {
           document.removeEventListener('pointermove', move);
           document.removeEventListener('pointerup', up);
           document.removeEventListener('pointercancel', up);
           temp.remove();
+          if (hoverEl) hoverEl.classList.remove('edge-target');
+          hoverEl = null;
+          state.nodeEdgeDrawActive = false;
+          state.cancelEdgeDraw = null;
+        };
+        const up = (ev) => {
+          if (cancelled || ev.pointerId !== pid) return;
+          const targetEl = hoverEl;
+          const clientX = ev.clientX, clientY = ev.clientY;
+          cleanup();
 
-          if (hoverEl) {
-            hoverEl.classList.remove('edge-target');
-            const toId = hoverEl.dataset.nodeId;
+          if (targetEl) {
+            // 落到其它节点上 -> 建立连接
+            const toId = targetEl.dataset.nodeId;
             if (toId && toId !== nodeId) {
-              const p = screenToWorld(ev.clientX, ev.clientY);
-              const toSide = nearestSide(hoverEl, p);
+              const p = screenToWorld(clientX, clientY);
+              const toSide = nearestSide(targetEl, p);
               addEdge(nodeId, side, toId, toSide);
             }
+            return;
           }
-          hoverEl = null;
+
+          // 落到空白处 -> 就地新建节点并自动连线
+          const dragged = Math.hypot(clientX - startClientX, clientY - startClientY);
+          if (dragged < NODE_EDGE_MIN_DRAG) {
+            showToast('已取消连线（松手前请拖到目标节点或空白处）');
+            return;
+          }
+          const world = screenToWorld(clientX, clientY);
+          createConnectedNode(nodeId, side, world);
+          showToast('已新建节点并连线，可直接改名');
+        };
+
+        // 供 Escape 键调用
+        state.cancelEdgeDraw = () => {
+          if (cancelled) return;
+          cancelled = true;
+          cleanup();
         };
 
         document.addEventListener('pointermove', move);
@@ -7894,7 +9236,7 @@
         });
         saveNodes();
         renderAllEdges();
-        showToast('已连接，点击连线上的＋可编辑关系说明');
+        showToast('已连接，点连线可选中并编辑关系');
       }
 
       function deleteNode(nodeId) {
@@ -7905,6 +9247,9 @@
           state.edges = state.edges.filter(e => e.from !== nodeId && e.to !== nodeId);
           const nodeEl = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
           if (nodeEl) nodeEl.remove();
+          if (state.nodeSelection.nodeId === nodeId) {
+            state.nodeSelection = { nodeId: null, edgeId: null };
+          }
           saveNodes();
           renderAllEdges();
           updateNodeEmptyTip();
@@ -7912,62 +9257,774 @@
         });
       }
 
+      // 把节点元素挂到画布上
+      function appendNodeEl(node) {
+        const layer = document.getElementById('nodeLayer');
+        if (!layer) return null;
+        const nodeEl = createNodeEl(node);
+        layer.appendChild(nodeEl);
+        updateNodeEmptyTip();
+        return nodeEl;
+      }
+
+      function duplicateNode(nodeId) {
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!node) return null;
+        const copy = {
+          id: generateId(),
+          x: Math.round(node.x + NODE_DUP_OFFSET),
+          y: Math.round(node.y + NODE_DUP_OFFSET),
+          title: node.title,
+          content: node.content,
+          images: (node.images || []).slice(),
+          linkedItemId: null
+        };
+        state.nodes.push(copy);
+        appendNodeEl(copy);
+        saveNodes();
+        updateNodeEmptyTip();
+        // 选中新节点，便于连续 Ctrl+D 或直接 Delete
+        selectNode(copy.id);
+        return copy;
+      }
+
       function addNodeAtCenter() {
         const viewport = document.getElementById('nodeViewport');
         if (!viewport) return;
         const rect = viewport.getBoundingClientRect();
         const center = screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
-        const node = {
-          id: generateId(),
-          x: Math.round(center.x - NODE_DEFAULT_W / 2),
-          y: Math.round(center.y - 70),
-          title: '新节点',
-          content: '',
-          images: [],
-          linkedItemId: null
-        };
-        state.nodes.push(node);
-
-        const layer = document.getElementById('nodeLayer');
-        const nodeEl = createNodeEl(node);
-        const tip = layer.querySelector('.node-empty-tip');
-        if (tip) tip.remove();
-        layer.appendChild(nodeEl);
-
-        saveNodes();
-        updateNodeEmptyTip();
-
-        setTimeout(() => {
-          const input = nodeEl.querySelector('.node-title-input');
-          if (input) { input.focus(); input.select(); }
-        }, 60);
+        finalizeNewNode(makePlainNode(center.x - NODE_DEFAULT_W / 2, center.y - NODE_DEFAULT_H / 2));
       }
 
-      function importItemsAsNodes() {
-        const linked = new Set(state.nodes.map(n => n.linkedItemId).filter(Boolean));
-        const pending = state.items.filter(it => !linked.has(it.id));
-        if (pending.length === 0) {
-          showToast('所有知识点都已导入为节点');
+      // ---------- 知识点 → 节点 单向同步 ----------
+      // 知识点保存后，把 title/content/images 同步到所有 linkedItemId 指向它的节点。
+      // 位置、连线、标签关系全部保留，不做任何反向回写。
+      function syncItemToLinkedNodes(item) {
+        if (!item) return 0;
+        let changed = 0;
+        state.nodes.forEach(node => {
+          if (node.linkedItemId !== item.id) return;
+          const nextContent = item.content || '';
+          const nextImages = item.images || [];
+          const diff = node.title !== item.title ||
+            (node.content || '') !== nextContent ||
+            JSON.stringify(node.images || []) !== JSON.stringify(nextImages);
+          if (!diff) return;
+          node.title = item.title;
+          node.content = nextContent;
+          node.images = nextImages.slice();
+          changed++;
+          patchNodeDom(node);
+        });
+        if (changed > 0) saveNodes();
+        return changed;
+      }
+
+      // 只更新已挂载节点元素的可见内容，尽量不打断用户操作
+      function patchNodeDom(node) {
+        if (state.mode !== 'node') return;
+        const nodeEl = document.querySelector(`.node-item[data-node-id="${node.id}"]`);
+        if (!nodeEl) return;
+        const titleInput = nodeEl.querySelector('.node-title-input');
+        // 焦点在标题/正文里时不动它，避免把用户正在输入的光标顶掉
+        if (titleInput && document.activeElement !== titleInput) titleInput.value = node.title;
+        const body = nodeEl.querySelector('.node-body');
+        if (body && document.activeElement !== body) {
+          const nextHtml = node.content || '';
+          if (body.innerHTML !== nextHtml) body.innerHTML = nextHtml;
+        }
+        if (body) {
+          const imgBox = nodeEl.querySelector('.node-images');
+          renderNodeImages(node, imgBox);
+        }
+        scheduleEdgesRedraw();
+      }
+
+      let itemNodeSyncTimer = null;
+      function scheduleItemNodeSync(item) {
+        if (!item) return;
+        if (itemNodeSyncTimer) clearTimeout(itemNodeSyncTimer);
+        // 300ms 防抖：连续保存只同步一次
+        itemNodeSyncTimer = setTimeout(() => {
+          itemNodeSyncTimer = null;
+          syncItemToLinkedNodes(item);
+        }, 300);
+      }
+
+      function flushItemNodeSync(items) {
+        if (itemNodeSyncTimer) { clearTimeout(itemNodeSyncTimer); itemNodeSyncTimer = null; }
+        const list = Array.isArray(items) ? items : state.items;
+        let changed = 0;
+        list.forEach(it => { changed += syncItemToLinkedNodes(it); });
+        return changed;
+      }
+
+      // ---------- 目录路径输入框：三种设置方式中的前两种 ----------
+      // 1) 直接写 父/子；2) Tab 降级 / Shift+Tab 升级
+      function bindGroupPathInput(inputId, hintId) {
+        const input = document.getElementById(inputId);
+        const hint = hintId ? document.getElementById(hintId) : null;
+        if (!input) return;
+
+        const refresh = () => {
+          const raw = input.value;
+          const norm = normalizeGroupPath(raw);
+          if (hint) {
+            if (!norm) {
+              hint.textContent = '留空表示不分组；用「/」分层，如：前端基础/JavaScript';
+            } else {
+              const depth = norm.split('/').length;
+              hint.textContent = `第 ${depth} 级 · ${norm}`;
+            }
+          }
+          return norm;
+        };
+
+        input.addEventListener('input', refresh);
+
+        input.addEventListener('keydown', (e) => {
+          // Tab / Shift+Tab：整体升降一级（自动补一级父目录）
+          if (e.key === 'Tab') {
+            e.preventDefault();
+            const norm = refresh();
+            if (e.shiftKey) {
+              if (!norm) return;
+              const segs = norm.split('/');
+              if (segs.length <= 1) { showToast('已经是第 1 级', true); return; }
+              input.value = segs.slice(0, -1).join('/');
+            } else {
+              const segs = norm ? norm.split('/') : [];
+              const leaf = segs.length ? segs[segs.length - 1] : '新目录';
+              const parent = segs.length > 1 ? segs.slice(0, -1).join('/') : '';
+              input.value = (parent ? parent + '/' : '') + leaf + '/';
+            }
+            refresh();
+            // 把光标放回末尾，方便直接继续输入子目录名
+            const v = input.value;
+            input.setSelectionRange(v.length, v.length);
+            return;
+          }
+
+          // 输入「/」时把已有目录作为候选提示出来，减少手打
+          if (e.key === '/') {
+            const segs = normalizeGroupPath(input.value).split('/').filter(Boolean);
+            const prefix = segs.length ? segs.join('/') + '/' : '';
+            const candidates = getAllGroups().filter(g => g.startsWith(prefix) && g !== prefix);
+            if (candidates.length > 0 && hint) {
+              const nextSegs = Array.from(new Set(candidates.map(g =>
+                g.slice(prefix.length).split('/')[0]))).slice(0, 6);
+              hint.textContent = `可选子目录：${nextSegs.join('、')}`;
+            }
+          }
+        });
+
+        refresh();
+      }
+
+      // ---------- 节点 ↔ 知识点 互转 ----------
+      function setNodeLinkedItem(node, itemId) {
+        node.linkedItemId = itemId || null;
+        saveNodes();
+        refreshNodeStatus(node.id);
+      }
+
+      // 把节点转为知识点：未关联则新建，已关联但被隐藏则恢复显示
+      function convertNodeToItem(nodeId) {
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!node) return null;
+        const st = getNodeItemState(node);
+
+        if (st.kind === 'linked') {
+          showToast('这个节点已经是知识点，正在全局与背诵模式中显示');
+          return st.item;
+        }
+
+        if (st.kind === 'hidden-item') {
+          st.item.hidden = false;
+          saveToStorage();
+          setNodeLinkedItem(node, st.item.id);
+          renderSidebar(true);
+          showToast('已恢复为知识点，重新出现在全局与背诵模式');
+          return st.item;
+        }
+
+        const item = {
+          id: generateId(),
+          title: node.title || '无标题',
+          content: toHtmlContent(node.content || ''),
+          group: '',
+          masteryLevel: 0,
+          images: (node.images || []).slice(),
+          tags: [],
+          hidden: false
+        };
+        state.items.push(item);
+        saveToStorage();
+        setNodeLinkedItem(node, item.id);
+        renderSidebar(true);
+        showToast('已转为知识点，可在全局与背诵模式查看');
+        return item;
+      }
+
+      // 把已关联的知识点隐藏：数据与掌握度保留，只是不参与全局/背诵/侧栏
+      function hideLinkedItemOfNode(nodeId) {
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+        const st = getNodeItemState(node);
+        if (st.kind !== 'linked') {
+          showToast('这个节点还没有关联知识点');
+          return;
+        }
+        st.item.hidden = true;
+        saveToStorage();
+        // 当前编辑的正是它时，让位给其它可见条目
+        if (state.activeId === st.item.id) {
+          const visible = getReciteItems();
+          state.activeId = visible.length > 0 ? visible[0].id : null;
+          state.editingSessionId = null;
+        }
+        saveNodes();
+        refreshNodeStatus(nodeId);
+        renderSidebar(true);
+        showToast('已隐藏：不再出现在全局与背诵模式，掌握度已保留');
+      }
+
+      function openKnowledgeItem(itemId) {
+        const item = state.items.find(i => i.id === itemId);
+        if (!item) return;
+        closeNodeMenu();
+        guardUnsaved(() => {
+          state.isCreatingNew = false;
+          state.activeId = itemId;
+          state.editingSessionId = null;
+          doSetMode('edit');
+          setTimeout(() => {
+            const t = document.getElementById('editTitleInput');
+            if (t) { t.focus(); t.select(); }
+          }, 120);
+        });
+      }
+
+      // ---------- 多选（框选 / Ctrl 点选 / 全选 / 按标签 / 按目录） ----------
+      function getSelectedNodeIds() {
+        // 只保留仍然存在的节点
+        const alive = new Set(state.nodes.map(n => n.id));
+        Array.from(state.nodeMultiSelect).forEach(id => {
+          if (!alive.has(id)) state.nodeMultiSelect.delete(id);
+        });
+        return Array.from(state.nodeMultiSelect);
+      }
+
+      function isMultiSelecting() {
+        return getSelectedNodeIds().length > 0;
+      }
+
+      function clearNodeMultiSelect() {
+        if (state.nodeMultiSelect.size === 0) { updateNodeBatchBar(); return; }
+        state.nodeMultiSelect.clear();
+        state.nodeSelectAnchor = null;
+        syncMultiSelectClasses();
+        updateNodeBatchBar();
+      }
+
+      function setNodeMultiSelect(ids, anchor) {
+        state.nodeMultiSelect = new Set(ids || []);
+        state.nodeSelectAnchor = anchor || (ids && ids.length ? ids[0] : null);
+        syncMultiSelectClasses();
+        updateNodeBatchBar();
+      }
+
+      function toggleNodeMultiSelect(id) {
+        if (!id) return;
+        if (state.nodeMultiSelect.has(id)) state.nodeMultiSelect.delete(id);
+        else state.nodeMultiSelect.add(id);
+        state.nodeSelectAnchor = id;
+        // 多选与单选互斥，避免两个高亮同时出现造成误解
+        state.nodeSelection = { nodeId: null, edgeId: null };
+        updateNodeSelectionUI();
+        syncMultiSelectClasses();
+        updateNodeBatchBar();
+      }
+
+      // Shift 点击：从锚点连续加选；没有锚点时退化为单选
+      function extendNodeMultiSelect(toId) {
+        if (!toId) return;
+        const anchor = state.nodeSelectAnchor;
+        if (!anchor || !state.nodeMultiSelect.has(anchor)) { toggleNodeMultiSelect(toId); return; }
+        rangeSelectNodes(anchor, toId);
+      }
+
+      // Ctrl / Cmd 点击：逐个加选 / 减选
+      function toggleNodeMultiSelectAt(id) {
+        toggleNodeMultiSelect(id);
+      }
+
+      // Ctrl 点击：范围加选（从锚点到当前）
+      function rangeSelectNodes(fromId, toId) {
+        const compact = state.nodes.map(n => n.id);
+        const a = compact.indexOf(fromId);
+        const b = compact.indexOf(toId);
+        if (a < 0 || b < 0) { toggleNodeMultiSelect(toId); return; }
+        const lo = Math.min(a, b), hi = Math.max(a, b);
+        for (let i = lo; i <= hi; i++) state.nodeMultiSelect.add(compact[i]);
+        state.nodeSelectAnchor = toId;
+        state.nodeSelection = { nodeId: null, edgeId: null };
+        updateNodeSelectionUI();
+        syncMultiSelectClasses();
+        updateNodeBatchBar();
+      }
+
+      function selectAllNodes() {
+        setNodeMultiSelect(state.nodes.map(n => n.id), state.nodes.length ? state.nodes[0].id : null);
+        if (state.nodes.length > 0) showToast(`已全选 ${state.nodes.length} 个节点`);
+      }
+
+      function syncMultiSelectClasses() {
+        const ids = state.nodeMultiSelect;
+        document.querySelectorAll('.node-item').forEach(el => {
+          el.classList.toggle('multi-selected', ids.has(el.dataset.nodeId));
+        });
+      }
+
+      // 框选：与矩形相交即选中
+      function applyMarqueeSelection(clientRect, mq) {
+        const hits = new Set();
+        state.nodes.forEach(n => {
+          const el = document.querySelector(`.node-item[data-node-id="${n.id}"]`);
+          if (!el) return;
+          const r = el.getBoundingClientRect();
+          const overlap = r.left < clientRect.right && r.right > clientRect.left &&
+                          r.top < clientRect.bottom && r.bottom > clientRect.top;
+          if (overlap) hits.add(n.id);
+        });
+        const next = mq.additive ? new Set(mq.keep) : new Set();
+        hits.forEach(id => next.add(id));
+        state.nodeMultiSelect = next;
+        if (hits.size > 0) state.nodeSelectAnchor = Array.from(hits)[0];
+        syncMultiSelectClasses();
+        updateNodeBatchBar();
+      }
+
+      // 多选状态下整体拖动：保持相对位置
+      function startMultiNodeDrag(e, anchorEl, nodeEls) {
+        e.preventDefault();
+        e.stopPropagation();
+        const scale = state.nodeView.scale || 1;
+        const pid = e.pointerId;
+        const startX = e.clientX, startY = e.clientY;
+        const orig = nodeEls.map(el => {
+          const node = state.nodes.find(n => n.id === el.dataset.nodeId);
+          return { el, node, x: node ? node.x : 0, y: node ? node.y : 0 };
+        });
+        nodeEls.forEach(el => el.classList.add('dragging'));
+
+        let rafId = null;
+        const schedule = () => {
+          if (rafId !== null) return;
+          rafId = requestAnimationFrame(() => { rafId = null; renderAllEdges(); });
+        };
+        let finished = false;
+        const finish = () => {
+          if (finished) return;
+          finished = true;
+          document.removeEventListener('pointermove', onMove);
+          document.removeEventListener('pointerup', onUp);
+          document.removeEventListener('pointercancel', onUp);
+          if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+          nodeEls.forEach(el => el.classList.remove('dragging'));
+          renderAllEdges();
+          saveNodes();
+        };
+        const onMove = (ev) => {
+          if (finished || ev.pointerId !== pid) return;
+          const dx = (ev.clientX - startX) / scale;
+          const dy = (ev.clientY - startY) / scale;
+          orig.forEach(o => {
+            if (!o.node) return;
+            o.node.x = Math.round(o.x + dx);
+            o.node.y = Math.round(o.y + dy);
+            o.el.style.left = o.node.x + 'px';
+            o.el.style.top = o.node.y + 'px';
+          });
+          schedule();
+        };
+        const onUp = (ev) => {
+          if (ev.pointerId !== undefined && ev.pointerId !== pid) return;
+          finish();
+        };
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
+        document.addEventListener('pointercancel', onUp);
+      }
+
+      // ---------- 批量操作条 ----------
+      function updateNodeBatchBar() {
+        const bar = document.getElementById('nodeBatchBar');
+        if (!bar) return;
+        const ids = getSelectedNodeIds();
+        if (ids.length === 0) {
+          bar.style.display = 'none';
+          bar.innerHTML = '';
+          return;
+        }
+        const stats = getBatchSelectionStats(ids);
+        bar.style.display = '';
+        bar.innerHTML =
+          `<span class="node-batch-count">已选 ${ids.length} 个节点</span>` +
+          `<button type="button" class="node-batch-btn primary" data-batch="connect">🔗 依次连线</button>` +
+          `<button type="button" class="node-batch-btn" data-batch="to-item">✓ 转为知识点` +
+            (stats.plain > 0 ? ` (${stats.plain})` : '') + `</button>` +
+          `<button type="button" class="node-batch-btn" data-batch="hide">🚫 隐藏知识点` +
+            (stats.linked > 0 ? ` (${stats.linked})` : '') + `</button>` +
+          `<button type="button" class="node-batch-btn" data-batch="show">👁 取消隐藏` +
+            (stats.hidden > 0 ? ` (${stats.hidden})` : '') + `</button>` +
+          `<button type="button" class="node-batch-btn danger" data-batch="delete">✕ 删除 (${ids.length})</button>` +
+          `<button type="button" class="node-batch-btn" data-batch="clear">取消选择</button>`;
+      }
+
+      function getBatchSelectionStats(ids) {
+        let plain = 0, linked = 0, hidden = 0;
+        (ids || getSelectedNodeIds()).forEach(id => {
+          const node = state.nodes.find(n => n.id === id);
+          if (!node) return;
+          const st = getNodeItemState(node);
+          if (st.kind === 'plain') plain++;
+          else if (st.kind === 'linked') linked++;
+          else hidden++;
+        });
+        return { plain, linked, hidden, total: (ids || []).length };
+      }
+
+      function bindNodeBatchBar() {
+        const bar = document.getElementById('nodeBatchBar');
+        if (!bar) return;
+        bar.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-batch]');
+          if (!btn) return;
+          e.stopPropagation();
+          runBatchNodeAction(btn.dataset.batch);
+        });
+      }
+
+      function runBatchNodeAction(action) {
+        const ids = getSelectedNodeIds();
+        if (ids.length === 0) { showToast('请先选择节点', true); return; }
+
+        if (action === 'clear') { clearNodeMultiSelect(); return; }
+
+        if (action === 'connect') {
+          if (ids.length < 2) { showToast('至少选择 2 个节点才能连线', true); return; }
+          const order = state.nodes.filter(n => state.nodeMultiSelect.has(n.id)).map(n => n.id);
+          let created = 0, skipped = 0;
+          for (let i = 0; i < order.length - 1; i++) {
+            const a = order[i], b = order[i + 1];
+            const dup = state.edges.some(ed =>
+              (ed.from === a && ed.to === b) || (ed.from === b && ed.to === a));
+            if (dup) { skipped++; continue; }
+            state.edges.push({
+              id: generateId(), from: a, to: b,
+              fromSide: 'right', toSide: 'left', label: ''
+            });
+            created++;
+          }
+          saveNodes();
+          renderAllEdges();
+          showToast(`已按顺序连线 ${created} 条` + (skipped ? `，跳过已存在的 ${skipped} 条` : ''));
           return;
         }
 
-        // 放在已有节点右侧的空位上
-        let baseX = 60;
-        if (state.nodes.length > 0) {
-          let maxX = -Infinity;
-          state.nodes.forEach(n => { maxX = Math.max(maxX, n.x); });
-          baseX = (isFinite(maxX) ? maxX : 60) + 320;
+        if (action === 'to-item') {
+          const targets = ids.filter(id => {
+            const node = state.nodes.find(n => n.id === id);
+            return node && getNodeItemState(node).kind !== 'linked';
+          });
+          if (targets.length === 0) { showToast('选中的节点都已经是知识点', true); return; }
+          targets.forEach(id => convertNodeToItem(id));
+          syncMultiSelectClasses();
+          updateNodeBatchBar();
+          showToast(`已把 ${targets.length} 个节点转为知识点`);
+          return;
         }
-        const startY = 60;
-        const colW = 280;
-        const rowH = 250;
-        const cols = 3;
 
-        pending.forEach((it, i) => {
+        if (action === 'hide') {
+          const targets = ids.filter(id => {
+            const node = state.nodes.find(n => n.id === id);
+            return node && getNodeItemState(node).kind === 'linked';
+          });
+          if (targets.length === 0) { showToast('选中的节点没有可隐藏的知识点', true); return; }
+          targets.forEach(id => hideLinkedItemOfNode(id));
+          syncMultiSelectClasses();
+          updateNodeBatchBar();
+          showToast(`已隐藏 ${targets.length} 个知识点（数据与掌握度保留）`);
+          return;
+        }
+
+        if (action === 'show') {
+          const targets = ids.filter(id => {
+            const node = state.nodes.find(n => n.id === id);
+            return node && getNodeItemState(node).kind === 'hidden-item';
+          });
+          if (targets.length === 0) { showToast('选中的节点没有处于隐藏状态的知识点', true); return; }
+          targets.forEach(id => convertNodeToItem(id));
+          syncMultiSelectClasses();
+          updateNodeBatchBar();
+          showToast(`已恢复 ${targets.length} 个知识点`);
+          return;
+        }
+
+        if (action === 'delete') {
+          const titles = ids.slice(0, 5).map(id => {
+            const n = state.nodes.find(x => x.id === id);
+            return '「' + ((n && n.title) || '未命名') + '」';
+          }).join('、');
+          const more = ids.length > 5 ? ` 等 ${ids.length} 个节点` : '';
+          showConfirm('批量删除节点',
+            `确定删除 ${ids.length} 个节点吗？\n${titles}${more}\n与它们相连的连线也会一并删除。\n（关联的知识点本身不会被删除）`,
+            () => {
+              const del = new Set(ids);
+              state.nodes = state.nodes.filter(n => !del.has(n.id));
+              state.edges = state.edges.filter(e => !del.has(e.from) && !del.has(e.to));
+              ids.forEach(id => {
+                const el = document.querySelector(`.node-item[data-node-id="${id}"]`);
+                if (el) el.remove();
+              });
+              state.nodeMultiSelect.clear();
+              state.nodeSelectAnchor = null;
+              state.nodeSelection = { nodeId: null, edgeId: null };
+              saveNodes();
+              renderAllEdges();
+              updateNodeEmptyTip();
+              updateNodeBatchBar();
+              showToast(`已删除 ${ids.length} 个节点`);
+            });
+        }
+      }
+
+      // ---------- 选择面板：全选 / 按标签 / 按目录 ----------
+      function toggleNodeFilterPanel() {
+        const panel = document.getElementById('nodeFilterPanel');
+        if (!panel) return;
+        if (state.nodeFilterOpen) { closeNodeFilterPanel(); return; }
+        state.nodeFilterOpen = true;
+        renderNodeFilterPanel();
+        panel.style.display = '';
+      }
+
+      function closeNodeFilterPanel() {
+        const panel = document.getElementById('nodeFilterPanel');
+        state.nodeFilterOpen = false;
+        if (panel) panel.style.display = 'none';
+      }
+
+      // 节点按「关联知识点的目录/标签」「未关联」分类统计
+      function getNodeGroupBuckets() {
+        const map = new Map();      // path -> node ids（含子树汇总在渲染时算）
+        const unlinked = [];
+        state.nodes.forEach(n => {
+          const st = getNodeItemState(n);
+          if (!st.item) { unlinked.push(n.id); return; }
+          const path = normalizeGroupPath(st.item.group) || WORD_UNGROUPED_KEY;
+          if (!map.has(path)) map.set(path, []);
+          map.get(path).push(n.id);
+        });
+        return { map, unlinked };
+      }
+
+      function getNodeTagBuckets() {
+        const map = new Map();
+        const untagged = [];
+        state.nodes.forEach(n => {
+          const st = getNodeItemState(n);
+          if (!st.item || !(st.item.tags || []).length) { untagged.push(n.id); return; }
+          st.item.tags.forEach(t => {
+            const key = normalizeTag(t).toLowerCase();
+            if (!key) return;
+            if (!map.has(key)) map.set(key, []);
+            map.get(key).push(n.id);
+          });
+        });
+        return { map, untagged };
+      }
+
+      function renderNodeFilterPanel() {
+        const panel = document.getElementById('nodeFilterPanel');
+        if (!panel) return;
+        let html = `<button type="button" class="node-filter-close" data-filter="close">✕</button>`;
+
+        html += `<div class="node-filter-title">快速选择</div>`;
+        html += `<div class="node-filter-row" data-filter="all"><span class="f-name">全选所有节点</span>` +
+                `<span class="f-count">${state.nodes.length}</span></div>`;
+        html += `<div class="node-filter-row" data-filter="none"><span class="f-name">取消选择</span>` +
+                `<span class="f-count">${getSelectedNodeIds().length}</span></div>`;
+
+        // 按目录（含子树汇总）
+        const gb = getNodeGroupBuckets();
+        const groupPaths = Array.from(gb.map.keys()).filter(p => p !== WORD_UNGROUPED_KEY);
+        html += `<div class="node-filter-title">按目录（含子目录）</div>`;
+        if (groupPaths.length === 0 && gb.map.size === 0 && gb.unlinked.length === 0) {
+          html += `<div class="node-filter-hint">还没有节点</div>`;
+        } else {
+          groupPaths.sort().forEach(p => {
+            // 汇总子树：父目录要包含子目录的节点
+            const ids = [];
+            gb.map.forEach((list, path) => {
+              if (path === p || isDescendantGroup(path, p)) ids.push(...list);
+            });
+            html += `<div class="node-filter-row" data-filter="group" data-value="${escapeHtml(p)}">` +
+              `<span class="f-name" style="padding-left:${getGroupDepth(p) * 12}px;">📁 ${escapeHtml(p)}</span>` +
+              `<span class="f-count">${ids.length}</span></div>`;
+          });
+          if (gb.map.has(WORD_UNGROUPED_KEY)) {
+            const ids = gb.map.get(WORD_UNGROUPED_KEY);
+            html += `<div class="node-filter-row" data-filter="group" data-value="${WORD_UNGROUPED_KEY}">` +
+              `<span class="f-name">📄 知识点未分组</span><span class="f-count">${ids.length}</span></div>`;
+          }
+        }
+
+        // 按标签
+        const tb = getNodeTagBuckets();
+        html += `<div class="node-filter-title">按标签</div>`;
+        if (tb.map.size === 0) {
+          html += `<div class="node-filter-hint">还没有带标签的节点</div>`;
+        } else {
+          Array.from(tb.map.entries())
+            .sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))
+            .forEach(([tag, ids]) => {
+              html += `<div class="node-filter-row" data-filter="tag" data-value="${escapeHtml(tag)}">` +
+                `<span class="f-name">#${escapeHtml(tag)}</span><span class="f-count">${ids.length}</span></div>`;
+            });
+        }
+
+        // 未关联知识点的纯节点
+        html += `<div class="node-filter-title">其它</div>`;
+        html += `<div class="node-filter-row" data-filter="plain"><span class="f-name">○ 未关联知识点的节点</span>` +
+                `<span class="f-count">${gb.unlinked.length}</span></div>`;
+
+        panel.innerHTML = html;
+
+        panel.querySelectorAll('.node-filter-row').forEach(row => {
+          row.addEventListener('click', () => {
+            applyNodeFilterSelection(row.dataset.filter, row.dataset.value);
+          });
+        });
+        const closeBtn = panel.querySelector('[data-filter="close"]');
+        if (closeBtn) closeBtn.addEventListener('click', closeNodeFilterPanel);
+      }
+
+      function applyNodeFilterSelection(kind, value) {
+        if (kind === 'close') { closeNodeFilterPanel(); return; }
+        if (kind === 'none') { clearNodeMultiSelect(); return; }
+        if (kind === 'all') { selectAllNodes(); return; }
+
+        let ids = [];
+        if (kind === 'plain') {
+          ids = getNodeGroupBuckets().unlinked;
+        } else if (kind === 'group') {
+          const gb = getNodeGroupBuckets();
+          if (value === WORD_UNGROUPED_KEY) {
+            ids = gb.map.get(WORD_UNGROUPED_KEY) || [];
+          } else {
+            gb.map.forEach((list, path) => {
+              if (path === value || isDescendantGroup(path, value)) ids.push(...list);
+            });
+          }
+        } else if (kind === 'tag') {
+          ids = getNodeTagBuckets().map.get(value) || [];
+        }
+
+        if (ids.length === 0) { showToast('这个条件下没有节点', true); return; }
+        setNodeMultiSelect(ids, ids[0]);
+        showToast(`已选中 ${ids.length} 个节点`);
+      }
+
+
+      function openNodeMenu(nodeId, clientX, clientY) {
+        const menu = document.getElementById('nodeMenu');
+        const viewport = document.getElementById('nodeViewport');
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!menu || !viewport || !node) return;
+
+        const st = getNodeItemState(node);
+        let html = '';
+        if (st.kind === 'plain') {
+          html =
+            '<button type="button" data-menu="to-item">✓ 转为知识点</button>' +
+            '<div class="menu-hint">转为知识点后会出现在全局与背诵模式</div>';
+        } else if (st.kind === 'linked') {
+          html =
+            '<button type="button" data-menu="open-item">↗ 打开这个知识点</button>' +
+            '<button type="button" data-menu="hide">🚫 设为普通节点（隐藏知识点）</button>' +
+            '<div class="menu-hint">隐藏后不参与全局与背诵，数据与掌握度保留</div>';
+        } else {
+          html =
+            '<button type="button" data-menu="open-item">↗ 打开这个知识点</button>' +
+            '<button type="button" data-menu="to-item">👁 取消隐藏（恢复显示）</button>' +
+            '<div class="menu-hint">来源知识点当前处于隐藏状态</div>';
+        }
+        html += '<div class="menu-sep"></div>' +
+          '<button type="button" class="danger" data-menu="delete">✕ 删除节点</button>';
+        menu.innerHTML = html;
+        menu.dataset.nodeId = nodeId;
+        menu.style.display = '';
+        menu.dataset.mode = st.kind;
+
+        // 先量尺寸再定位，避免超出视口
+        menu.style.visibility = 'hidden';
+        const vr = viewport.getBoundingClientRect();
+        const mw = menu.offsetWidth || 176;
+        const mh = menu.offsetHeight || 120;
+        let left = clientX - vr.left;
+        let top = clientY - vr.top + 8;
+        if (left + mw > vr.width - 8) left = Math.max(8, vr.width - mw - 8);
+        if (top + mh > vr.height - 8) top = Math.max(8, clientY - vr.top - mh - 8);
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+        menu.style.visibility = '';
+      }
+
+      function closeNodeMenu() {
+        const menu = document.getElementById('nodeMenu');
+        if (menu) menu.style.display = 'none';
+      }
+
+      function bindNodeMenu() {
+        const menu = document.getElementById('nodeMenu');
+        if (!menu) return;
+        menu.addEventListener('click', (e) => {
+          const btn = e.target.closest('button[data-menu]');
+          if (!btn) return;
+          e.stopPropagation();
+          const nodeId = menu.dataset.nodeId;
+          const act = btn.dataset.menu;
+          const mode = menu.dataset.mode;
+          closeNodeMenu();
+          if (act === 'to-item') convertNodeToItem(nodeId);
+          else if (act === 'hide') hideLinkedItemOfNode(nodeId);
+          else if (act === 'open-item') {
+            const node = state.nodes.find(n => n.id === nodeId);
+            const st = node ? getNodeItemState(node) : null;
+            if (st && st.item) openKnowledgeItem(st.item.id);
+          } else if (act === 'delete') deleteNode(nodeId);
+        });
+      }
+
+      function importItemsAsNodes(pending) {
+        const list = Array.isArray(pending) ? pending : state.items.slice();
+        if (list.length === 0) {
+          showToast('没有需要导入的知识点');
+          return 0;
+        }
+
+        // 放到已有内容的「下方」空位：用整体包围盒计算，避免多次导入互相重叠
+        const box = getNodesBBox();
+        const baseX = box ? Math.round(box.minX) : 60;
+        const startY = box ? Math.round(box.maxY + NODE_IMPORT_GAP_Y) : 60;
+
+        list.forEach((it, i) => {
           const node = {
             id: generateId(),
-            x: Math.round(baseX + (i % cols) * colW),
-            y: Math.round(startY + Math.floor(i / cols) * rowH),
+            x: Math.round(baseX + (i % NODE_IMPORT_COLS) * NODE_IMPORT_COL_W),
+            y: Math.round(startY + Math.floor(i / NODE_IMPORT_COLS) * NODE_IMPORT_ROW_H),
             title: it.title,
             content: it.content || '',
             images: (it.images || []).slice(),
@@ -7979,7 +10036,432 @@
         mountAllNodes();
         renderAllEdges();
         saveNodes();
-        showToast(`已导入 ${pending.length} 个节点`);
+        // 导入后把画布调到能看见新节点，否则用户只会看到「没反应」
+        requestAnimationFrame(() => { fitNodes(); });
+        return list.length;
+      }
+
+      // ============================================================
+      // 节点模式：导入知识点面板
+      // ============================================================
+      // 判断目录选中项是否覆盖某条知识点的目录（路径式，选父含子）
+      function groupSelectionCovers(sel, itemGroup) {
+        const g = String(itemGroup || '').trim();
+        for (const s of sel) {
+          if (s === WORD_UNGROUPED_KEY) {
+            if (!g) return true;
+            continue;
+          }
+          if (g === s || g.startsWith(s + '/')) return true;
+        }
+        return false;
+      }
+
+      function getNodeImportedItemMap() {
+        const map = new Map();
+        state.nodes.forEach(n => { if (n.linkedItemId) map.set(n.linkedItemId, n); });
+        return map;
+      }
+
+      // 当前选择范围命中的知识点
+      function getNodeImportHitItems() {
+        const sel = state.nodeImportSelection;
+        const items = state.items;
+        switch (state.nodeImportScope) {
+          case 'all': return items.slice();
+          case 'single':
+            return items.filter(it => sel.items.has(it.id));
+          case 'group':
+            return items.filter(it => groupSelectionCovers(sel.groups, it.group));
+          case 'tag':
+            return items.filter(it => (it.tags || []).some(t => sel.tags.has(normalizeTag(t).toLowerCase())));
+          default: return [];
+        }
+      }
+
+      function getNodeImportCounts() {
+        const map = getNodeImportedItemMap();
+        const hits = getNodeImportHitItems();
+        let already = 0;
+        hits.forEach(it => { if (map.has(it.id)) already++; });
+        const mode = state.nodeImportConflict;
+        const toImport = hits.filter(it => mode === 'refresh' ? true : !map.has(it.id));
+        return { hits, already, pending: hits.length - already, toImport, map };
+      }
+
+      function openNodeImportPanel() {
+        const modal = document.getElementById('nodeImportModal');
+        if (!modal) return;
+        if (state.items.length === 0) {
+          showToast('还没有知识点，先去「录入」模式添加');
+          return;
+        }
+        state.nodeImportScope = 'all';
+        state.nodeImportConflict = 'skip';
+        state.nodeImportSelection = { items: new Set(), groups: new Set(), tags: new Set() };
+        state.nodeImportSearch = '';
+
+        modal.classList.add('show');
+        document.querySelectorAll('#nodeImportScopeList .export-scope-option').forEach(o => {
+          o.classList.toggle('selected', o.dataset.scope === 'all');
+        });
+        const allRadio = document.querySelector('#nodeImportScopeList input[value="all"]');
+        if (allRadio) allRadio.checked = true;
+        document.querySelectorAll('input[name="nodeImportConflict"]').forEach(r => {
+          r.checked = r.value === 'skip';
+        });
+        document.querySelectorAll('#nodeImportModal [data-conflict]').forEach(o => {
+          o.classList.toggle('selected', o.dataset.conflict === 'skip');
+        });
+
+        buildNodeImportSingleList();
+        buildNodeImportGroupList();
+        buildNodeImportTagList();
+        refreshNodeImportPanel();
+      }
+
+      function closeNodeImportPanel() {
+        const modal = document.getElementById('nodeImportModal');
+        if (modal) modal.classList.remove('show');
+      }
+
+      function syncNodeImportScopeUI() {
+        document.querySelectorAll('#nodeImportScopeList .export-scope-option').forEach(o => {
+          o.classList.toggle('selected', o.dataset.scope === state.nodeImportScope);
+        });
+        const byId = {
+          single: 'nodeImpSingleDetail',
+          group: 'nodeImpGroupDetail',
+          tag: 'nodeImpTagDetail'
+        };
+        Object.keys(byId).forEach(k => {
+          const d = document.getElementById(byId[k]);
+          if (d) d.style.display = state.nodeImportScope === k ? '' : 'none';
+        });
+      }
+
+      function setNodeImportScope(scope) {
+        state.nodeImportScope = scope;
+        syncNodeImportScopeUI();
+        refreshNodeImportPanel();
+      }
+
+      function setNodeImportConflict(mode) {
+        state.nodeImportConflict = mode;
+        document.querySelectorAll('#nodeImportModal [data-conflict]').forEach(o => {
+          o.classList.toggle('selected', o.dataset.conflict === mode);
+        });
+        refreshNodeImportPanel();
+      }
+
+      // 单个知识点列表（带搜索）
+      function buildNodeImportSingleList() {
+        const list = document.getElementById('nodeImpItemList');
+        if (!list) return;
+        const q = (state.nodeImportSearch || '').trim().toLowerCase();
+        const map = getNodeImportedItemMap();
+        const items = state.items.filter(it => {
+          if (!q) return true;
+          const hay = (it.title + ' ' + htmlToPlainText(it.content) + ' ' +
+            (it.tags || []).join(' ')).toLowerCase();
+          return hay.includes(q);
+        });
+        if (items.length === 0) {
+          list.innerHTML = '<div class="multi-select-empty">没有匹配的知识点</div>';
+          return;
+        }
+        list.innerHTML = items.map(it => {
+          const imported = map.has(it.id);
+          const tags = (it.tags || []).length ? ' #' + (it.tags || []).join(' #') : '';
+          return `
+            <label class="multi-select-item" data-id="${escapeHtml(it.id)}">
+              <input type="checkbox" value="${escapeHtml(it.id)}" ${state.nodeImportSelection.items.has(it.id) ? 'checked' : ''}>
+              <span class="ms-name">${escapeHtml(it.title || '无标题')}${escapeHtml(tags)}</span>
+              <span class="ms-count">${imported ? '已导入' : '未导入'}</span>
+            </label>`;
+        }).join('');
+      }
+
+      // 目录列表：路径式分层，命中数包含子目录；父目录已选时子项标注「已包含」
+      function buildNodeImportGroupList() {
+        const list = document.getElementById('nodeImpGroupList');
+        if (!list) return;
+        const map = getNodeImportedItemMap();
+        const itemsWithGroup = state.items.filter(it => normalizeGroupPath(it.group));
+        const ungroupedCount = state.items.filter(it => !normalizeGroupPath(it.group)).length;
+        const sel = state.nodeImportSelection.groups;
+        let html = '';
+        if (ungroupedCount > 0) {
+          html += `
+            <label class="multi-select-item" data-group="${WORD_UNGROUPED_KEY}">
+              <input type="checkbox" value="${WORD_UNGROUPED_KEY}" ${sel.has(WORD_UNGROUPED_KEY) ? 'checked' : ''}>
+              <span class="ms-name"><i>未分组</i></span>
+              <span class="ms-count">${ungroupedCount}</span>
+            </label>`;
+        }
+
+        const tree = buildGroupTree(itemsWithGroup);
+        const renderRow = (node) => {
+          // 命中数含子树
+          const hits = state.items.filter(it => groupSelectionCovers(new Set([node.path]), it.group));
+          const importedN = hits.filter(it => map.has(it.id)).length;
+          // 祖先已被选中 -> 本行属于「已被包含」，仅作提示，不重复计入
+          const coveredByAncestor = Array.from(sel).some(s =>
+            s !== WORD_UNGROUPED_KEY && isDescendantGroup(node.path, s));
+          const checked = sel.has(node.path);
+          let out = `
+            <label class="multi-select-item ${coveredByAncestor ? 'is-covered' : ''}"
+                   data-group="${escapeHtml(node.path)}"
+                   style="padding-left:${8 + node.depth * 16}px;">
+              <input type="checkbox" value="${escapeHtml(node.path)}" ${checked ? 'checked' : ''}>
+              <span class="ms-name">${node.depth > 0 ? '└ ' : ''}${escapeHtml(node.name)}</span>
+              <span class="ms-count">${coveredByAncestor && !checked
+                ? '已含于上级'
+                : (importedN > 0 ? `${hits.length}（${importedN} 已导入）` : hits.length)}</span>
+            </label>`;
+          node.children.forEach(ch => { out += renderRow(ch); });
+          return out;
+        };
+        tree.roots.forEach(n => { html += renderRow(n); });
+        list.innerHTML = html || '<div class="multi-select-empty">还没有任何目录</div>';
+      }
+
+      function buildNodeImportTagList() {
+        const list = document.getElementById('nodeImpTagList');
+        if (!list) return;
+        const tags = getAllTags();
+        if (tags.length === 0) {
+          list.innerHTML = '<div class="multi-select-empty">还没有任何标签</div>';
+          return;
+        }
+        const map = getNodeImportedItemMap();
+        list.innerHTML = tags.map(name => {
+          const key = name.toLowerCase();
+          const items = state.items.filter(it =>
+            (it.tags || []).some(x => normalizeTag(x).toLowerCase() === key));
+          const importedN = items.filter(it => map.has(it.id)).length;
+          return `
+            <label class="multi-select-item" data-tag="${escapeHtml(key)}">
+              <input type="checkbox" value="${escapeHtml(key)}" ${state.nodeImportSelection.tags.has(key) ? 'checked' : ''}>
+              <span class="ms-name">#${escapeHtml(name)}</span>
+              <span class="ms-count">${importedN > 0 ? `${items.length}（${importedN} 已导入）` : items.length}</span>
+            </label>`;
+        }).join('');
+      }
+
+      // 刷新统计与按钮状态
+      function refreshNodeImportPanel() {
+        const allCount = state.items.length;
+        const ungroupedCount = state.items.filter(it => !(it.group || '').trim()).length;
+        const tagCount = getAllTags().length;
+        const allEl = document.getElementById('nodeImpScopeAllCount');
+        if (allEl) allEl.textContent = allCount;
+        const singleEl = document.getElementById('nodeImpScopeSingleCount');
+        if (singleEl) singleEl.textContent = state.nodeImportSelection.items.size;
+        const groupEl = document.getElementById('nodeImpScopeGroupCount');
+        if (groupEl) groupEl.textContent = state.nodeImportSelection.groups.size;
+        const tagEl = document.getElementById('nodeImpScopeTagCount');
+        if (tagEl) tagEl.textContent = state.nodeImportSelection.tags.size;
+        const singleSel = document.getElementById('nodeImpSingleSelCount');
+        if (singleSel) singleSel.textContent = state.nodeImportSelection.items.size;
+        const groupSel = document.getElementById('nodeImpGroupSelCount');
+        if (groupSel) groupSel.textContent = state.nodeImportSelection.groups.size;
+        const tagSel = document.getElementById('nodeImpTagSelCount');
+        if (tagSel) tagSel.textContent = state.nodeImportSelection.tags.size;
+
+        const { hits, already, toImport } = getNodeImportCounts();
+        const summary = document.getElementById('nodeImportSummary');
+        if (summary) {
+          const skipped = hits.length - already;
+          summary.innerHTML = state.nodeImportConflict === 'refresh'
+            ? `<span>命中 <b>${hits.length}</b> 条</span>` +
+              `<span>已导入 <b>${already}</b> 条</span>` +
+              `<span class="is-warn">将覆盖 <b>${already}</b> 条</span>` +
+              `<span class="is-ok">待导入 <b>${hits.length}</b> 条</span>`
+            : `<span>命中 <b>${hits.length}</b> 条</span>` +
+              `<span>已导入 <b>${already}</b> 条</span>` +
+              `<span>跳过 <b>${already}</b> 条</span>` +
+              `<span class="is-ok">待导入 <b>${skipped}</b> 条</span>`;
+        }
+
+        const doBtn = document.getElementById('nodeImportDoBtn');
+        if (doBtn) {
+          const n = toImport.length;
+          doBtn.textContent = n > 0 ? `✅ 导入 ${n} 个节点` : '✅ 没有可导入的知识点';
+          doBtn.disabled = n === 0;
+          doBtn.style.opacity = n === 0 ? '0.55' : '';
+          doBtn.style.cursor = n === 0 ? 'not-allowed' : '';
+        }
+        const status = document.getElementById('nodeImportStatus');
+        if (status) {
+          status.textContent = toImport.length === 0
+            ? (state.nodeImportScope === 'all' && already === allCount ? '所有知识点都已导入为节点' : '当前范围没有可导入的知识点')
+            : '';
+          status.className = 'status-msg';
+          status.style.color = toImport.length === 0 ? 'var(--text-muted)' : '';
+        }
+        void ungroupedCount; void tagCount;
+      }
+
+      function bindNodeImportPanel() {
+        const modal = document.getElementById('nodeImportModal');
+        if (!modal) return;
+
+        document.querySelectorAll('#nodeImportScopeList .export-scope-option').forEach(opt => {
+          opt.addEventListener('click', () => {
+            const radio = opt.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+            setNodeImportScope(opt.dataset.scope);
+          });
+        });
+        document.querySelectorAll('#nodeImportModal [data-conflict]').forEach(opt => {
+          opt.addEventListener('click', () => {
+            const radio = opt.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+            setNodeImportConflict(opt.dataset.conflict);
+          });
+        });
+
+        const search = document.getElementById('nodeImpSearch');
+        if (search) {
+          search.addEventListener('input', () => {
+            state.nodeImportSearch = search.value;
+            buildNodeImportSingleList();
+          });
+        }
+
+        // 三层勾选列表统一用事件委托
+        modal.addEventListener('change', (e) => {
+          const cb = e.target;
+          if (!cb || cb.tagName !== 'INPUT' || cb.type !== 'checkbox') return;
+          const itemRow = cb.closest('.multi-select-item');
+          if (!itemRow) return;
+          const ds = itemRow.dataset;
+          const sel = state.nodeImportSelection;
+          let scope = null;
+          if (Object.prototype.hasOwnProperty.call(ds, 'id')) {
+            if (cb.checked) sel.items.add(ds.id); else sel.items.delete(ds.id);
+            scope = 'single';
+          } else if (Object.prototype.hasOwnProperty.call(ds, 'group')) {
+            // 未分组用空串占位，存储时统一换成哨兵值
+            const key = ds.group === '' ? WORD_UNGROUPED_KEY : ds.group;
+            if (cb.checked) sel.groups.add(key); else sel.groups.delete(key);
+            scope = 'group';
+          } else if (Object.prototype.hasOwnProperty.call(ds, 'tag')) {
+            if (cb.checked) sel.tags.add(ds.tag); else sel.tags.delete(ds.tag);
+            scope = 'tag';
+          }
+          // 勾选后切到对应范围，符合直觉
+          if (scope) setNodeImportScope(scope);
+          else refreshNodeImportPanel();
+        });
+
+        const bulk = (id, fn) => {
+          const b = document.getElementById(id);
+          if (b) b.addEventListener('click', fn);
+        };
+        bulk('nodeImpSingleSelectAll', () => {
+          const q = (state.nodeImportSearch || '').trim().toLowerCase();
+          state.items.forEach(it => {
+            if (!q) { state.nodeImportSelection.items.add(it.id); return; }
+            const hay = (it.title + ' ' + htmlToPlainText(it.content) + ' ' +
+              (it.tags || []).join(' ')).toLowerCase();
+            if (hay.includes(q)) state.nodeImportSelection.items.add(it.id);
+          });
+          buildNodeImportSingleList();
+          setNodeImportScope('single');
+        });
+        bulk('nodeImpSingleClearAll', () => {
+          state.nodeImportSelection.items.clear();
+          buildNodeImportSingleList();
+          refreshNodeImportPanel();
+        });
+        bulk('nodeImpGroupSelectAll', () => {
+          state.nodeImportSelection.groups.clear();
+          if (state.items.some(it => !(it.group || '').trim())) {
+            state.nodeImportSelection.groups.add(WORD_UNGROUPED_KEY);
+          }
+          getAllGroups().forEach(g => state.nodeImportSelection.groups.add(g));
+          buildNodeImportGroupList();
+          setNodeImportScope('group');
+        });
+        bulk('nodeImpGroupClearAll', () => {
+          state.nodeImportSelection.groups.clear();
+          buildNodeImportGroupList();
+          refreshNodeImportPanel();
+        });
+        bulk('nodeImpTagSelectAll', () => {
+          state.nodeImportSelection.tags.clear();
+          getAllTags().forEach(t => state.nodeImportSelection.tags.add(t.name.toLowerCase()));
+          buildNodeImportTagList();
+          setNodeImportScope('tag');
+        });
+        bulk('nodeImpTagClearAll', () => {
+          state.nodeImportSelection.tags.clear();
+          buildNodeImportTagList();
+          refreshNodeImportPanel();
+        });
+
+        bulk('nodeImportDoBtn', doNodeImport);
+        bulk('nodeImportCancelBtn', closeNodeImportPanel);
+        bulk('nodeImportModalClose', closeNodeImportPanel);
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) closeNodeImportPanel();
+        });
+      }
+
+      function doNodeImport() {
+        const { toImport, map, already } = getNodeImportCounts();
+        if (toImport.length === 0) {
+          showToast('当前范围没有可导入的知识点');
+          return;
+        }
+
+        const updateExistingNodes = () => {
+          toImport.forEach(it => {
+            const node = map.get(it.id);
+            if (!node) return;
+            // 只更新内容，位置、连线、标签关系全部保留
+            node.title = it.title;
+            node.content = it.content || '';
+            node.images = (it.images || []).slice();
+          });
+          mountAllNodes();
+          renderAllEdges();
+          saveNodes();
+          showToast(`已刷新 ${toImport.length} 个节点`);
+        };
+
+        if (state.nodeImportConflict === 'skip') {
+          const created = importItemsAsNodes(toImport);
+          closeNodeImportPanel();
+          if (created > 0) showToast(`已导入 ${created} 个节点`);
+          return;
+        }
+
+        // 覆盖模式：先算出有多少节点内容会真的变化，再要求确认
+        const changed = toImport.filter(it => {
+          const node = map.get(it.id);
+          if (!node) return false;
+          return node.title !== it.title ||
+            (node.content || '') !== (it.content || '') ||
+            JSON.stringify(node.images || []) !== JSON.stringify(it.images || []);
+        });
+        const willCreate = toImport.length - already;
+
+        showConfirm(
+          '覆盖并刷新节点',
+          `将用知识点当前内容覆盖 ${toImport.length} 个节点：\n` +
+          `· 其中新建 ${willCreate} 个\n` +
+          `· 其中已有 ${already} 个，其中有 ${changed.length} 个节点的内容与来源不一致，将被覆盖\n\n` +
+          `节点位置与连线会保留。确定继续吗？`,
+          () => {
+            const newItems = toImport.filter(it => !map.has(it.id));
+            if (newItems.length > 0) importItemsAsNodes(newItems);
+            updateExistingNodes();
+            closeNodeImportPanel();
+          }
+        );
       }
 
       // ============================================================
@@ -7989,6 +10471,8 @@
         if (e.key === 'Escape') {
           if (el.exportModal.classList.contains('show')) closeExportModal();
           if (el.importModal.classList.contains('show')) closeImportModal();
+          const nodeImpModal = document.getElementById('nodeImportModal');
+          if (nodeImpModal && nodeImpModal.classList.contains('show')) closeNodeImportPanel();
           const wordModal = document.getElementById('wordExportModal');
           if (wordModal && wordModal.classList.contains('show')) closeWordExportModal();
           if (el.moveGroupModal.classList.contains('show')) el.moveGroupModal.classList.remove('show');
@@ -8003,13 +10487,77 @@
             document.querySelectorAll('.format-painter-btn.armed').forEach(b => b.classList.remove('armed'));
           }
           closeAllPalettes();
+          // 节点模式：取消正在拉的连线 / 清除选中（仅在焦点不在输入框时）
+          if (state.mode === 'node' && state.nodeEdgeDrawActive && typeof state.cancelEdgeDraw === 'function') {
+            state.cancelEdgeDraw();
+            showToast('已取消连线');
+          }
+          if (state.mode === 'node') closeNodeMenu();
+          if (state.mode === 'node') closeNodeFilterPanel();
         }
 
         const ae = document.activeElement;
         const isInputting = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
-        if (!isInputting && state.mode === 'recite' && state.items.length > 0) {
+        if (!isInputting && state.mode === 'recite' && getReciteItems().length > 0) {
           if (e.key === 'ArrowLeft') { e.preventDefault(); goToPrev(); }
           else if (e.key === 'ArrowRight') { e.preventDefault(); goToNext(); }
+        }
+
+        // ---------- 节点模式快捷键 ----------
+        if (state.mode === 'node') {
+          // 在标题 / 正文里打字时不抢键，避免误删节点
+          if (isInputting) return;
+          const { nodeId, edgeId } = state.nodeSelection;
+          const multiIds = getSelectedNodeIds();
+
+          if (e.key === 'Delete' || e.key === 'Backspace') {
+            if (edgeId) {
+              e.preventDefault();
+              deleteEdge(edgeId);
+            } else if (multiIds.length > 0) {
+              e.preventDefault();
+              runBatchNodeAction('delete');
+            } else if (nodeId) {
+              e.preventDefault();
+              deleteNode(nodeId);
+            }
+            return;
+          }
+
+          if (e.key === 'Escape') {
+            if (state.nodeFilterOpen) {
+              e.preventDefault();
+              closeNodeFilterPanel();
+              return;
+            }
+            if (multiIds.length > 0 || edgeId || nodeId) {
+              // 已经在上面处理过连线取消，这里负责清选中
+              e.preventDefault();
+              clearNodeSelection();
+              clearNodeMultiSelect();
+            }
+            return;
+          }
+
+          if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+            e.preventDefault();
+            selectAllNodes();
+            return;
+          }
+
+          if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
+            if (multiIds.length > 0) {
+              e.preventDefault();
+              multiIds.forEach(id => duplicateNode(id));
+              showToast(`已复制 ${multiIds.length} 个节点`);
+              return;
+            }
+            if (nodeId) {
+              e.preventDefault();
+              duplicateNode(nodeId);
+            }
+            return;
+          }
         }
       });
 
@@ -8017,12 +10565,14 @@
         if (document.hidden) {
           flushSave();
           flushNodesSave();
+          flushItemNodeSync();
           if (state.speakingId) stopSpeaking();
         }
       });
       window.addEventListener('pagehide', () => {
         flushSave();
         flushNodesSave();
+        flushItemNodeSync();
         if (state.speakingId) stopSpeaking();
       });
 
@@ -8044,9 +10594,11 @@
         state.activeId = state.items.length > 0 ? state.items[0].id : null;
         validateActiveId();
 
+        // 先加载节点，再加载连线：连线校验端点存在性时依赖 state.nodes
         state.nodes = loadNodes();
         state.edges = loadEdges();
         loadNodeView();
+        loadNodeHintDismissed();
 
         el.sidebarHeader.innerHTML = `
           <span>目录</span>
@@ -8060,6 +10612,7 @@
         document.getElementById('sidebarAddBtn').addEventListener('click', handleSidebarAddClick);
 
         initWordExportUI();
+        bindNodeImportPanel();
 
         renderSidebar(true);
         renderContent();
