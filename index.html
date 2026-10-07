@@ -2179,6 +2179,175 @@
       background-size: 24px 24px;
     }
     .node-viewport.panning { cursor: grabbing; }
+    /* 标尺开启时，网格点也跟着对齐到 20px，方便目测 */
+    .node-viewport.grid-20 {
+      background-size: 20px 20px;
+    }
+
+    /* ---------- 对齐辅助层 ---------- */
+    .node-guide-svg {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 1px;
+      height: 1px;
+      overflow: visible;
+      pointer-events: none;
+      z-index: 4;
+    }
+    .node-guide-svg .align-line {
+      stroke: var(--primary-bright);
+      stroke-width: 1;
+      stroke-dasharray: 5 4;
+      opacity: 0.9;
+      vector-effect: non-scaling-stroke;
+    }
+    .node-guide-svg .align-line.spacing {
+      stroke: #f59e0b;
+      stroke-dasharray: none;
+    }
+    .node-guide-svg .align-tick {
+      stroke: #f59e0b;
+      stroke-width: 1;
+      vector-effect: non-scaling-stroke;
+    }
+    .node-measure-layer {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+    /* 计量标签：文字要始终可读，所以反向缩放由 JS 补偿 */
+    .node-measure {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      padding: 1px 6px;
+      border-radius: 8px;
+      background: var(--primary-bright);
+      color: #fff;
+      font-size: 0.64rem;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: var(--shadow-sm);
+      font-family: inherit;
+    }
+    .node-measure.spacing { background: #f59e0b; }
+    .node-measure.delta { background: var(--text-strong); }
+
+    /* ---------- 标尺 ---------- */
+    .node-ruler {
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      height: 18px;
+      z-index: 26;
+      pointer-events: none;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      display: none;
+    }
+    .node-ruler.vertical {
+      left: 0;
+      top: 0;
+      bottom: 0;
+      right: auto;
+      width: 18px;
+      height: auto;
+      border-bottom: none;
+      border-right: 1px solid var(--border);
+    }
+    .node-viewport.ruler-on .node-ruler { display: block; }
+    .node-ruler .tick {
+      position: absolute;
+      background: var(--border-strong);
+    }
+    .node-ruler:not(.vertical) .tick { width: 1px; top: 56%; bottom: 0; }
+    .node-ruler.vertical .tick { height: 1px; left: 56%; right: 0; }
+    .node-ruler .tick.major { top: 30%; background: var(--text-faint); }
+    .node-ruler.vertical .tick.major { left: 30%; top: auto; }
+    .node-ruler .tick-label {
+      position: absolute;
+      font-size: 0.55rem;
+      color: var(--text-faint);
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .node-ruler:not(.vertical) .tick-label { top: 2px; transform: translateX(2px); }
+    .node-ruler.vertical .tick-label {
+      left: 2px;
+      transform: translateY(2px) rotate(-90deg);
+      transform-origin: left top;
+    }
+    /* 标尺开启时给画布让出边距，避免遮住内容 */
+    .node-viewport.ruler-on .node-world { padding-left: 18px; padding-top: 18px; }
+
+    /* ---------- 对齐与排版设置面板 ---------- */
+    .node-layout-panel {
+      position: absolute;
+      top: 54px;
+      left: 12px;
+      z-index: 32;
+      width: 236px;
+      padding: 6px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      box-shadow: var(--shadow-modal);
+    }
+    .node-layout-panel .lp-title {
+      padding: 4px 8px 6px;
+      font-size: 0.66rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--text-faint);
+      border-bottom: 1px solid var(--border-light);
+      margin-bottom: 4px;
+    }
+    .node-layout-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 9px;
+      border-radius: 9px;
+      font-size: 0.77rem;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .node-layout-row:hover { background: var(--bg-accent); }
+    .node-layout-row .lr-label { flex: 1; min-width: 0; }
+    .node-layout-row .lr-hint {
+      font-size: 0.63rem;
+      color: var(--text-faint);
+      white-space: nowrap;
+    }
+    /* 自绘开关，避免各浏览器 checkbox 观感不一致 */
+    .node-layout-row .lr-switch {
+      flex-shrink: 0;
+      width: 32px;
+      height: 18px;
+      border-radius: 10px;
+      background: var(--border-strong);
+      position: relative;
+      transition: background 0.15s;
+    }
+    .node-layout-row .lr-switch::after {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      transition: transform 0.15s;
+    }
+    .node-layout-row.on .lr-switch { background: var(--primary-bright); }
+    .node-layout-row.on .lr-switch::after { transform: translateX(14px); }
 
     .node-world {
       position: absolute;
@@ -2248,6 +2417,12 @@
     .edge-tool-btn:hover { background: var(--bg-accent); color: var(--primary-text); }
     .edge-tool-btn.danger { color: var(--text-danger); }
     .edge-tool-btn.danger:hover { background: var(--bg-danger); color: var(--text-danger); }
+    /* 当前连线已是父子关系时，该按钮高亮 */
+    .edge-tool-btn.active {
+      background: var(--bg-accent-strong);
+      color: var(--primary-text);
+      box-shadow: inset 0 0 0 1px var(--border-accent);
+    }
 
     .node-edge-hit {
       fill: none;
@@ -2329,46 +2504,32 @@
       /* pan-y 而不是 none：否则会吃掉 .node-body 的垂直滚动；
          抓手与连接点各自声明 touch-action:none，拖拽仍然正常 */
       touch-action: pan-y;
+      /* 这里不能用 overflow:hidden 来裁圆角 —— 四个 .node-port 是按负偏移
+         探出边界的，一裁就点不到了。因此约定：卡片内的子元素不要加不透明背景，
+         否则方角会从卡片圆角处漏出来（正文曾经踩过这个坑）。 */
     }
-    /* 节点头部：知识点状态标签（点它打开转换菜单） */
     .node-item:hover { border-color: var(--border-accent); }
-    .node-status {
-      flex-shrink: 0;
-      border: none;
-      border-radius: 9px;
-      padding: 2px 6px;
-      font-size: 0.63rem;
-      font-family: inherit;
-      font-weight: 700;
-      line-height: 1.5;
-      cursor: pointer;
-      white-space: nowrap;
-      -webkit-tap-highlight-color: transparent;
-      transition: background 0.15s, color 0.15s;
-    }
-    .node-status.linked {
-      background: var(--bg-green-strong);
+
+    /* 知识点状态：直接体现在「拖动按钮」上，不额外占任何布局空间。
+       普通节点 = 灰蓝；已关联知识点 = 绿色；知识点被隐藏 = 暗灰（整卡同时降调）。
+       状态变更一律走右键菜单，卡片上不再有任何状态文字。 */
+    .node-grip { color: var(--text-faint); }
+    .node-item.linked-item .node-grip {
       color: var(--text-green);
+      background: var(--bg-green-strong);
     }
-    .node-status.hidden-item {
-      background: var(--bg-subtle);
-      color: var(--text-muted);
-    }
-    .node-status.plain {
-      background: transparent;
+    .node-item.item-hidden .node-grip {
       color: var(--text-faint);
-      border: 1px dashed var(--border-strong);
+      background: var(--bg-subtle);
     }
-    .node-status:hover { filter: brightness(0.96); }
-    /* 已隐藏的知识点对应的节点：整卡降调，和普通节点区分开 */
+    .node-item.linked-item .node-grip:hover { color: var(--text-green); }
+
+    /* 已隐藏知识点对应的节点：整卡降调 */
     .node-item.item-hidden { opacity: 0.72; }
     .node-item.item-hidden .node-body { color: var(--text-muted); }
-    /* 已关联知识点的节点正文：只读，靠左侧色条与光标表明「跟随知识点」 */
+    /* 已关联知识点的节点正文：只读（状态由拖动按钮的颜色表明） */
     .node-body.is-readonly {
       cursor: default;
-      background:
-        linear-gradient(90deg, var(--bg-accent) 0, transparent 3px) no-repeat,
-        var(--bg-surface);
       -webkit-user-select: text;
       user-select: text;
     }
@@ -2377,29 +2538,126 @@
     .node-menu {
       position: absolute;
       z-index: 60;
-      min-width: 176px;
+      width: 244px;
+      max-height: 78vh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
       padding: 5px;
       background: var(--bg-surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      box-shadow: var(--shadow-elevated);
+      border-radius: 13px;
+      box-shadow: var(--shadow-modal);
     }
-    .node-menu button {
-      display: block;
+    /* 分组标题：让「知识点 / 层级 / 节点」三块一眼分开 */
+    .node-menu .menu-section {
+      padding: 7px 10px 3px;
+      font-size: 0.63rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-faint);
+    }
+    .node-menu .menu-section:first-child { padding-top: 4px; }
+    /* 菜单行：图标列固定宽，文字与次要说明各占一列，所有行严格对齐 */
+    .node-menu button.menu-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
       width: 100%;
-      text-align: left;
-      padding: 8px 10px;
+      padding: 7px 9px;
       border: none;
-      border-radius: 8px;
+      border-radius: 9px;
       background: transparent;
       color: var(--text);
       font-size: 0.78rem;
       font-family: inherit;
+      line-height: 1.35;
+      text-align: left;
       cursor: pointer;
-      line-height: 1.4;
     }
-    .node-menu button:hover { background: var(--bg-accent); color: var(--primary-text); }
-    .node-menu button.danger:hover { background: var(--bg-danger); color: var(--text-danger); }
+    .node-menu button.menu-row .mi {
+      flex-shrink: 0;
+      width: 17px;
+      text-align: center;
+      font-size: 0.82rem;
+      line-height: 1;
+    }
+    .node-menu button.menu-row .mt {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .node-menu button.menu-row .mh {
+      flex-shrink: 0;
+      max-width: 108px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.66rem;
+      color: var(--text-faint);
+    }
+    .node-menu button.menu-row:hover { background: var(--bg-accent); color: var(--primary-text); }
+    .node-menu button.menu-row:hover .mh { color: var(--primary-text); }
+    .node-menu button.menu-row.danger { color: var(--text-danger); }
+    .node-menu button.menu-row.danger:hover { background: var(--bg-danger); color: var(--text-danger); }
+    /* 「当前父节点」这类只读说明 */
+    .node-menu .menu-note {
+      padding: 4px 10px 6px 35px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    /* 子菜单标题栏（返回 + 标题） */
+    .node-menu .menu-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 4px 6px;
+      border-bottom: 1px solid var(--border-light);
+      margin-bottom: 4px;
+    }
+    .node-menu .menu-back {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border: none;
+      border-radius: 7px;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .node-menu .menu-back:hover { background: var(--bg-accent); color: var(--primary-text); }
+    .node-menu .menu-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-strong);
+    }
+    .node-menu .menu-empty {
+      padding: 14px 10px;
+      text-align: center;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .node-menu .menu-empty span { font-size: 0.68rem; color: var(--text-faint); }
+    /* 候选行右侧的小标签 */
+    .node-menu .mv {
+      flex-shrink: 0;
+      padding: 1px 7px;
+      border-radius: 9px;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      font-size: 0.62rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .node-menu .mv.current { background: var(--bg-green-strong); color: var(--text-green); }
     .node-menu .menu-sep {
       height: 1px;
       margin: 4px 6px;
@@ -2409,26 +2667,281 @@
       padding: 6px 10px 4px;
       font-size: 0.68rem;
       color: var(--text-faint);
+      line-height: 1.5;
     }
 
+    /* 连接点管理菜单里的行 */
+    .port-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 6px 4px 10px;
+      border-radius: 8px;
+      font-size: 0.76rem;
+      color: var(--text);
+      min-height: 30px;
+    }
+    .port-row:hover { background: var(--bg-accent); }
+    .port-row.editing { background: var(--bg-accent); }
+    .port-row .port-side {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      border-radius: 5px;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      font-size: 0.62rem;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    /* 名字本身就是改名入口：整块可点 */
+    .port-row .port-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: text;
+      border-radius: 6px;
+      padding: 2px 4px;
+      margin-left: -4px;
+    }
+    .port-row .port-name:hover {
+      background: var(--bg-surface);
+      box-shadow: 0 0 0 1px var(--border-accent);
+      color: var(--primary-text);
+    }
+    /* 原地改名输入框 */
+    .port-name-input {
+      flex: 1;
+      min-width: 0;
+      padding: 3px 6px;
+      border: 1px solid var(--primary-bright);
+      border-radius: 7px;
+      background: var(--bg-surface);
+      color: var(--text-strong);
+      font-size: 0.76rem;
+      font-family: inherit;
+      outline: none;
+      box-shadow: 0 0 0 3px var(--bg-accent);
+    }
+    .port-row .port-tag {
+      flex-shrink: 0;
+      padding: 1px 6px;
+      border-radius: 8px;
+      background: var(--bg-subtle);
+      color: var(--text-faint);
+      font-size: 0.6rem;
+      font-weight: 700;
+    }
+    .port-row .port-act {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-faint);
+      font-size: 0.68rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .port-row .port-act:hover { background: var(--bg-accent); }
+    .port-row .port-act.danger:hover { background: var(--bg-danger); color: var(--text-danger); }
+
+    /* 命名过的连接点：中间加一个小点，和默认点区分 */
+    .node-port.named::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 4px;
+      height: 4px;
+      margin: -2px 0 0 -2px;
+      border-radius: 50%;
+      background: var(--primary-bright);
+      pointer-events: none;
+    }
+    .node-port.custom { border-style: dashed; }
+    /* 有名字的连接点悬停时把名字显示出来 */
+    .node-port.named:hover::before {
+      content: attr(data-port-name);
+      position: absolute;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      padding: 2px 7px;
+      border-radius: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-accent);
+      color: var(--primary-text);
+      font-size: 0.62rem;
+      font-weight: 700;
+      white-space: nowrap;
+      pointer-events: none;
+      box-shadow: var(--shadow-sm);
+      z-index: 5;
+    }
+
+    /* ---------- 父子层级：折叠按钮 ---------- */
+    /* 只有真的有下级节点时才出现，占据的是头部原有的空间（抓手右侧），不额外占位 */
+    .node-collapse-badge {
+      flex-shrink: 0;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 4px;
+      border: none;
+      border-radius: 6px;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      font-weight: 700;
+      line-height: 1;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .node-collapse-badge:hover { background: var(--bg-accent); color: var(--primary-text); }
+    .node-collapse-badge.is-collapsed {
+      background: var(--bg-accent-strong);
+      color: var(--primary-text);
+      box-shadow: inset 0 0 0 1px var(--border-accent);
+    }
+    /* 被折叠隐藏的节点：直接不显示（不销毁 DOM，展开即可恢复） */
+    .node-item.collapsed-hidden { display: none !important; }
+
+    /* ---------- 连线：直线 vs 父子箭头 ---------- */
+    /* 父子关系用稍粗、带箭头的线，和普通关系一眼区分 */
+    .node-edge.is-arrow {
+      stroke-width: 2.4;
+    }
+    .node-edge.is-line {
+      stroke-width: 1.6;
+    }
+    .node-edge-group.is-parent .node-edge {
+      stroke: var(--primary-bright);
+    }
+
+    /* 选中态尽量轻：只把边框换成主题色 + 一点极淡的外发光。
+       早先用的是 0 0 0 2px 亮蓝环，卡片四周一圈很抢眼，读正文时注意力会被拉走。
+       这里刻意不加强阴影、不加粗边框，让注意力留在内容上；
+       选中后需要更明显的指示时由「连接点显形 / 编辑控件出现」承担，
+       而不是靠一圈高对比描边。 */
     .node-item.selected {
       border-color: var(--primary-bright);
-      box-shadow: 0 0 0 2px var(--border-accent), var(--shadow-elevated);
+      box-shadow: 0 0 0 1px var(--border-accent), var(--shadow-elevated);
     }
     .node-item.dragging {
       z-index: 50;
-      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22), var(--shadow-elevated);
+      box-shadow: var(--shadow-drag);
       cursor: grabbing;
     }
-    /* 多选：被框选/点选中的节点 */
+    /* 多选：需要一眼看出「这一批会被批量操作」，所以比单选稍明显，但仍克制
+       （用淡蓝填充而非高对比描边） */
     .node-item.multi-selected {
       border-color: var(--primary-bright);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3), var(--shadow-elevated);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.16), var(--shadow-elevated);
+    }
+    /* 正在编辑的节点不叠加选中环，避免和光标/选区打架 */
+    .node-item.selected:focus-within,
+    .node-item.multi-selected:focus-within {
+      box-shadow: var(--shadow-elevated);
+    }
+
+    /* 节点的最佳视图（空格键放大查看） */
+    .node-focus-view {
+      position: absolute;
+      inset: 0;
+      z-index: 70;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: var(--overlay);
+      backdrop-filter: blur(2px);
+    }
+    .nfv-card {
+      display: flex;
+      flex-direction: column;
+      width: min(760px, 100%);
+      max-height: 100%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-accent);
+      border-radius: 16px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+    .nfv-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-light);
+      background: var(--bg-surface-2);
+    }
+    .nfv-title {
+      flex: 1;
+      min-width: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-strong);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .nfv-chip {
+      flex-shrink: 0;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+    }
+    .nfv-chip.linked { background: var(--bg-green-strong); color: var(--text-green); }
+    .nfv-close {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 50%;
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+    .nfv-close:hover { background: var(--bg-danger); color: var(--text-danger); }
+    .nfv-body {
+      padding: 16px 18px;
+      overflow-y: auto;
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--text);
+      word-break: break-word;
+    }
+    .nfv-body .nfv-empty { color: var(--text-faint); font-style: italic; }
+    .nfv-images {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 0 18px 16px;
+      overflow-y: auto;
+    }
+    .nfv-images:empty { display: none; }
+    .nfv-images img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
     }
 
     /* 框选矩形 */
-    .node-marquee {
-      position: absolute;
+    .node-marquee {      position: absolute;
       z-index: 40;
       border: 1.5px dashed var(--primary-bright);
       background: rgba(37, 99, 235, 0.12);
@@ -2461,6 +2974,27 @@
       color: var(--primary-text);
       padding: 0 8px;
       white-space: nowrap;
+    }
+    /* 对齐工具组：用细分隔线与「对齐」小标题分组，避免看起来是一长串同级按钮 */
+    .node-batch-sep {
+      width: 1px;
+      height: 18px;
+      background: var(--border);
+      margin: 0 2px;
+      flex-shrink: 0;
+    }
+    .node-batch-group-label {
+      font-size: 0.64rem;
+      font-weight: 700;
+      color: var(--text-faint);
+      white-space: nowrap;
+      padding: 0 2px;
+    }
+    .node-batch-btn.icon {
+      min-width: 28px;
+      padding: 0 6px;
+      font-size: 0.86rem;
+      line-height: 1;
     }
     .node-batch-btn {
       border: none;
@@ -2548,7 +3082,8 @@
       cursor: pointer;
     }
 
-    .node-item.edge-target {      border-color: var(--primary-bright);
+    .node-item.edge-target {
+      border-color: var(--primary-bright);
       box-shadow: 0 0 0 4px rgba(37,99,235,0.2), var(--shadow-elevated);
     }
 
@@ -2556,10 +3091,12 @@
       display: flex;
       align-items: center;
       gap: 2px;
-      padding: 5px 5px 5px 3px;
+      /* 头部只放「抓手 + 标题 + 关闭」，固定宽元素尽量小，把宽度都留给标题 */
+      padding: 5px 6px 5px 3px;
       background: var(--bg-surface-2);
       border-bottom: 1px solid var(--border-light);
-      border-radius: 12px 12px 0 0;
+      /* 12.5 = 卡片 14px 圆角 − 1.5px 边框，与内弧严格对齐 */
+      border-radius: 12.5px 12.5px 0 0;
     }
 
     .node-grip {
@@ -2591,13 +3128,14 @@
       padding: 4px 3px;
       font-family: inherit;
       border-radius: 6px;
+      text-overflow: ellipsis;
     }
     .node-title-input:focus { background: var(--bg-input); box-shadow: 0 0 0 2px var(--border-accent); }
 
     .node-del-btn {
       flex-shrink: 0;
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       border: none;
       background: transparent;
       color: var(--text-faint);
@@ -2634,41 +3172,98 @@
     }
     .node-body img { display: block; max-width: 100%; height: auto; border-radius: 8px; margin: 6px 0; }
 
-    .node-images { display: flex; flex-direction: column; gap: 4px; padding: 0 11px; }
+    /* 左右留 11px、底部留 13px：卡片是 14px 圆角，图片如果贴到左右边或底边，
+       方角会压到圆角弧线之外（看起来像图片溢出卡片）。
+       另外图片区必须有高度上限，否则多图节点会长到几千像素，把「适应画布」
+       的缩放压到下限 0.25，其余节点全部不可读。 */
+    .node-images {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 0 11px 13px;
+      max-height: 240px;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .node-images:empty { padding: 0; max-height: none; overflow: visible; }
+
+    /* ============================================================
+       「只有图片」的节点：以图为主
+       进入条件：有图片 + 没有实际文字内容
+       - 默认（未激活）：图片铺满卡片，隐藏空文字框与状态条
+       - 选中 / 多选 / 编辑中 / 卡片内有焦点：退出紧凑态，
+         文字说明框与状态条回来，仍可补文字
+       ============================================================ */
+    .node-item.image-only .node-images {
+      padding: 0;
+      gap: 0;
+      max-height: none;
+    }
+    .node-item.image-only .node-body { display: none; }
+    /* 图片自带圆角：顶部两张跟着卡片上圆角（头部已隐藏），底部两张跟着下圆角 */
+    .node-item.image-only .node-img-item { border-radius: 0; }
+    .node-item.image-only .node-img-item:first-child { border-radius: 12.5px 12.5px 0 0; }
+    .node-item.image-only .node-img-item:last-child { border-radius: 0 0 12.5px 12.5px; }
+    .node-item.image-only .node-img-item:only-child { border-radius: 12.5px; }
+    /* 头部同时隐藏：只剩一张图，信息最少 */
+    .node-item.image-only .node-head { display: none; }
+
+    /* 激活态：以上全部还原 */
+    .node-item.image-only.selected .node-head,
+    .node-item.image-only.multi-selected .node-head,
+    .node-item.image-only.editing .node-head,
+    .node-item.image-only:focus-within .node-head { display: flex; }
+
+    .node-item.image-only.selected .node-body,
+    .node-item.image-only.multi-selected .node-body,
+    .node-item.image-only.editing .node-body,
+    .node-item.image-only:focus-within .node-body { display: block; }
+
+    .node-item.image-only.selected .node-images,
+    .node-item.image-only.multi-selected .node-images,
+    .node-item.image-only.editing .node-images,
+    .node-item.image-only:focus-within .node-images {
+      padding: 0 11px 13px;
+      gap: 4px;
+    }
+    .node-item.image-only.selected .node-img-item,
+    .node-item.image-only.multi-selected .node-img-item,
+    .node-item.image-only.editing .node-img-item,
+    .node-item.image-only:focus-within .node-img-item { border-radius: 8px; }
+    /* 图片不再放任何悬浮删除按钮（用户要求图片上保持干净）。
+       移除图片的入口统一放到节点菜单里的「移除图片…」。 */
     .node-img-item { position: relative; border-radius: 8px; overflow: hidden; }
     .node-img-item img { display: block; width: 100%; height: auto; }
 
-    .node-img-del {
-      position: absolute;
-      top: 3px;
-      right: 3px;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      border: none;
-      background: rgba(220,38,38,0.9);
-      color: #fff;
-      font-size: 0.62rem;
-      cursor: pointer;
-      line-height: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .node-img-del:active { transform: scale(0.9); }
-
+    /* 图片上的移除按钮：默认完全不显示，悬停到这张图才淡入 */
+    /* 插入图片：缩成右下角小加号，默认隐藏，悬停/选中/可编辑时出现 */
     .node-add-img {
-      margin: 6px 11px 10px;
-      padding: 5px;
+      position: absolute;
+      right: 7px;
+      bottom: 7px;
+      width: 24px;
+      height: 24px;
+      padding: 0;
       border: 1px dashed var(--border-strong);
-      border-radius: 8px;
-      background: transparent;
+      border-radius: 50%;
+      background: var(--bg-surface);
       color: var(--text-muted);
-      font-size: 0.7rem;
+      font-size: 0.82rem;
+      line-height: 1;
       cursor: pointer;
       font-family: inherit;
-      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 4;
+      transition: opacity 0.15s, border-color 0.15s, color 0.15s, background 0.15s;
     }
+    .node-item:hover .node-add-img,
+    .node-item.selected .node-add-img,
+    .node-item.multi-selected .node-add-img,
+    .node-item.editing .node-add-img { opacity: 1; pointer-events: auto; }
     .node-add-img:hover {
       border-color: var(--primary-bright);
       color: var(--primary-text);
@@ -2685,12 +3280,30 @@
       cursor: crosshair;
       z-index: 3;
       touch-action: none;
-      transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
+      transition: background 0.12s, border-color 0.12s, box-shadow 0.12s, opacity 0.15s;
     }
-    .node-port:hover {
-      background: var(--primary-bright);
-      border-color: var(--primary-bright);
-      box-shadow: 0 0 0 5px rgba(37,99,235,0.18);
+    /* 连接点显示规则（保持简单，避免多条媒体查询互相覆盖）：
+       - 基线：默认隐藏（对所有设备生效）
+       - 鼠标设备：悬停节点时显示
+       - 所有设备：选中 / 多选 / 正在拉这条线时显示
+       触屏没有 hover，靠「点一下节点 → 选中」即可拿到连接点，
+       因此不需要再为触屏单独开一条「常显」规则 —— 那种写法会被
+       any-pointer: coarse 误判（触屏笔记本/Bedrock 设备）并强制常显。 */
+    .node-port { opacity: 0; pointer-events: none; }
+    @media (hover: hover) and (any-pointer: fine) {
+      .node-item:hover .node-port { opacity: 1; pointer-events: auto; }
+    }
+    .node-item.selected .node-port,
+    .node-item.multi-selected .node-port,
+    .node-item.edge-source .node-port { opacity: 1; pointer-events: auto; }
+    /* 只有真有 hover 的设备才应用 hover 高亮，避免触屏点击后留下「粘性 hover」 */
+    @media (hover: hover) and (any-pointer: fine) {
+      .node-port:hover {
+        opacity: 1;
+        background: var(--primary-bright);
+        border-color: var(--primary-bright);
+        box-shadow: 0 0 0 5px rgba(37,99,235,0.18);
+      }
     }
     .node-port[data-side="top"]    { left: 50%; top: -8px; margin-left: -7px; }
     .node-port[data-side="bottom"] { left: 50%; bottom: -8px; margin-left: -7px; }
@@ -3458,6 +4071,10 @@
       const NODE_IMPORT_COLS = 3;
       const NODE_IMPORT_GAP_Y = 240;
       const NODE_DUP_OFFSET = 30;
+      // 右侧可以额外新建的连接点数量上限（其余三边各保持 1 个）
+      const NODE_MAX_RIGHT_PORTS = 8;
+      // 父子箭头端点沿卡片外法线让出的距离，保证箭头停在卡片外缘
+      const ARROW_INSET = 9;
       // 拉线时至少要拖动这么多屏幕像素，才认为是「有意拉线」而不是误触
       const NODE_EDGE_MIN_DRAG = 12;
       const NODE_SIDES = ['top', 'right', 'bottom', 'left'];
@@ -3537,9 +4154,21 @@
         edges: [],
         nodeView: { x: 60, y: 60, scale: 1 },
         nodeSelection: { nodeId: null, edgeId: null },
+        // 父子层级：由「父子关系」连线推导；折叠状态按节点 id 记录
+        nodeLevels: null,
+        nodeCollapsed: new Set(),
+        // 排版辅助开关（吸附/网格/参考线/间距/标尺）
+        nodeLayout: null,
         // 多选：框选 / Ctrl 点选 / 全选 / 按标签 / 按目录
         nodeMultiSelect: new Set(),
         nodeSelectAnchor: null,
+        // 最近一次获得焦点的节点，作为剪贴板粘贴图片的目标
+        nodePasteTargetId: null,
+        nodePasteBound: false,
+        // 正在以「最佳视图」放大的节点
+        nodeFocusId: null,
+        // 最近一次「解除关联」记录，供恢复关联使用
+        lastDetachedItem: null,
         // 节点筛选面板
         nodeFilterOpen: false,
         // 正在编辑中的连线标签输入框（显式登记，避免被重绘清掉）
@@ -8090,6 +8719,25 @@
       }
 
       function normalizeNode(n) {
+        // 连接点：保留已有的合法项（含 id/side/pos/name），缺的边由 getNodePorts 补齐
+        const rawPorts = Array.isArray(n.ports) ? n.ports : [];
+        const seenPortIds = new Set();
+        const ports = [];
+        rawPorts.forEach(p => {
+          if (!p || typeof p !== 'object') return;
+          const side = NODE_SIDES.includes(p.side) ? p.side : null;
+          if (!side) return;
+          const id = (typeof p.id === 'string' && /^[A-Za-z0-9_-]{1,60}$/.test(p.id)) ? p.id : generateId();
+          if (seenPortIds.has(id)) return;
+          seenPortIds.add(id);
+          ports.push({
+            id,
+            side,
+            pos: (typeof p.pos === 'number' && isFinite(p.pos)) ? Math.min(1, Math.max(0, p.pos)) : 0.5,
+            name: typeof p.name === 'string' ? p.name.slice(0, 12) : '',
+            custom: p.custom === true || id !== defaultPortIdForSide(side)
+          });
+        });
         return {
           id: sanitizeId(n.id),
           x: Number.isFinite(n.x) ? n.x : 80,
@@ -8097,7 +8745,8 @@
           title: (typeof n.title === 'string' && n.title) ? n.title : '新节点',
           content: toHtmlContent(n.content || ''),
           images: Array.isArray(n.images) ? n.images.filter(x => typeof x === 'string' && x) : [],
-          linkedItemId: (typeof n.linkedItemId === 'string') ? n.linkedItemId : null
+          linkedItemId: (typeof n.linkedItemId === 'string') ? n.linkedItemId : null,
+          ports
         };
       }
 
@@ -8109,8 +8758,17 @@
       function parseEdgesArray(arr, nodes) {
         if (!Array.isArray(arr)) return [];
         const nodeIds = new Set((nodes || []).map(n => n.id));
+        const nodeById = new Map((nodes || []).map(n => [n.id, n]));
         const seen = new Set();
         const out = [];
+        // 旧数据没有 fromPort/toPort：补成该边的默认连接点
+        const resolvePort = (nodeId, portId, side) => {
+          if (portId) {
+            const node = nodeById.get(nodeId);
+            if (node && Array.isArray(node.ports) && node.ports.some(p => p.id === portId)) return portId;
+          }
+          return defaultPortIdForSide(side);
+        };
         arr.forEach(e => {
           if (!e || typeof e !== 'object') return;
           const from = sanitizeId(e.from);
@@ -8121,11 +8779,14 @@
           const key = from < to ? (from + '|' + to) : (to + '|' + from);
           if (seen.has(key)) return;
           seen.add(key);
+          const fromSide = NODE_SIDES.includes(e.fromSide) ? e.fromSide : 'right';
+          const toSide = NODE_SIDES.includes(e.toSide) ? e.toSide : 'left';
           out.push({
             id: sanitizeId(e.id),
             from, to,
-            fromSide: NODE_SIDES.includes(e.fromSide) ? e.fromSide : 'right',
-            toSide: NODE_SIDES.includes(e.toSide) ? e.toSide : 'left',
+            fromSide, fromPort: resolvePort(from, e.fromPort, fromSide),
+            toSide, toPort: resolvePort(to, e.toPort, toSide),
+            kind: e.kind === 'parent' ? 'parent' : 'relation',
             label: typeof e.label === 'string' ? e.label : ''
           });
         });
@@ -8165,7 +8826,9 @@
                   name: (typeof p.name === 'string' && p.name.trim()) ? p.name.trim().slice(0, 24) : '未命名页面',
                   nodes,
                   edges: parseEdgesArray(p.edges, nodes),
-                  view: normalizeNodeView(p.view)
+                  view: normalizeNodeView(p.view),
+                  collapsed: Array.isArray(p.collapsed) ? p.collapsed.filter(x => typeof x === 'string') : [],
+                  layout: (p.layout && typeof p.layout === 'object') ? p.layout : null
                 };
               });
               state.nodeCurrentPageId = sanitizeId(obj.currentId);
@@ -8221,6 +8884,24 @@
         state.nodes = page.nodes;
         state.edges = page.edges;
         state.nodeView = page.view;
+        // 折叠状态按页面持久化；只接受仍然存在的节点 id
+        const ids = new Set(page.nodes.map(n => n.id));
+        state.nodeCollapsed = new Set(
+          (Array.isArray(page.collapsed) ? page.collapsed : []).filter(id => ids.has(id))
+        );
+        // 排版辅助开关同样按页面恢复
+        state.nodeLayout = { ...LAYOUT_DEFAULTS, ...(page.layout || {}) };
+      }
+
+      // 清掉指向已不存在节点的折叠记录（删节点/切页后都要调）
+      function pruneCollapsedState() {
+        if (!state.nodeCollapsed || state.nodeCollapsed.size === 0) return false;
+        const ids = new Set(state.nodes.map(n => n.id));
+        let changed = false;
+        Array.from(state.nodeCollapsed).forEach(id => {
+          if (!ids.has(id)) { state.nodeCollapsed.delete(id); changed = true; }
+        });
+        return changed;
       }
 
       // 把 state 上的当前页数据回写到页面集合，并整体持久化
@@ -8230,6 +8911,11 @@
         page.nodes = state.nodes;
         page.edges = state.edges;
         page.view = state.nodeView;
+        // 折叠状态跟着页面一起存，否则刷新后层级又全展开了
+        pruneCollapsedState();
+        page.collapsed = Array.from(state.nodeCollapsed || []);
+        // 排版辅助开关也跟着存，刷新后保持用户的排版习惯
+        if (state.nodeLayout) page.layout = { ...getLayoutPref() };
         try {
           localStorage.setItem(STORAGE_KEY_NODE_PAGES, JSON.stringify({
             v: 2,
@@ -8240,7 +8926,6 @@
           throw e;
         }
       }
-
       function saveNodes() {
         if (nodeSaveTimer) clearTimeout(nodeSaveTimer);
         nodeSaveTimer = setTimeout(() => {
@@ -8272,7 +8957,9 @@
           name: pageName,
           nodes: [],
           edges: [],
-          view: { x: 60, y: 60, scale: 1 }
+          view: { x: 60, y: 60, scale: 1 },
+          collapsed: [],
+          layout: null
         };
         state.nodePages.push(page);
         switchNodePage(page.id);
@@ -8439,10 +9126,24 @@
             <div class="node-wrap">
               <div class="node-viewport" id="nodeViewport">
                 <div class="node-world" id="nodeWorld">
-                  <svg class="node-edge-svg" id="nodeEdgeSvg"></svg>
+                  <svg class="node-edge-svg" id="nodeEdgeSvg">
+                    <defs>
+                      <!-- 箭头颜色跟随连线颜色（context-stroke），选中/悬停时会自动变色 -->
+                      <marker id="nodeArrowHead" viewBox="0 0 10 10" refX="9.5" refY="5"
+                              markerWidth="7" markerHeight="7" orient="auto-start-reverse"
+                              markerUnits="userSpaceOnUse">
+                        <path d="M 0 1 L 10 5 L 0 9 z" fill="context-stroke"></path>
+                      </marker>
+                    </defs>
+                  </svg>
                   <div class="edge-label-layer" id="edgeLabelLayer"></div>
+                  <!-- 对齐辅助层：参考线、间距标尺、拖动位移提示（世界坐标，随画布缩放平移） -->
+                  <svg class="node-guide-svg" id="nodeGuideSvg"></svg>
+                  <div class="node-measure-layer" id="nodeMeasureLayer"></div>
                   <div class="node-layer" id="nodeLayer"></div>
                 </div>
+                <div class="node-ruler" id="nodeRulerH"></div>
+                <div class="node-ruler vertical" id="nodeRulerV"></div>
                 <div class="node-empty-tip" id="nodeEmptyTip" style="display:none;">
                   <span class="big">🕸️</span>还没有节点<br>点击左上角 ➕ 新建节点，或点 📥 把已有知识点导入
                 </div>
@@ -8451,6 +9152,7 @@
                 <button class="node-tool-btn" id="nodeAddBtn" title="新建节点">➕</button>
                 <button class="node-tool-btn" id="nodeImportBtn" title="把知识点导入为节点">📥</button>
                 <button class="node-tool-btn" id="nodeSelectBtn" title="选择节点：全选、按标签、按目录">☑️</button>
+                <button class="node-tool-btn" id="nodeLayoutBtn" title="对齐与排版设置：吸附、网格、参考线、间距、标尺">📐</button>
                 <button class="node-page-btn" id="nodePageBtn" title="切换 / 新建 / 重命名页面（Ctrl+Alt+← →）">
                   <span class="page-icon">🗂</span>
                   <span class="node-page-label" id="nodePageLabel">页面</span>
@@ -8463,9 +9165,10 @@
               </div>
               <div class="node-page-menu" id="nodePageMenu" style="display:none;"></div>
               <div class="node-filter-panel" id="nodeFilterPanel" style="display:none;"></div>
+              <div class="node-layout-panel" id="nodeLayoutPanel" style="display:none;"></div>
               <div class="node-batch-bar" id="nodeBatchBar" style="display:none;"></div>
               <div class="node-hint" id="nodeHint">
-                <span>拖顶部 ⠿ 移动 · 拖边缘圆点拉线：碰到节点即连接，空白处松手即新建节点 · 点连线可选中 · 框选或 Ctrl 点选可多选</span>
+                <span>拖 ⠿ 移动 · 拖边缘圆点拉线：碰到节点即连接、空白处松手即新建 · 空格=最佳视图 · Ctrl+V 可粘贴图片 · 框选或 Ctrl 点选多选</span>
                 <button type="button" class="hint-close" id="nodeHintClose" title="不再显示">✕</button>
               </div>
               <div class="node-menu" id="nodeMenu" style="display:none;"></div>
@@ -8478,6 +9181,7 @@
           bindNodePageSwitcher();
           renderNodePageSwitcher();
           bindNodeMenu();
+          bindNodePasteHandler();
           mountAllNodes();
           applyNodeHintVisibility();
           nodeDomReady = true;
@@ -8535,6 +9239,8 @@
         const selectBtn = document.getElementById('nodeSelectBtn');
         if (selectBtn) selectBtn.addEventListener('click', toggleNodeFilterPanel);
         bindNodeBatchBar();
+        bindLayoutPanel();
+        renderRulers();
       }
 
       function mountAllNodes() {
@@ -8544,6 +9250,8 @@
         state.nodes.forEach(n => {
           layer.appendChild(createNodeEl(n));
         });
+        computeNodeLevels();
+        applyCollapseVisibility();
         updateNodeEmptyTip();
         updateNodeSelectionUI();
         syncMultiSelectClasses();
@@ -8558,16 +9266,7 @@
         return { kind: item.hidden ? 'hidden-item' : 'linked', item };
       }
 
-      function getNodeStatusChipHtml(node) {
-        const st = getNodeItemState(node);
-        if (st.kind === 'linked') {
-          return `<button type="button" class="node-status linked" data-node-status="1" title="已同步为知识点「${escapeHtml(st.item.title)}」，点击管理">✓ 知识点</button>`;
-        }
-        if (st.kind === 'hidden-item') {
-          return `<button type="button" class="node-status hidden-item" data-node-status="1" title="来源知识点已隐藏，不参与全局与背诵，点击管理">🚫 已隐藏</button>`;
-        }
-        return `<button type="button" class="node-status plain" data-node-status="1" title="这是普通节点，点击可转为知识点">○ 普通节点</button>`;
-      }
+      // 状态不再用文字标签表示（改为拖动按钮的颜色 + tooltip），此处只保留状态判定
 
       // 已关联知识点的节点：正文不再可独立编辑，改为跟随知识点（避免被静默覆盖）
       function isNodeBodyReadonly(node) {
@@ -8586,12 +9285,234 @@
         body.dataset.placeholder = st.item
           ? '内容跟随知识点，请到「录入」模式修改'
           : '输入文字说明…';
+        applyNodeImageOnlyMode(nodeEl, node);
+      }
+
+      // 节点是否「只有图片」：有图片、但没有实际文字内容
+      function isImageOnlyNode(node) {
+        if (!node || !Array.isArray(node.images) || node.images.length === 0) return false;
+        if (node.__pendingImages) return false;          // 图片还没渲染完，先别进紧凑态
+        return !htmlToPlainText(node.content || '').trim();
+      }
+
+      // 只有图片的节点：隐藏空的文字占位框、图片铺满卡片。
+      // 选中 / 激活 / 编辑中时退出该状态，文字说明框回来，仍可补文字。
+      function applyNodeImageOnlyMode(nodeEl, node) {
+        if (!nodeEl) return;
+        nodeEl.classList.toggle('image-only', isImageOnlyNode(node));
+      }
+
+      // 解开「图片渲染中」标记并刷新展示态。
+      // 供 finally 与超时兜底共用，保证底层读取卡住时标记也能自愈。
+      function releaseNodeImagePending(node) {
+        if (!node) return;
+        const guardId = 'imgGuard_' + node.id;
+        if (node[guardId]) { clearTimeout(node[guardId]); node[guardId] = null; }
+        node.__pendingImages = false;
+        const el = document.querySelector(`.node-item[data-node-id="${node.id}"]`);
+        if (el) applyNodeImageOnlyMode(el, node);
+      }
+
+      // ---------- 连接点模型 ----------
+      // 每边至少 1 个默认连接点；右侧可以额外新建（总数上限 NODE_MAX_RIGHT_PORTS）。
+      // 连接点可以命名，连线会绑定到具体的连接点上。
+      function defaultPortIdForSide(side) {
+        return 'p_' + side;
+      }
+
+      function makePort(side, pos, name, id) {
+        return {
+          id: id || generateId(),
+          side,
+          pos: (typeof pos === 'number') ? pos : 0.5,
+          name: typeof name === 'string' ? name.slice(0, 12) : ''
+        };
+      }
+
+      function getNodePorts(node) {
+        if (!Array.isArray(node.ports)) node.ports = [];
+        let changed = false;
+        const has = (pred) => node.ports.some(pred);
+        // 每边至少 1 个连接点。若该边已有连接点（哪怕是旧数据里生成的随机 id），
+        // 就把它「认领」为该边的默认点并改用规范 id —— 否则同一条边会补出第二个点，
+        // 出现两个位置相同的连接点。只有当该边有多个点时，才新建规范默认点。
+        NODE_SIDES.forEach(side => {
+          const onSide = node.ports.filter(p => p.side === side);
+          if (onSide.length === 0) {
+            node.ports.push(makePort(side, 0.5, '', defaultPortIdForSide(side)));
+            changed = true;
+          } else if (onSide.length === 1 && onSide[0].id !== defaultPortIdForSide(side)) {
+            onSide[0].id = defaultPortIdForSide(side);
+            onSide[0].custom = false;
+            changed = true;
+          } else if (!has(p => p.side === side && p.id === defaultPortIdForSide(side))) {
+            node.ports.push(makePort(side, 0.5, '', defaultPortIdForSide(side)));
+            changed = true;
+          }
+        });
+        // 拖拽过或改名过的连接点要标记为自定义，避免被重新分配位置
+        node.ports.forEach(p => {
+          if (!NODE_SIDES.includes(p.side)) { p.side = 'right'; changed = true; }
+          if (typeof p.pos !== 'number' || !isFinite(p.pos)) { p.pos = 0.5; changed = true; }
+          if (p.custom === undefined) {
+            p.custom = p.id !== defaultPortIdForSide(p.side);
+            changed = true;
+          }
+        });
+        if (changed) saveNodes();
+        return node.ports;
+      }
+
+      function getNodePort(node, portId) {
+        return getNodePorts(node).find(p => p.id === portId) || null;
+      }
+
+      function getRightCustomPorts(node) {
+        return getNodePorts(node).filter(p => p.side === 'right' && p.custom);
+      }
+
+      function canAddRightPort(node) {
+        return getRightCustomPorts(node).length < NODE_MAX_RIGHT_PORTS;
+      }
+
+      function addRightPort(node) {
+        if (!node) return null;
+        if (!canAddRightPort(node)) {
+          showToast(`最多只能新建 ${NODE_MAX_RIGHT_PORTS} 个连接点`, true);
+          return null;
+        }
+        const p = makePort('right', 0.5, '');
+        p.custom = true;
+        getNodePorts(node).push(p);
+        repositionRightPorts(node);
+        saveNodes();
+        renderNodePorts(node);
+        return p;
+      }
+
+      // 把所有「右侧自定义连接点」沿右边均匀排开。
+      // 关键：默认点固定在 0.5（该边中点），自定义点必须在它两侧让开，
+      // 否则第一个新建的点会正好压在默认点上 —— 同位置两个点，根本点不到。
+      const PORT_SAFE_MIN = 0.1;
+      const PORT_SAFE_MAX = 0.9;
+      const PORT_CENTER = 0.5;
+      const PORT_MIN_GAP = 0.06;
+
+      function repositionRightPorts(node) {
+        const customs = getRightCustomPorts(node);
+        const n = customs.length;
+        if (n === 0) return;
+        // (n+1) 个槽位把 [0.1, 0.9] 等分，逐一避开中点
+        const span = PORT_SAFE_MAX - PORT_SAFE_MIN;
+        const slot = span / (n + 1);
+        let prev = PORT_SAFE_MIN - slot;
+        customs.forEach((p, i) => {
+          let pos = PORT_SAFE_MIN + slot * (i + 1);
+          if (Math.abs(pos - PORT_CENTER) < PORT_MIN_GAP) {
+            // 移向离上一个点更远的一侧，保持单调递增
+            const up = PORT_CENTER - PORT_MIN_GAP;
+            const down = PORT_CENTER + PORT_MIN_GAP;
+            pos = (up - prev >= PORT_MIN_GAP) ? up : down;
+          }
+          if (pos - prev < PORT_MIN_GAP) pos = prev + PORT_MIN_GAP;
+          pos = Math.min(PORT_SAFE_MAX, Math.max(PORT_SAFE_MIN, pos));
+          p.pos = pos;
+          prev = pos;
+        });
+      }
+
+      function renameNodePort(node, portId, name) {
+        const p = getNodePort(node, portId);
+        if (!p) return false;
+        const clean = String(name == null ? '' : name).replace(/[\r\n\t]/g, ' ').trim().slice(0, 12);
+        p.name = clean;
+        // 改过名也算自定义（右侧点需要保留它自己的位置）
+        if (p.side === 'right' && p.id !== defaultPortIdForSide('right')) p.custom = true;
+        saveNodes();
+        renderNodePorts(node);
+        return true;
+      }
+
+      function removeNodePort(node, portId) {
+        const p = getNodePort(node, portId);
+        if (!p) return false;
+        if (p.id === defaultPortIdForSide(p.side)) {
+          showToast('每边默认连接点不能删除，只能重命名', true);
+          return false;
+        }
+        node.ports = getNodePorts(node).filter(x => x.id !== portId);
+        // 顺带清掉挂在它上面的连线端点引用（连线本身保留，回退到该边的默认点）
+        const fallback = defaultPortIdForSide(p.side);
+        state.edges.forEach(e => {
+          if (e.fromPort === portId) e.fromPort = fallback;
+          if (e.toPort === portId) e.toPort = fallback;
+        });
+        repositionRightPorts(node);
+        saveNodes();
+        renderNodePorts(node);
+        renderAllEdges();
+        showToast('已删除连接点');
+        return true;
+      }
+
+      // 把节点上的连接点元素整体重绘（结构变化时用）
+      function renderNodePorts(node) {
+        const nodeEl = document.querySelector(`.node-item[data-node-id="${node.id}"]`);
+        if (!nodeEl) return;
+        nodeEl.querySelectorAll('.node-port').forEach(p => p.remove());
+        buildNodePortEls(node, nodeEl);
+        scheduleEdgesRedraw();
+      }
+
+      function buildNodePortEls(node, nodeEl) {
+        const ports = getNodePorts(node);
+        const frag = document.createDocumentFragment();
+        ports.forEach(p => {
+          const el = document.createElement('span');
+          el.className = 'node-port';
+          el.dataset.portId = p.id;
+          el.dataset.side = p.side;
+          const label = p.name || (p.custom ? '未命名连接点' : `${p.side} 侧连接点`);
+          el.title = p.name ? `连接点「${p.name}」（拖出连线 / 右键管理）` : `${label}（拖出连线 / 右键管理）`;
+          el.style.left = '';
+          el.style.top = '';
+          el.style.right = '';
+          el.style.bottom = '';
+          el.style.marginLeft = '';
+          el.style.marginTop = '';
+          if (p.side === 'top' || p.side === 'bottom') {
+            el.style.left = (p.pos * 100) + '%';
+            el.style.marginLeft = '-7px';
+            if (p.side === 'top') el.style.top = '-8px';
+            else el.style.bottom = '-8px';
+          } else {
+            el.style.top = (p.pos * 100) + '%';
+            el.style.marginTop = '-7px';
+            if (p.side === 'left') el.style.left = '-8px';
+            else el.style.right = '-8px';
+          }
+          if (p.name) {
+            // 有名字的连接点加一个小标记，便于和默认点区分
+            el.classList.add('named');
+            el.dataset.portName = p.name;
+          }
+          if (p.custom) el.classList.add('custom');
+          frag.appendChild(el);
+        });
+        // 插到加号按钮之前，保持 DOM 顺序稳定
+        const addBtn = nodeEl.querySelector('.node-add-img');
+        if (addBtn) nodeEl.insertBefore(frag, addBtn);
+        else nodeEl.appendChild(frag);
       }
 
       function createNodeEl(node) {
         const st = getNodeItemState(node);
         const div = document.createElement('div');
-        div.className = 'node-item' + (st.kind === 'hidden-item' ? ' item-hidden' : '');
+        // linked-item 只是语义标记（便于以后按状态加样式）。
+        // 卡片左侧不再画任何色条 —— 状态靠正文顶部状态条上的标签文字表达。
+        div.className = 'node-item' +
+          (st.kind === 'hidden-item' ? ' item-hidden' : '') +
+          (st.kind === 'linked' ? ' linked-item' : '');
         div.dataset.nodeId = node.id;
         div.style.left = node.x + 'px';
         div.style.top = node.y + 'px';
@@ -8599,21 +9520,226 @@
           <div class="node-head">
             <span class="node-grip" title="按住拖动节点">⠿</span>
             <input class="node-title-input" type="text" value="${escapeHtml(node.title)}" placeholder="节点标题" autocorrect="off" autocapitalize="off" spellcheck="false">
-            ${getNodeStatusChipHtml(node)}
             <button class="node-del-btn" type="button" title="删除节点">✕</button>
           </div>
           <div class="node-body" contenteditable="true" data-placeholder="输入文字说明…">${node.content || ''}</div>
           <div class="node-images"></div>
-          <button class="node-add-img" type="button" title="插入图片">🖼 图片</button>
-          <span class="node-port" data-side="top" title="拖出连线"></span>
-          <span class="node-port" data-side="right" title="拖出连线"></span>
-          <span class="node-port" data-side="bottom" title="拖出连线"></span>
-          <span class="node-port" data-side="left" title="拖出连线"></span>
+          <button class="node-add-img" type="button" title="插入图片（也可直接 Ctrl+V 粘贴）">＋</button>
         `;
+        buildNodePortEls(node, div);
         const imgBox = div.querySelector('.node-images');
         renderNodeImages(node, imgBox);
         applyNodeBodyMode(div, node);
+        applyNodeGripStatus(div, node);
         return div;
+      }
+
+      // 知识点状态：只体现在「拖动按钮」的颜色 + tooltip 文案上，不占显示区域
+      function applyNodeGripStatus(nodeEl, node) {
+        if (!nodeEl) return;
+        const st = getNodeItemState(node);
+        const grip = nodeEl.querySelector('.node-grip');
+        const label = st.kind === 'linked'
+          ? `已关联知识点「${st.item.title}」`
+          : (st.kind === 'hidden-item'
+              ? `来源知识点「${st.item.title}」已隐藏（不参与全局与背诵）`
+              : '普通节点（未关联知识点）');
+        if (grip) grip.title = label + '　·　按住可拖动，右键可更改状态';
+        nodeEl.classList.toggle('linked-item', st.kind === 'linked');
+        nodeEl.classList.toggle('item-hidden', st.kind === 'hidden-item');
+      }
+
+      // 正在编辑的节点：让插入图片控件保持可见
+      function setNodeEditing(nodeEl, on) {
+        if (!nodeEl) return;
+        nodeEl.classList.toggle('editing', !!on);
+      }
+
+      function bindNodeEditingState(viewport) {
+        const onFocusIn = (e) => {
+          const el = e.target.closest && e.target.closest('.node-item');
+          if (el) setNodeEditing(el, true);
+        };
+        const onFocusOut = (e) => {
+          const el = e.target.closest && e.target.closest('.node-item');
+          if (!el) return;
+          // 焦点仍在同一个节点内（比如从标题切到正文）时不取消
+          const next = e.relatedTarget;
+          if (next && el.contains(next)) return;
+          setNodeEditing(el, false);
+        };
+        viewport.addEventListener('focusin', onFocusIn);
+        viewport.addEventListener('focusout', onFocusOut);
+      }
+
+      // 拉线时给来源节点加标记：此时它的连接点要保持可见
+      function setEdgeSourceHighlight(nodeId, on) {
+        document.querySelectorAll('.node-item.edge-source').forEach(el => el.classList.remove('edge-source'));
+        if (!on) return;
+        const el = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
+        if (el) el.classList.add('edge-source');
+      }
+
+      // ---------- 从剪贴板粘贴图片到节点 ----------
+      // 返回 true 表示这次粘贴已经被当作「插入图片」处理
+      async function pasteImagesIntoNode(nodeId, e) {
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!node) return false;
+        const cd = (e && (e.clipboardData || window.clipboardData)) || null;
+        if (!cd) return false;
+
+        const files = [];
+        const dataUrls = [];
+        const httpUrls = [];
+
+        // 1) 剪贴板里的图片文件（截图 / 复制的图片）
+        if (cd.items && cd.items.length) {
+          for (const it of Array.from(cd.items)) {
+            if (it.kind !== 'file' || !it.type || it.type.indexOf('image/') !== 0) continue;
+            const f = it.getAsFile && it.getAsFile();
+            if (f) files.push(f);
+          }
+        }
+        if (cd.files && cd.files.length) {
+          Array.from(cd.files).forEach(f => {
+            if (f && f.type && f.type.indexOf('image/') === 0) files.push(f);
+          });
+        }
+
+        // 2) 富文本里的 <img>（可能是 data: 或 http(s)）
+        const html = cd.getData ? (cd.getData('text/html') || '') : '';
+        if (html) {
+          const tmp = document.createElement('div');
+          tmp.innerHTML = html;
+          tmp.querySelectorAll('img').forEach(img => {
+            const src = img.getAttribute('src') || '';
+            if (src.indexOf('data:image/') === 0) dataUrls.push(src);
+            else if (/^https?:\/\//i.test(src)) httpUrls.push(src);
+          });
+        }
+
+        if (files.length === 0 && dataUrls.length === 0 && httpUrls.length === 0) return false;
+
+        const added = await storePastedImages({ files, dataUrls, httpUrls });
+        if (added.length === 0) {
+          showToast('未能从剪贴板读取到图片', true);
+          return false;
+        }
+        node.images.push(...added);
+        saveNodes();
+        const nodeEl = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
+        await renderNodeImages(node, nodeEl ? nodeEl.querySelector('.node-images') : null);
+        showToast(`已粘贴 ${added.length} 张图片`);
+        return true;
+      }
+
+      // 记住最近一次获得焦点的节点，作为粘贴目标
+      function setPasteTargetNode(nodeId) {
+        state.nodePasteTargetId = nodeId || null;
+      }
+
+      function getPasteTargetNode() {
+        // 优先：当前正在编辑/选中的节点
+        const sel = state.nodeSelection.nodeId;
+        if (sel && state.nodes.some(n => n.id === sel)) return sel;
+        if (state.nodePasteTargetId && state.nodes.some(n => n.id === state.nodePasteTargetId)) {
+          return state.nodePasteTargetId;
+        }
+        if (state.nodeMultiSelect.size === 1) {
+          const only = Array.from(state.nodeMultiSelect)[0];
+          if (state.nodes.some(n => n.id === only)) return only;
+        }
+        return null;
+      }
+
+      function bindNodePasteHandler() {
+        if (state.nodePasteBound) return;
+        state.nodePasteBound = true;
+        document.addEventListener('paste', (e) => {
+          if (state.mode !== 'node') return;
+          const target = getPasteTargetNode();
+          if (!target) return;
+          // 只有剪贴板里确实有图片时才接管；纯文本粘贴保持默认行为
+          const cd = e.clipboardData || window.clipboardData;
+          if (!cd) return;
+          let hasImage = false;
+          if (cd.items && cd.items.length) {
+            hasImage = Array.from(cd.items).some(it =>
+              it.kind === 'file' && it.type && it.type.indexOf('image/') === 0);
+          }
+          if (!hasImage && cd.files && cd.files.length) {
+            hasImage = Array.from(cd.files).some(f => f && f.type && f.type.indexOf('image/') === 0);
+          }
+          if (!hasImage) return;
+          e.preventDefault();
+          e.stopPropagation();
+          pasteImagesIntoNode(target, e).catch(() => {});
+        });
+      }
+
+      // ---------- 节点的最佳视图（放到最大便于查看） ----------
+      function closeNodeFocusView() {
+        const overlay = document.getElementById('nodeFocusView');
+        if (!overlay) return;
+        overlay.remove();
+        state.nodeFocusId = null;
+      }
+
+      function openNodeFocusView(nodeId) {
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!node) return false;
+        closeNodeFocusView();
+        const wrap = document.querySelector('.node-wrap');
+        if (!wrap) return false;
+
+        const st = getNodeItemState(node);
+        const chip = st.kind === 'linked'
+          ? '<span class="nfv-chip linked">✓ 知识点</span>'
+          : (st.kind === 'hidden-item'
+              ? '<span class="nfv-chip hidden-item">🚫 已隐藏</span>'
+              : '<span class="nfv-chip plain">○ 普通节点</span>');
+
+        const overlay = document.createElement('div');
+        overlay.className = 'node-focus-view';
+        overlay.id = 'nodeFocusView';
+        overlay.innerHTML = `
+          <div class="nfv-card" data-node-id="${escapeHtml(node.id)}">
+            <div class="nfv-head">
+              <span class="nfv-title">${escapeHtml(node.title || '未命名节点')}</span>
+              ${chip}
+              <button type="button" class="nfv-close" title="退出最佳视图（Esc / 空格）">✕</button>
+            </div>
+            <div class="nfv-body">${node.content || '<span class="nfv-empty">这个节点还没有内容</span>'}</div>
+            <div class="nfv-images"></div>
+          </div>
+        `;
+        wrap.appendChild(overlay);
+        state.nodeFocusId = nodeId;
+
+        // 图片按实际尺寸展示
+        const imgBox = overlay.querySelector('.nfv-images');
+        if (imgBox && node.images.length > 0) {
+          resolveImageArray(node.images).then(list => {
+            if (!imgBox.isConnected) return;
+            imgBox.innerHTML = list.map(src =>
+              `<img src="${src}" alt="节点图片">`).join('');
+          }).catch(() => {});
+        }
+
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) closeNodeFocusView();
+        });
+        const closeBtn = overlay.querySelector('.nfv-close');
+        if (closeBtn) closeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeNodeFocusView();
+        });
+        return true;
+      }
+
+      function toggleNodeFocusView(nodeId) {
+        if (state.nodeFocusId === nodeId) { closeNodeFocusView(); return false; }
+        return openNodeFocusView(nodeId);
       }
 
       // 只刷新某个节点的状态标签与关联样式（不重建整个节点，避免打断正在编辑的正文）
@@ -8621,13 +9747,8 @@
         const nodeEl = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
         const node = state.nodes.find(n => n.id === nodeId);
         if (!nodeEl || !node) return;
-        const head = nodeEl.querySelector('.node-head');
-        const oldChip = head && head.querySelector('.node-status');
-        if (oldChip) oldChip.remove();
-        const delBtn = head && head.querySelector('.node-del-btn');
-        if (head && delBtn) delBtn.insertAdjacentHTML('beforebegin', getNodeStatusChipHtml(node));
-        const st = getNodeItemState(node);
-        nodeEl.classList.toggle('item-hidden', st.kind === 'hidden-item');
+        // 状态体现在拖动按钮颜色上，由 applyNodeGripStatus 统一处理
+        applyNodeGripStatus(nodeEl, node);
         applyNodeBodyMode(nodeEl, node);
       }
 
@@ -8643,16 +9764,35 @@
 
       async function renderNodeImages(node, container) {
         if (!container) return;
-        const entries = [];
-        for (let i = 0; i < node.images.length; i++) {
-          const resolved = await resolveImageArray([node.images[i]]);
-          if (resolved.length) entries.push({ idx: i, src: resolved[0] });
+        const nodeEl = container.closest ? container.closest('.node-item') : null;
+        // 标记「图片渲染中」：此时不要进入紧凑展示态，否则会先闪一下有占位框的样子。
+        // 同时挂一个超时兜底：图片读取底层（IndexedDB）若长时间不 settle，
+        // 标记也必须能自动解开，否则节点会永远停在「渲染中」而进不了紧凑态。
+        node.__pendingImages = true;
+        if (nodeEl) applyNodeImageOnlyMode(nodeEl, node);
+        const guardId = 'imgGuard_' + node.id;
+        clearTimeout(node[guardId]);
+        node[guardId] = setTimeout(() => { releaseNodeImagePending(node); }, 2500);
+
+        let entries = [];
+        try {
+          for (let i = 0; i < node.images.length; i++) {
+            const resolved = await resolveImageArray([node.images[i]]);
+            if (resolved.length) entries.push({ idx: i, src: resolved[0] });
+          }
+        } catch (e) {
+          entries = [];
+        } finally {
+          // 任何提前 return / 抛错都不能让标记卡住
+          releaseNodeImagePending(node);
         }
+
         if (!container.isConnected) return;
-        if (entries.length === 0) { container.innerHTML = ''; return; }
-        container.innerHTML = entries.map(e =>
-          `<div class="node-img-item"><img src="${e.src}" alt=""><button type="button" class="node-img-del" data-idx="${e.idx}" title="移除图片">✕</button></div>`
-        ).join('');
+        container.innerHTML = entries.length === 0
+          ? ''
+          : entries.map(e => `<div class="node-img-item"><img src="${e.src}" alt=""></div>`).join('');
+        // 图片渲染完成后才能判断是否「只有图片」，据此决定是否铺满
+        if (nodeEl) applyNodeImageOnlyMode(nodeEl, node);
         // 图片撑高节点后必须重算连线锚点，否则连线会一直错位到下次拖动节点
         scheduleEdgesRedraw();
       }
@@ -8719,7 +9859,11 @@
               bar.style.top = pos.y + 'px';
               bar.innerHTML =
                 '<button type="button" class="edge-tool-btn" data-action="label" title="编辑关系说明">✏️</button>' +
-                '<button type="button" class="edge-tool-btn" data-action="reverse" title="反转方向">⇄</button>' +
+                '<button type="button" class="edge-tool-btn" data-action="reverse" title="' +
+                  (isParentEdge(edge)
+                    ? '反转方向：父子关系会随之互换'
+                    : '反转方向') +
+                  '">⇄</button>' +
                 '<button type="button" class="edge-tool-btn danger" data-action="delete" title="删除这条连线">✕</button>';
               labelLayer.appendChild(bar);
             }
@@ -8735,6 +9879,33 @@
         let panState = null;
         let pinchState = null;
         let marqueeState = null;
+        bindNodeEditingState(viewport);
+
+        // ---------- 右键：节点菜单（状态变更入口）/ 连接点菜单 ----------
+        layer.addEventListener('contextmenu', (e) => {
+          const port = e.target.closest('.node-port');
+          if (port) {
+            e.preventDefault();
+            e.stopPropagation();
+            const nodeEl = port.closest('.node-item');
+            if (nodeEl) {
+              const portId = port.dataset.portId;
+              const node = state.nodes.find(n => n.id === nodeEl.dataset.nodeId);
+              if (node && portId) {
+                // 先在菜单里定位到该连接点所在节点，再打开连接点视图
+                openNodePortsMenu(nodeEl.dataset.nodeId);
+                const menu = document.getElementById('nodeMenu');
+                if (menu) menu.dataset.focusPort = portId;
+              }
+            }
+            return;
+          }
+          const nodeEl = e.target.closest('.node-item');
+          if (!nodeEl) return;
+          e.preventDefault();
+          e.stopPropagation();
+          openNodeMenu(nodeEl.dataset.nodeId, e.clientX, e.clientY);
+        });
 
         // ---------- 平移 ----------
         viewport.addEventListener('pointerdown', (e) => {
@@ -8890,11 +10061,10 @@
           const nodeEl = e.target.closest('.node-item');
           const nodeId = nodeEl ? nodeEl.dataset.nodeId : null;
 
-          // 点击端口/状态标签时不参与（多）选逻辑：那两个是独立交互
+          // 点击连接点时不参与（多）选逻辑：那是独立交互
           const isPort = !!e.target.closest('.node-port');
-          const isChip = !!e.target.closest('.node-status');
 
-          if (nodeEl && !isPort && !isChip) {
+          if (nodeEl && !isPort) {
             if (e.ctrlKey || e.metaKey) {
               // Ctrl/Cmd 点选：增减单个节点
               toggleNodeMultiSelectAt(nodeId);
@@ -8906,10 +10076,12 @@
               state.nodeSelection = { nodeId: null, edgeId: null };
               updateNodeSelectionUI();
               state.nodeSelectAnchor = nodeId;
+              setPasteTargetNode(nodeId);
             } else {
               // 普通点击：清空多选，退化为单选
               clearNodeMultiSelect();
               selectNode(nodeId);
+              setPasteTargetNode(nodeId);
             }
           } else if (!nodeEl && !e.target.closest('.edge-label') && !e.target.closest('.edge-toolbar')
                      && !e.target.closest('.node-menu') && !e.target.closest('.node-filter-panel')) {
@@ -8933,23 +10105,18 @@
           }
           const port = e.target.closest('.node-port');
           if (port) {
-            if (nodeEl) startEdgeDraw(e, nodeEl.dataset.nodeId, port.dataset.side);
+            if (nodeEl) startEdgeDraw(e, nodeEl.dataset.nodeId, port.dataset.portId, port.dataset.side);
             return;
           }
         });
 
         layer.addEventListener('click', (e) => {
-          const delImg = e.target.closest('.node-img-del');
-          if (delImg) {
-            const nodeEl = delImg.closest('.node-item');
-            const node = state.nodes.find(n => n.id === nodeEl.dataset.nodeId);
-            if (!node) return;
-            const idx = parseInt(delImg.dataset.idx, 10);
-            if (!isNaN(idx)) {
-              node.images.splice(idx, 1);
-              saveNodes();
-              renderNodeImages(node, nodeEl.querySelector('.node-images'));
-            }
+          // 折叠/展开按钮
+          const collapse = e.target.closest('.node-collapse-badge');
+          if (collapse) {
+            e.stopPropagation();
+            const nodeEl = collapse.closest('.node-item');
+            if (nodeEl) toggleNodeCollapse(nodeEl.dataset.nodeId);
             return;
           }
 
@@ -8973,16 +10140,7 @@
             return;
           }
 
-          // 节点头部的状态标签：打开「转为知识点 / 隐藏 / 恢复」菜单
-          const statusChip = e.target.closest('.node-status');
-          if (statusChip) {
-            const nodeEl = statusChip.closest('.node-item');
-            if (nodeEl) {
-              e.stopPropagation();
-              openNodeMenu(nodeEl.dataset.nodeId, e.clientX, e.clientY);
-            }
-            return;
-          }
+          // 状态已改为拖动按钮颜色表示，这里不再有点击状态标签的分支
         });
 
         // ---------- 连线选中 / 浮出操作条 ----------
@@ -9011,6 +10169,10 @@
             if (btn.dataset.action === 'delete') deleteEdge(edgeId);
             else if (btn.dataset.action === 'label') editEdgeLabel(edgeId);
             else if (btn.dataset.action === 'reverse') reverseEdge(edgeId);
+            else if (btn.dataset.action === 'kind') {
+              const edge = state.edges.find(x => x.id === edgeId);
+              if (edge) setEdgeKind(edgeId, isParentEdge(edge) ? 'relation' : 'parent');
+            }
           });
         }
 
@@ -9018,6 +10180,7 @@
           const body = e.target.closest('.node-body');
           if (body) {
             const nodeEl = body.closest('.node-item');
+            setNodeEditing(nodeEl, true);
             const node = state.nodes.find(n => n.id === nodeEl.dataset.nodeId);
             if (node) {
               // 已关联知识点的节点正文只读：兜底阻止写入（避免节点侧改动被同步静默覆盖）
@@ -9028,6 +10191,8 @@
               }
               node.content = sanitizeHtml(body.innerHTML);
               saveNodes();
+              // 内容从「有文字」变回「空」时，需要重新判定是否回到「只有图片」的紧凑态
+              applyNodeImageOnlyMode(nodeEl, node);
               // 正文高度变化会改变锚点，补一次对齐
               scheduleEdgesRedraw();
             }
@@ -9065,11 +10230,17 @@
         world.style.transform = `translate(${v.x}px, ${v.y}px) scale(${v.scale})`;
         const label = document.getElementById('nodeZoomLabel');
         if (label) label.textContent = Math.round(v.scale * 100) + '%';
+        const pref = getLayoutPref();
         if (vp) {
-          const size = 24 * v.scale;
+          // 开了网格吸附就把点阵对齐到 20px，关掉时回到 24px 的装饰点阵
+          const gridSize = pref.grid ? GRID_SIZE : 24;
+          const size = gridSize * v.scale;
           vp.style.backgroundSize = `${size}px ${size}px`;
           vp.style.backgroundPosition = `${v.x}px ${v.y}px`;
         }
+        // 计量标签按缩放反向补偿，保证任何缩放下都看得清
+        applyMeasureScale();
+        renderRulers();
       }
 
       // 传入的是视口内的局部坐标（各调用方自己换算），保证与屏幕位置一致
@@ -9143,6 +10314,497 @@
         saveNodes();
       }
 
+      // ============================================================
+      // 排版与对齐：吸附 / 参考线 / 间距测量 / 多选对齐 / 标尺
+      // ============================================================
+      const LAYOUT_DEFAULTS = {
+        snap: true,        // 智能参考线吸附
+        grid: false,       // 吸附到 20px 网格
+        guides: true,      // 显示参考线
+        spacing: true,     // 显示相邻间距
+        ruler: false       // 显示标尺
+      };
+      const SNAP_THRESHOLD = 6;      // 世界坐标下的吸附阈值（px）
+      const GRID_SIZE = 20;          // 网格与标尺主刻度
+      const NODE_GAP_STEP = 20;      // 多选整列间距默认步长
+
+      function getLayoutPref() {
+        if (!state.nodeLayout) state.nodeLayout = { ...LAYOUT_DEFAULTS };
+        Object.keys(LAYOUT_DEFAULTS).forEach(k => {
+          if (typeof state.nodeLayout[k] !== 'boolean') state.nodeLayout[k] = LAYOUT_DEFAULTS[k];
+        });
+        return state.nodeLayout;
+      }
+
+      // 拖动开始时缓存所有节点的尺寸，避免 pointermove 里反复读 offsetWidth
+      function measureNodeBox(n) {
+        const el = document.querySelector(`.node-item[data-node-id="${n.id}"]`);
+        return {
+          id: n.id,
+          x: n.x,
+          y: n.y,
+          w: (el && el.offsetWidth) || NODE_DEFAULT_W,
+          h: (el && el.offsetHeight) || NODE_DEFAULT_H
+        };
+      }
+
+      function buildSnapCandidates(excludeIds) {
+        const skip = new Set(excludeIds || []);
+        return state.nodes
+          .filter(n => !skip.has(n.id) && !isNodeHiddenByCollapse(n.id))
+          .map(measureNodeBox);
+      }
+
+      // 拖动吸附：优先吸中心线，再吸边线；返回吸附后的位置与要画的参考线
+      function snapNodePosition(x, y, w, h, candidates, requireOverlapAxis) {
+        const pref = getLayoutPref();
+        let bestDx = null, bestDy = null;
+        const guides = [];
+
+        const consider = (axis, delta, guide) => {
+          if (Math.abs(delta) > SNAP_THRESHOLD) return;
+          if (axis === 'x') {
+            if (bestDx === null || Math.abs(delta) < Math.abs(bestDx)) {
+              bestDx = delta;
+              guides.push(guide);
+            }
+          } else if (bestDy === null || Math.abs(delta) < Math.abs(bestDy)) {
+            bestDy = delta;
+            guides.push(guide);
+          }
+        };
+
+        if (pref.snap) {
+          const rx = x + w / 2, ry = y + h / 2;
+          candidates.forEach(c => {
+            const rcx = c.x + c.w / 2, rcy = c.y + c.h / 2;
+            // 只有两条轴上有投影重叠时吸附含义才清楚，否则容易「吸到很远的节点」
+            const overlapX = requireOverlapAxis ? (y < c.y + c.h && y + h > c.y) : true;
+            const overlapY = requireOverlapAxis ? (x < c.x + c.w && x + w > c.x) : true;
+            if (overlapX) {
+              // 左对左、右对右、中心对中心、左对右、右对左
+              [[x, c.x], [rx, rcx], [x + w, c.x + c.w], [x, c.x + c.w], [x + w, c.x]]
+                .forEach(([a, b]) => consider('x', b - a, {
+                  axis: 'v', at: b, from: Math.min(y, c.y), to: Math.max(y + h, c.y + c.h)
+                }));
+            }
+            if (overlapY) {
+              [[y, c.y], [ry, rcy], [y + h, c.y + c.h], [y, c.y + c.h], [y + h, c.y]]
+                .forEach(([a, b]) => consider('y', b - a, {
+                  axis: 'h', at: b, from: Math.min(x, c.x), to: Math.max(x + w, c.x + c.w)
+                }));
+            }
+          });
+        }
+
+        let nx = x + (bestDx || 0);
+        let ny = y + (bestDy || 0);
+        if (pref.grid) {
+          nx = Math.round(nx / GRID_SIZE) * GRID_SIZE;
+          ny = Math.round(ny / GRID_SIZE) * GRID_SIZE;
+        }
+        // 只保留真正生效的那一条参考线（避免同时画出一堆线）
+        const finalGuides = [];
+        if (bestDx !== null && pref.snap) {
+          const g = guides.filter(x2 => x2.axis === 'v').slice(-1)[0];
+          if (g) finalGuides.push({ ...g, at: g.at });
+        }
+        if (bestDy !== null && pref.snap) {
+          const g = guides.filter(x2 => x2.axis === 'h').slice(-1)[0];
+          if (g) finalGuides.push({ ...g, at: g.at });
+        }
+        // 网格吸附时也画一条淡参考线，让用户看到吸到了网格
+        if (pref.grid) {
+          if (!finalGuides.some(g => g.axis === 'v')) {
+            finalGuides.push({ axis: 'v', at: nx, from: ny, to: ny + h, grid: true });
+          }
+          if (!finalGuides.some(g => g.axis === 'h')) {
+            finalGuides.push({ axis: 'h', at: ny, from: nx, to: nx + w, grid: true });
+          }
+        }
+        return { x: nx, y: ny, guides: finalGuides, snappedX: bestDx !== null, snappedY: bestDy !== null };
+      }
+
+      // 与「其它节点整体包围盒」的间距：拖动时显示最近的上/下、左/右间距
+      function computeDragSpacings(box, candidates) {
+        const pref = getLayoutPref();
+        if (!pref.spacing || candidates.length === 0) return [];
+        const out = [];
+        const yOverlap = c => box.y < c.y + c.h && box.y + box.h > c.y;
+        const xOverlap = c => box.x < c.x + c.w && box.x + box.w > c.x;
+
+        // 横向：找左右最近的邻居
+        let left = null, right = null;
+        candidates.forEach(c => {
+          if (!yOverlap(c)) return;
+          if (c.x + c.w <= box.x && (!left || c.x + c.w > left.x + left.w)) left = c;
+          if (c.x >= box.x + box.w && (!right || c.x < right.x)) right = c;
+        });
+        if (left) {
+          out.push({
+            axis: 'h', value: Math.round(box.x - (left.x + left.w)),
+            x1: left.x + left.w, x2: box.x, at: box.y + box.h / 2
+          });
+        }
+        if (right) {
+          out.push({
+            axis: 'h', value: Math.round(right.x - (box.x + box.w)),
+            x1: box.x + box.w, x2: right.x, at: box.y + box.h / 2
+          });
+        }
+        // 纵向：上下最近邻居
+        let up = null, down = null;
+        candidates.forEach(c => {
+          if (!xOverlap(c)) return;
+          if (c.y + c.h <= box.y && (!up || c.y + c.h > up.y + up.h)) up = c;
+          if (c.y >= box.y + box.h && (!down || c.y < down.y)) down = c;
+        });
+        if (up) {
+          out.push({
+            axis: 'v', value: Math.round(box.y - (up.y + up.h)),
+            x1: up.y + up.h, x2: box.y, at: box.x + box.w / 2
+          });
+        }
+        if (down) {
+          out.push({
+            axis: 'v', value: Math.round(down.y - (box.y + box.h)),
+            x1: box.y + box.h, x2: down.y, at: box.x + box.w / 2
+          });
+        }
+        return out.filter(s => s.value >= 0);
+      }
+
+      function clearLayoutGuides() {
+        const svg = document.getElementById('nodeGuideSvg');
+        if (svg) svg.innerHTML = '';
+        const layer = document.getElementById('nodeMeasureLayer');
+        if (layer) layer.innerHTML = '';
+      }
+
+      // 把参考线 / 间距 / 位移提示画出来（都在世界坐标层，随画布缩放）
+      function renderLayoutGuides(data) {
+        const svg = document.getElementById('nodeGuideSvg');
+        const layer = document.getElementById('nodeMeasureLayer');
+        if (!svg || !layer) return;
+        svg.innerHTML = '';
+        layer.innerHTML = '';
+        const pref = getLayoutPref();
+
+        // 参考线
+        if (pref.guides) {
+          (data.guides || []).forEach(g => {
+            const line = document.createElementNS(SVG_NS, 'line');
+            if (g.axis === 'v') {
+              line.setAttribute('x1', g.at);
+              line.setAttribute('x2', g.at);
+              line.setAttribute('y1', g.from - 20);
+              line.setAttribute('y2', g.to + 20);
+            } else {
+              line.setAttribute('y1', g.at);
+              line.setAttribute('y2', g.at);
+              line.setAttribute('x1', g.from - 20);
+              line.setAttribute('x2', g.to + 20);
+            }
+            line.setAttribute('class', 'align-line' + (g.grid ? ' grid' : ''));
+            svg.appendChild(line);
+          });
+        }
+
+        // 间距：带端点的标尺 + 数值
+        (data.spacings || []).forEach(s => {
+          const g = document.createElementNS(SVG_NS, 'g');
+          const mk = (x1, y1, x2, y2) => {
+            const l = document.createElementNS(SVG_NS, 'line');
+            l.setAttribute('x1', x1); l.setAttribute('y1', y1);
+            l.setAttribute('x2', x2); l.setAttribute('y2', y2);
+            l.setAttribute('class', 'align-line spacing');
+            return l;
+          };
+          if (s.axis === 'h') {
+            g.appendChild(mk(s.x1, s.at, s.x2, s.at));
+            g.appendChild(mk(s.x1, s.at - 5, s.x1, s.at + 5));
+            g.appendChild(mk(s.x2, s.at - 5, s.x2, s.at + 5));
+          } else {
+            g.appendChild(mk(s.at, s.x1, s.at, s.x2));
+            g.appendChild(mk(s.at - 5, s.x1, s.at + 5, s.x1));
+            g.appendChild(mk(s.at - 5, s.x2, s.at + 5, s.x2));
+          }
+          svg.appendChild(g);
+
+          const badge = document.createElement('div');
+          badge.className = 'node-measure spacing';
+          badge.textContent = s.value + 'px';
+          if (s.axis === 'h') {
+            badge.style.left = ((s.x1 + s.x2) / 2) + 'px';
+            badge.style.top = (s.at - 12) + 'px';
+          } else {
+            badge.style.left = (s.at + 26) + 'px';
+            badge.style.top = ((s.x1 + s.x2) / 2) + 'px';
+          }
+          layer.appendChild(badge);
+        });
+
+        // 拖动位移提示
+        if (data.delta) {
+          const badge = document.createElement('div');
+          badge.className = 'node-measure delta';
+          badge.textContent = `Δ ${data.delta.x >= 0 ? '+' : ''}${Math.round(data.delta.x)}, ` +
+                              `${data.delta.y >= 0 ? '+' : ''}${Math.round(data.delta.y)}`;
+          badge.style.left = data.delta.atX + 'px';
+          badge.style.top = data.delta.atY + 'px';
+          layer.appendChild(badge);
+        }
+
+        applyMeasureScale();
+      }
+
+      // 标签文字要始终清晰：按当前缩放反向补偿
+      function applyMeasureScale() {
+        const scale = (state.nodeView && state.nodeView.scale) || 1;
+        const layer = document.getElementById('nodeMeasureLayer');
+        if (!layer) return;
+        Array.from(layer.children).forEach(el => {
+          el.style.transform = `translate(-50%, -50%) scale(${1 / scale})`;
+        });
+      }
+
+      // ---------- 多选对齐 ----------
+      function alignSelectedNodes(mode) {
+        const ids = getSelectedNodeIds();
+        if (ids.length < 2) { showToast('至少选择 2 个节点', true); return false; }
+        const boxes = ids.map(id => {
+          const n = state.nodes.find(x => x.id === id);
+          return n ? measureNodeBox(n) : null;
+        }).filter(Boolean);
+        if (boxes.length < 2) return false;
+
+        if (mode === 'left') {
+          const v = Math.min(...boxes.map(b => b.x));
+          boxes.forEach(b => moveNodeTo(b.id, v, b.y));
+        } else if (mode === 'right') {
+          const v = Math.max(...boxes.map(b => b.x + b.w));
+          boxes.forEach(b => moveNodeTo(b.id, v - b.w, b.y));
+        } else if (mode === 'hcenter') {
+          const sum = boxes.reduce((a, b) => a + b.x + b.w / 2, 0);
+          const c = sum / boxes.length;
+          boxes.forEach(b => moveNodeTo(b.id, Math.round(c - b.w / 2), b.y));
+        } else if (mode === 'top') {
+          const v = Math.min(...boxes.map(b => b.y));
+          boxes.forEach(b => moveNodeTo(b.id, b.x, v));
+        } else if (mode === 'bottom') {
+          const v = Math.max(...boxes.map(b => b.y + b.h));
+          boxes.forEach(b => moveNodeTo(b.id, b.x, v - b.h));
+        } else if (mode === 'vcenter') {
+          const sum = boxes.reduce((a, b) => a + b.y + b.h / 2, 0);
+          const c = sum / boxes.length;
+          boxes.forEach(b => moveNodeTo(b.id, b.x, Math.round(c - b.h / 2)));
+        } else if (mode === 'distribute-h') {
+          return distributeNodes(boxes, 'h');
+        } else if (mode === 'distribute-v') {
+          return distributeNodes(boxes, 'v');
+        } else {
+          return false;
+        }
+        saveNodes();
+        renderAllEdges();
+        renderMultiSpacings();
+        return true;
+      }
+
+      function moveNodeTo(id, x, y) {
+        const n = state.nodes.find(v => v.id === id);
+        if (!n) return;
+        n.x = Math.round(x);
+        n.y = Math.round(y);
+        const el = document.querySelector(`.node-item[data-node-id="${id}"]`);
+        if (el) {
+          el.style.left = n.x + 'px';
+          el.style.top = n.y + 'px';
+        }
+      }
+
+      // 等距分布：两端固定，中间节点按「中心连续」均匀排开
+      function distributeNodes(boxes, axis) {
+        if (boxes.length < 3) { showToast('等距分布至少需要 3 个节点', true); return false; }
+        const sorted = boxes.slice().sort((a, b) =>
+          axis === 'h' ? (a.x + a.w / 2) - (b.x + b.w / 2) : (a.y + a.h / 2) - (b.y + b.h / 2));
+        const first = sorted[0], last = sorted[sorted.length - 1];
+        const firstC = axis === 'h' ? first.x + first.w / 2 : first.y + first.h / 2;
+        const lastC = axis === 'h' ? last.x + last.w / 2 : last.y + last.h / 2;
+        const step = (lastC - firstC) / (sorted.length - 1);
+        sorted.forEach((b, i) => {
+          if (i === 0 || i === sorted.length - 1) return;
+          const target = firstC + step * i;
+          if (axis === 'h') moveNodeTo(b.id, target - b.w / 2, b.y);
+          else moveNodeTo(b.id, b.x, target - b.h / 2);
+        });
+        saveNodes();
+        renderAllEdges();
+        renderMultiSpacings();
+        return true;
+      }
+
+      // 多选状态下显示相邻节点的间距
+      function renderMultiSpacings() {
+        const pref = getLayoutPref();
+        const ids = getSelectedNodeIds();
+        if (!pref.spacing || ids.length < 2) { clearLayoutGuides(); return; }
+        const boxes = ids.map(id => {
+          const n = state.nodes.find(x => x.id === id);
+          return n ? measureNodeBox(n) : null;
+        }).filter(Boolean);
+        const all = buildSnapCandidates([]);
+        const spacings = [];
+        boxes.forEach(b => {
+          computeDragSpacings(b, all.filter(c => !ids.includes(c.id))).forEach(s => spacings.push(s));
+        });
+        // 去重（同一段被两个节点各算一次）
+        const seen = new Set();
+        const uniq = spacings.filter(s => {
+          const k = s.axis + ':' + s.x1 + ':' + s.x2 + ':' + s.at;
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
+        renderLayoutGuides({ guides: [], spacings: uniq });
+      }
+
+      // ---------- 标尺 ----------
+      function renderRulers() {
+        const pref = getLayoutPref();
+        const vp = document.getElementById('nodeViewport');
+        const hEl = document.getElementById('nodeRulerH');
+        const vEl = document.getElementById('nodeRulerV');
+        if (!vp || !hEl || !vEl) return;
+        vp.classList.toggle('ruler-on', !!pref.ruler);
+        if (!pref.ruler) { hEl.innerHTML = ''; vEl.innerHTML = ''; return; }
+
+        const scale = (state.nodeView && state.nodeView.scale) || 1;
+        const ox = (state.nodeView && state.nodeView.x) || 0;
+        const oy = (state.nodeView && state.nodeView.y) || 0;
+        const w = vp.clientWidth || 800;
+        const h = vp.clientHeight || 600;
+        // 缩放越小，可见世界范围越大：主刻度要按「屏幕像素间距」放宽，
+        // 否则标签会挤成一团（48px 就放不下「1200」这种数字了）
+        const majorStep = scale >= 1.4 ? 40 : (scale >= 0.55 ? 120 : 320);
+        const minorStep = majorStep / 4;
+
+        const build = (el, length, origin, vertical) => {
+          let html = '';
+          const startWorld = -origin / scale;
+          const endWorld = (length - origin) / scale;
+          const first = Math.floor(startWorld / minorStep) * minorStep;
+          for (let v = first; v <= endWorld; v += minorStep) {
+            const screen = v * scale + origin;
+            if (screen < 0 || screen > length) continue;
+            const isMajor = Math.abs(v % majorStep) < 0.5;
+            html += `<span class="tick${isMajor ? ' major' : ''}" style="` +
+              (vertical ? `top:${screen}px` : `left:${screen}px`) + '"></span>';
+            if (isMajor) {
+              html += `<span class="tick-label" style="` +
+                (vertical ? `top:${screen}px` : `left:${screen}px`) + `">${Math.round(v)}</span>`;
+            }
+          }
+          el.innerHTML = html;
+        };
+        build(hEl, w, ox, false);
+        build(vEl, h, oy, true);
+      }
+
+      // ---------- 设置面板 ----------
+      function renderLayoutPanel() {
+        const panel = document.getElementById('nodeLayoutPanel');
+        if (!panel) return;
+        const pref = getLayoutPref();
+        const row = (key, icon, label, hint) =>
+          `<div class="node-layout-row${pref[key] ? ' on' : ''}" data-layout="${key}" role="switch" ` +
+          `aria-checked="${pref[key] ? 'true' : 'false'}">` +
+          `<span class="lr-switch"></span>` +
+          `<span class="lr-label">${icon} ${label}</span>` +
+          (hint ? `<span class="lr-hint">${hint}</span>` : '') + '</div>';
+        panel.innerHTML =
+          '<div class="lp-title">排版辅助</div>' +
+          row('snap', '🧲', '智能吸附', `${SNAP_THRESHOLD}px 内`) +
+          row('grid', '▦', '网格吸附', `${GRID_SIZE}px`) +
+          row('guides', '┿', '对齐参考线') +
+          row('spacing', '↔', '间距提示') +
+          row('ruler', '📏', '标尺');
+      }
+
+      function toggleLayoutPanel() {
+        const panel = document.getElementById('nodeLayoutPanel');
+        if (!panel) return;
+        if (panel.style.display === 'none') {
+          renderLayoutPanel();
+          panel.style.display = '';
+        } else {
+          panel.style.display = 'none';
+        }
+      }
+
+      function bindLayoutPanel() {
+        const panel = document.getElementById('nodeLayoutPanel');
+        const btn = document.getElementById('nodeLayoutBtn');
+        if (btn) {
+          btn.addEventListener('click', (e) => { e.stopPropagation(); toggleLayoutPanel(); });
+        }
+        if (!panel) return;
+        panel.addEventListener('click', (e) => {
+          const rowEl = e.target.closest('[data-layout]');
+          if (!rowEl) return;
+          e.stopPropagation();
+          const key = rowEl.dataset.layout;
+          const pref = getLayoutPref();
+          pref[key] = !pref[key];
+          renderLayoutPanel();
+          renderRulers();
+          if (!pref.spacing && !pref.guides) clearLayoutGuides();
+          else renderMultiSpacings();
+          saveNodes();
+        });
+        // 点击别处收起面板
+        const vp = document.getElementById('nodeViewport');
+        if (vp) {
+          vp.addEventListener('pointerdown', (e) => {
+            if (e.target.closest('.node-layout-panel') || e.target.closest('#nodeLayoutBtn')) return;
+            panel.style.display = 'none';
+          }, true);
+        }
+      }
+
+      // 方向键微调：1px，Shift 10px
+      function nudgeSelectedNodes(dx, dy) {
+        const ids = getSelectedNodeIds();
+        if (ids.length === 0) {
+          const cur = state.nodeSelection.nodeId;
+          if (!cur) return false;
+          ids.push(cur);
+        }
+        ids.forEach(id => {
+          const n = state.nodes.find(v => v.id === id);
+          if (!n) return;
+          moveNodeTo(id, n.x + dx, n.y + dy);
+        });
+        saveNodes();
+        renderAllEdges();
+        renderMultiSpacings();
+        return true;
+      }
+
+      function handleLayoutKeydown(e) {
+        if (state.mode !== 'node') return false;
+        const tag = (e.target && e.target.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return false;
+        const map = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+        const dir = map[e.key];
+        if (!dir) return false;
+        if (!state.nodeSelection.nodeId && state.nodeMultiSelect.size === 0) return false;
+        const step = e.shiftKey ? 10 : 1;
+        e.preventDefault();
+        nudgeSelectedNodes(dir[0] * step, dir[1] * step);
+        return true;
+      }
+
       function startNodeDrag(e, nodeEl) {
         const nodeId = nodeEl.dataset.nodeId;
         const node = state.nodes.find(n => n.id === nodeId);
@@ -9158,6 +10820,11 @@
         nodeEl.parentNode.appendChild(nodeEl);
         // 提到 DOM 末尾只影响同级顺序，真正的置顶靠 z-index
         nodeEl.classList.add('dragging');
+
+        // 拖动开始就量一次尺寸：pointermove 里不再读 offsetWidth/offsetHeight
+        const dragBox = measureNodeBox(node);
+        const candidates = buildSnapCandidates([nodeId]);
+        const pref = getLayoutPref();
 
         // 拖动期间用 rAF 合并边重绘，避免每个 pointermove 都全量重建
         let rafId = null;
@@ -9179,15 +10846,31 @@
           document.removeEventListener('lostpointercapture', onUp);
           if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
           nodeEl.classList.remove('dragging');
+          clearLayoutGuides();
           renderAllEdges();
           saveNodes();
         };
         const onMove = (ev) => {
           if (finished || ev.pointerId !== pid) return;
-          node.x = Math.round(ox + (ev.clientX - startX) / scale);
-          node.y = Math.round(oy + (ev.clientY - startY) / scale);
+          const rawX = ox + (ev.clientX - startX) / scale;
+          const rawY = oy + (ev.clientY - startY) / scale;
+          // 智能吸附（参考线 / 网格）
+          const snap = snapNodePosition(rawX, rawY, dragBox.w, dragBox.h, candidates, true);
+          node.x = Math.round(snap.x);
+          node.y = Math.round(snap.y);
           nodeEl.style.left = node.x + 'px';
           nodeEl.style.top = node.y + 'px';
+
+          // 拖动提示 + 间距 + 参考线
+          const box = { id: nodeId, x: node.x, y: node.y, w: dragBox.w, h: dragBox.h };
+          const delta = (node.x !== ox || node.y !== oy)
+            ? { x: node.x - ox, y: node.y - oy, atX: node.x + dragBox.w / 2, atY: node.y - 14 }
+            : null;
+          renderLayoutGuides({
+            guides: pref.guides ? snap.guides : [],
+            spacings: computeDragSpacings(box, candidates),
+            delta
+          });
           scheduleEdges();
         };
         // pointerup / pointercancel / lostpointercapture 都走同一条收尾路径
@@ -9219,23 +10902,76 @@
         showToast('已删除连线');
       }
 
+      // 判断「反转某条父子边」会不会形成环。
+      // 关键：必须先把这条边本身排除掉再遍历 —— 否则 A→B 这种直接父子边反转时，
+      // B 一定在 A 的后代里，判据恒为真，任何箭头都反转不了。
+      function wouldReverseCreateCycle(edge) {
+        const newParent = edge.to;
+        const newChild = edge.from;
+        if (newParent === newChild) return true;
+        // 从 newParent 出发，沿「跳过这条边」的父子关系能否回到 newChild
+        const seen = new Set([newParent]);
+        const stack = [newParent];
+        while (stack.length) {
+          const cur = stack.pop();
+          for (let i = 0; i < state.edges.length; i++) {
+            const e = state.edges[i];
+            if (e.id === edge.id) continue;             // 排除待反转的这条边
+            if (!isParentEdge(e) || e.from !== cur) continue;
+            if (e.to === newChild) return true;          // 会成环
+            if (seen.has(e.to)) continue;
+            seen.add(e.to);
+            stack.push(e.to);
+          }
+        }
+        return false;
+      }
+
+      // 反转连线方向。父子关系下这也意味着父子互换，因此要先检查冲突：
+      // 反转后如果形成环，就拒绝并保持原样。
       function reverseEdge(edgeId) {
         const edge = state.edges.find(x => x.id === edgeId);
-        if (!edge) return;
-        const from = edge.from, fromSide = edge.fromSide;
+        if (!edge) return false;
+        const parented = isParentEdge(edge);
+        if (parented) {
+          // 反转后：原 to 变成父、原 from 变成子
+          const newParent = edge.to;
+          const newChild = edge.from;
+          if (wouldReverseCreateCycle(edge)) {
+            showToast('反转后会形成循环层级，无法改变父子关系', true);
+            return false;
+          }
+          // 一个节点只能有一个父节点：新子节点若已有别的父节点，反转会造成矛盾
+          const existingParent = getParentNodeId(newChild);
+          if (existingParent && existingParent !== newParent) {
+            showToast('该节点已有父节点，反转会造成父子关系矛盾', true);
+            return false;
+          }
+        }
+        const from = edge.from, fromSide = edge.fromSide, fromPort = edge.fromPort;
         edge.from = edge.to;
         edge.fromSide = edge.toSide;
+        edge.fromPort = edge.toPort;
         edge.to = from;
         edge.toSide = fromSide;
+        edge.toPort = fromPort;
+        if (parented) {
+          computeNodeLevels();
+          applyCollapseVisibility();
+          renderNodeHierarchy(edge.from);
+          renderNodeHierarchy(edge.to);
+        }
         saveNodes();
         renderAllEdges();
-        showToast('已反转连线方向');
+        showToast(parented ? '已反转方向，父子关系随之互换' : '已反转连线方向');
+        return true;
       }
 
       function oppositeSide(s) {
         return { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }[s] || 'left';
       }
 
+      // 控制点沿边的外法线伸出（曲线的「出线方向」）
       function offsetPoint(p, side, d) {
         if (side === 'top') return { x: p.x, y: p.y - d };
         if (side === 'bottom') return { x: p.x, y: p.y + d };
@@ -9243,26 +10979,33 @@
         return { x: p.x + d, y: p.y };
       }
 
-      function buildCurve(a, b, fromSide, toSide) {
-        const dist = Math.hypot(b.x - a.x, b.y - a.y);
-        const d = Math.max(48, Math.min(170, dist * 0.45));
-        const c1 = offsetPoint(a, fromSide, d);
-        const c2 = offsetPoint(b, toSide, d);
-        return `M ${a.x} ${a.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${b.x} ${b.y}`;
+      // anchor 既接受字符串（side，向后兼容），也接受 { side, portId }
+      function anchorParts(anchor) {
+        if (anchor && typeof anchor === 'object') {
+          return { side: anchor.side, portId: anchor.portId || null };
+        }
+        return { side: anchor, portId: null };
       }
 
-      function getAnchorPoint(nodeEl, side) {
+      function getAnchorPoint(nodeEl, anchor) {
+        const { side, portId } = anchorParts(anchor);
         const nodeId = nodeEl.dataset.nodeId;
         const node = state.nodes.find(n => n.id === nodeId);
         const x = node ? node.x : (parseFloat(nodeEl.style.left) || 0);
         const y = node ? node.y : (parseFloat(nodeEl.style.top) || 0);
         const w = nodeEl.offsetWidth || NODE_DEFAULT_W;
         const h = nodeEl.offsetHeight || NODE_DEFAULT_H;
+        // 命中了具体连接点就按它的位置算（右侧可能有多个点分散在边上）
+        let pos = 0.5;
+        if (node && portId) {
+          const p = getNodePort(node, portId);
+          if (p) pos = Math.min(0.92, Math.max(0.08, p.pos));
+        }
         switch (side) {
-          case 'top': return { x: x + w / 2, y };
-          case 'bottom': return { x: x + w / 2, y: y + h };
-          case 'left': return { x, y: y + h / 2 };
-          case 'right': return { x: x + w, y: y + h / 2 };
+          case 'top': return { x: x + w * pos, y };
+          case 'bottom': return { x: x + w * pos, y: y + h };
+          case 'left': return { x, y: y + h * pos };
+          case 'right': return { x: x + w, y: y + h * pos };
           default: return { x: x + w / 2, y: y + h / 2 };
         }
       }
@@ -9285,23 +11028,347 @@
       }
 
       // 单点计算连线几何：SVG 路径 + 三次贝塞尔中点，供绘制与操作条共用
+      // ---------- 连线：直线 / 父子箭头 ----------
+      // kind: 'relation'（默认，直线，不表示层级）| 'parent'（父子关系，箭头由父指向子）
+      function isParentEdge(edge) {
+        return !!edge && edge.kind === 'parent';
+      }
+
+      // 三次贝塞尔：控制点沿各端所在边的外法线伸出，形成自然的「出线—入线」弧
+      function buildCurve(a, b, fromSide, toSide) {
+        const dist = Math.hypot(b.x - a.x, b.y - a.y);
+        const d = Math.max(48, Math.min(170, dist * 0.45));
+        const c1 = offsetPoint(a, fromSide, d);
+        const c2 = offsetPoint(b, toSide, d);
+        return `M ${a.x} ${a.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${b.x} ${b.y}`;
+      }
+
+      // 曲线几何：路径 + 三次贝塞尔中点（t=0.5）+ 终点处切线方向
+      function curveGeom(a, b, fromSide, toSide) {
+        const dist = Math.hypot(b.x - a.x, b.y - a.y);
+        const d = Math.max(48, Math.min(170, dist * 0.45));
+        const c1 = offsetPoint(a, fromSide, d);
+        const c2 = offsetPoint(b, toSide, d);
+        // 三次贝塞尔在 t=0.5 处的点
+        const mid = {
+          x: (a.x + 3 * c1.x + 3 * c2.x + b.x) / 8,
+          y: (a.y + 3 * c1.y + 3 * c2.y + b.y) / 8
+        };
+        // 终点切线方向：由 c2 指向 b
+        const tx = b.x - c2.x;
+        const ty = b.y - c2.y;
+        const tl = Math.hypot(tx, ty) || 1;
+        return {
+          a, b, c1, c2, mid,
+          endTangent: { x: tx / tl, y: ty / tl },
+          len: dist,
+          dAttr: `M ${a.x} ${a.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${b.x} ${b.y}`
+        };
+      }
+
+      // 有箭头时把终点沿曲线切线往回缩一点：箭头尖端正好落在锚点（卡片边界）上，
+      // 并且因为用的是「曲线在该点的切线」，斜向曲线上的箭头也是顺着线指的。
       function getEdgePathData(edge) {
         const aEl = document.querySelector(`.node-item[data-node-id="${edge.from}"]`);
         const bEl = document.querySelector(`.node-item[data-node-id="${edge.to}"]`);
         if (!aEl || !bEl) return null;
-        const a = getAnchorPoint(aEl, edge.fromSide);
-        const b = getAnchorPoint(bEl, edge.toSide);
-        const dist = Math.hypot(b.x - a.x, b.y - a.y);
-        const d = Math.max(48, Math.min(170, dist * 0.45));
-        const c1 = offsetPoint(a, edge.fromSide, d);
-        const c2 = offsetPoint(b, edge.toSide, d);
-        return {
-          dAttr: `M ${a.x} ${a.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${b.x} ${b.y}`,
-          mid: {
-            x: (a.x + 3 * c1.x + 3 * c2.x + b.x) / 8,
-            y: (a.y + 3 * c1.y + 3 * c2.y + b.y) / 8
+        const parent = isParentEdge(edge);
+        const a = getAnchorPoint(aEl, { side: edge.fromSide, portId: edge.fromPort });
+        const b = getAnchorPoint(bEl, { side: edge.toSide, portId: edge.toPort });
+        const geo = curveGeom(a, b, edge.fromSide, edge.toSide);
+        if (parent) {
+          geo.b = {
+            x: b.x - geo.endTangent.x * ARROW_INSET,
+            y: b.y - geo.endTangent.y * ARROW_INSET
+          };
+          geo.dAttr = buildCurve(a, geo.b, edge.fromSide, edge.toSide);
+        }
+        geo.arrow = parent;
+        return geo;
+      }
+
+      // ---------- 父子层级（由「父子关系」的连线推导） ----------
+      // 只有被标记为父子关系的连线才构成层级；其余连线是普通关系，不参与层级。
+      function getChildNodes(nodeId) {
+        return state.edges
+          .filter(e => isParentEdge(e) && e.from === nodeId)
+          .map(e => state.nodes.find(n => n.id === e.to))
+          .filter(Boolean);
+      }
+
+      function hasChildNodes(nodeId) {
+        return state.edges.some(e => isParentEdge(e) && e.from === nodeId);
+      }
+
+      // 所有后代（含更深层），带防环保护。
+      // 注意：这里必须用显式 for 循环 —— 曾经写成 state.edges.forEach 里 `return`，
+      // 那只跳过当前边、不会跳过整个节点，导致遇到已见节点时把整棵子树丢掉。
+      function getDescendantIds(nodeId) {
+        const out = [];
+        const seen = new Set([nodeId]);
+        const stack = [nodeId];
+        while (stack.length) {
+          const cur = stack.pop();
+          for (let i = 0; i < state.edges.length; i++) {
+            const e = state.edges[i];
+            if (!isParentEdge(e) || e.from !== cur) continue;
+            if (seen.has(e.to)) continue;
+            seen.add(e.to);
+            out.push(e.to);
+            stack.push(e.to);
           }
-        };
+        }
+        return out;
+      }
+
+      // 大纲级别：从各级根节点到该节点的最长父子路径长度（根 = 0）。
+      // 用「松弛到稳定」算法而不是简单 BFS —— 一个节点可能有多个父节点路径，
+      // 简单队列去重会把它固定在先遇到（可能更浅）的层级上。
+      function computeNodeLevels() {
+        const levels = new Map();
+        state.nodes.forEach(n => levels.set(n.id, 0));
+        const parentEdges = state.edges.filter(isParentEdge);
+        const maxRounds = state.nodes.length + 2;
+        for (let round = 0; round < maxRounds; round++) {
+          let changed = false;
+          for (let i = 0; i < parentEdges.length; i++) {
+            const e = parentEdges[i];
+            if (!levels.has(e.from) || !levels.has(e.to)) continue;
+            const want = levels.get(e.from) + 1;
+            if (want > levels.get(e.to)) {
+              // 上限防御：万一存在环，层级也不会无限增长
+              if (want <= state.nodes.length) {
+                levels.set(e.to, want);
+                changed = true;
+              }
+            }
+          }
+          if (!changed) break;
+        }
+        state.nodeLevels = levels;
+        return levels;
+      }
+
+      function getNodeLevel(nodeId) {
+        if (!state.nodeLevels) computeNodeLevels();
+        return state.nodeLevels.get(nodeId) || 0;
+      }
+
+      // 是否被某个折叠的祖先藏起来了（自身折叠不算，自身仍然可见）
+      // 注意：这里不能用 forEach + return true —— 那只跳出回调，外层函数仍会返回 false。
+      // 必须用显式遍历，找到就立刻 return。
+      function isNodeHiddenByCollapse(nodeId) {
+        if (!state.nodeCollapsed || state.nodeCollapsed.size === 0) return false;
+        const seen = new Set([nodeId]);
+        let cur = [nodeId];
+        while (cur.length) {
+          const next = [];
+          for (let i = 0; i < cur.length; i++) {
+            const id = cur[i];
+            for (let j = 0; j < state.edges.length; j++) {
+              const e = state.edges[j];
+              if (!isParentEdge(e) || e.to !== id) continue;
+              if (seen.has(e.from)) continue;
+              seen.add(e.from);
+              if (state.nodeCollapsed.has(e.from)) return true;
+              next.push(e.from);
+            }
+          }
+          cur = next;
+        }
+        return false;
+      }
+
+      // nodeId 是否在 ancestorId 的子树里
+      function isDescendantOf(nodeId, ancestorId) {
+        return getDescendantIds(ancestorId).includes(nodeId);
+      }
+
+      // 能否让 parentId 成为 childId 的父节点。
+      // 唯一会成环的情况：parentId 本身已经是 childId 的后代（含自己）。
+      // 注意方向 —— 判反了会把合法操作全部拒掉。
+      function canBeParent(parentId, childId) {
+        if (!parentId || !childId) return false;
+        if (parentId === childId) return false;
+        return !isDescendantOf(parentId, childId);
+      }
+
+      function wouldCreateCycle(parentId, childId) {
+        return !canBeParent(parentId, childId);
+      }
+
+      function toggleNodeCollapse(nodeId) {
+        if (!hasChildNodes(nodeId)) return false;
+        if (!state.nodeCollapsed) state.nodeCollapsed = new Set();
+        if (state.nodeCollapsed.has(nodeId)) state.nodeCollapsed.delete(nodeId);
+        else state.nodeCollapsed.add(nodeId);
+        pruneCollapsedState();
+        applyCollapseVisibility();
+        renderAllEdges();
+        saveNodes();
+        return true;
+      }
+
+      // 折叠隐藏 = 给节点元素加 .collapsed-hidden（用 display:none，不销毁 DOM）
+      function applyCollapseVisibility() {
+        state.nodes.forEach(n => {
+          const el = document.querySelector(`.node-item[data-node-id="${n.id}"]`);
+          if (!el) return;
+          const hidden = isNodeHiddenByCollapse(n.id);
+          el.classList.toggle('collapsed-hidden', hidden);
+          // 折叠状态下的父节点要显示「+N」，并更新可折叠标记
+          updateNodeCollapseBadge(el, n);
+        });
+        void 0;
+      }
+
+      function updateNodeCollapseBadge(nodeEl, node) {
+        if (!nodeEl) return;
+        const kids = hasChildNodes(node.id);
+        nodeEl.classList.toggle('has-children', kids);
+        let badge = nodeEl.querySelector('.node-collapse-badge');
+        if (!kids) {
+          if (badge) badge.remove();
+          return;
+        }
+        const collapsed = state.nodeCollapsed && state.nodeCollapsed.has(node.id);
+        if (!badge) {
+          badge = document.createElement('button');
+          badge.type = 'button';
+          badge.className = 'node-collapse-badge';
+          badge.dataset.collapseToggle = node.id;
+          const head = nodeEl.querySelector('.node-head');
+          if (head) head.insertBefore(badge, head.firstChild);
+          else nodeEl.appendChild(badge);
+        }
+        const count = getDescendantIds(node.id).length;
+        badge.textContent = collapsed ? `＋${count}` : '−';
+        badge.title = collapsed
+          ? `已折叠 ${count} 个下级节点，点击展开`
+          : '折叠下级节点';
+        badge.classList.toggle('is-collapsed', !!collapsed);
+      }
+
+      // 设置某条连线是否为父子关系
+      function setEdgeKind(edgeId, kind) {
+        const edge = state.edges.find(e => e.id === edgeId);
+        if (!edge) return false;
+        const next = kind === 'parent' ? 'parent' : 'relation';
+        if (next === 'parent' && wouldCreateCycle(edge.from, edge.to)) {
+          showToast('会形成循环层级，无法设为父子关系', true);
+          return false;
+        }
+        edge.kind = next;
+        computeNodeLevels();
+        applyCollapseVisibility();
+        renderAllEdges();
+        saveNodes();
+        showToast(next === 'parent' ? '已设为父子关系（箭头指向子节点）' : '已设为直线关系');
+        return true;
+      }
+
+      // ---------- 通过菜单设置父子关系 ----------
+      // 一个节点最多只有一个父节点：设置新的父节点会先解除旧的
+      function getParentNodeId(nodeId) {
+        const e = state.edges.find(x => isParentEdge(x) && x.to === nodeId);
+        return e ? e.from : null;
+      }
+
+      // 兼容旧调用名：判断 from→to 作为父子方向是否会引起循环
+      function wouldCycleInDirection(from, to) {
+        return !canBeParent(from, to);
+      }
+
+      // 保证 from→to 这条连线存在并成为父子关系（方向不对就自动反转）
+      function ensureParentEdge(from, to) {
+        let edge = state.edges.find(e => e.from === from && e.to === to);
+        if (!edge) edge = state.edges.find(e => e.from === to && e.to === from);
+        if (!edge) {
+          edge = addEdge(from, 'right', to, 'left');
+          if (!edge) return null;
+        } else if (edge.from !== from) {
+          // 方向不对：交换方向与连接点
+          const tFrom = edge.from, tFromSide = edge.fromSide, tFromPort = edge.fromPort;
+          edge.from = edge.to; edge.fromSide = edge.toSide; edge.fromPort = edge.toPort;
+          edge.to = tFrom; edge.toSide = tFromSide; edge.toPort = tFromPort;
+        }
+        const prev = edge.kind;
+        edge.kind = 'parent';
+        computeNodeLevels();
+        applyCollapseVisibility();
+        renderAllEdges();
+        saveNodes();
+        void prev;
+        return edge;
+      }
+
+      // 给 nodeId 设置父节点 parentId；返回 { ok, reason }
+      function setNodeParent(nodeId, parentId) {
+        const node = state.nodes.find(n => n.id === nodeId);
+        const parent = state.nodes.find(n => n.id === parentId);
+        if (!node || !parent) return { ok: false, reason: '节点不存在' };
+        if (nodeId === parentId) return { ok: false, reason: '不能把自己设为父节点' };
+        // 冲突一（关键）：候选父节点本身已经是当前节点的后代 → 设上去就成环。
+        // 注意方向别判反：要检查的是「parent 是 node 的后代」。
+        if (!canBeParent(parentId, nodeId)) {
+          return { ok: false, reason: '它是当前节点的下级，会形成循环层级，无法改变父子关系' };
+        }
+        // 冲突三：一个节点只能有一个父节点 —— 先解除原有的父子连线
+        const oldParentId = getParentNodeId(nodeId);
+        if (oldParentId && oldParentId !== parentId) {
+          const oldEdge = state.edges.find(e => isParentEdge(e) && e.to === nodeId);
+          if (oldEdge) oldEdge.kind = 'relation';
+        }
+        ensureParentEdge(parentId, nodeId);
+        renderNodeHierarchy(nodeId);
+        return { ok: true };
+      }
+
+      function clearNodeParent(nodeId) {
+        const edge = state.edges.find(e => isParentEdge(e) && e.to === nodeId);
+        if (!edge) return false;
+        edge.kind = 'relation';
+        computeNodeLevels();
+        applyCollapseVisibility();
+        renderAllEdges();
+        saveNodes();
+        renderNodeHierarchy(nodeId);
+        showToast('已解除父子关系');
+        return true;
+      }
+
+      function getChildNodeIds(nodeId) {
+        return state.edges.filter(e => isParentEdge(e) && e.from === nodeId).map(e => e.to);
+      }
+
+      // 可作为 nodeId 父节点的候选（排除自己与所有后代，避免直接造环）
+      function getParentCandidates(nodeId) {
+        const bad = new Set(getDescendantIds(nodeId));
+        bad.add(nodeId);
+        const current = getParentNodeId(nodeId);
+        return state.nodes
+          .filter(n => !bad.has(n.id))
+          .map(n => ({
+            node: n,
+            isCurrent: n.id === current,
+            level: getNodeLevel(n.id),
+            childCount: getChildNodeIds(n.id).length
+          }));
+      }
+
+      function nodeDisplayName(node) {
+        return (node && node.title) ? node.title : '未命名节点';
+      }
+
+      // 关系变化后刷新节点上的折叠标记
+      function renderNodeHierarchy(nodeId) {
+        const affected = new Set([nodeId]);
+        getDescendantIds(nodeId).forEach(id => affected.add(id));
+        state.nodes.forEach(n => {
+          const el = document.querySelector(`.node-item[data-node-id="${n.id}"]`);
+          if (el) updateNodeCollapseBadge(el, n);
+        });
+        void affected;
       }
 
       function renderAllEdges() {
@@ -9322,17 +11389,21 @@
         });
 
         state.edges.forEach(edge => {
+          // 任一端被折叠隐藏时，这条线也一起隐藏
+          if (isNodeHiddenByCollapse(edge.from) || isNodeHiddenByCollapse(edge.to)) return;
           const geo = getEdgePathData(edge);
           if (!geo) return;
           const dAttr = geo.dAttr;
 
           const g = document.createElementNS(SVG_NS, 'g');
-          g.setAttribute('class', 'node-edge-group');
+          g.setAttribute('class', 'node-edge-group' + (geo.arrow ? ' is-parent' : ''));
           g.dataset.edgeId = edge.id;
 
           const path = document.createElementNS(SVG_NS, 'path');
-          path.setAttribute('class', 'node-edge' + (edge.label ? ' has-label' : ''));
+          path.setAttribute('class', 'node-edge' + (edge.label ? ' has-label' : '') +
+            (geo.arrow ? ' is-arrow' : ' is-line'));
           path.setAttribute('d', dAttr);
+          if (geo.arrow) path.setAttribute('marker-end', 'url(#nodeArrowHead)');
           g.appendChild(path);
 
           const hit = document.createElementNS(SVG_NS, 'path');
@@ -9497,14 +11568,14 @@
         return { side, x: px - ax, y: py - ay };
       }
 
-      function createConnectedNode(prevNodeId, prevSide, worldPoint) {
+      function createConnectedNode(prevNodeId, prevPortId, prevSide, worldPoint) {
         const prevEl = document.querySelector(`.node-item[data-node-id="${prevNodeId}"]`);
         const w = prevEl ? (prevEl.offsetWidth || NODE_DEFAULT_W) : NODE_DEFAULT_W;
         const h = prevEl ? (prevEl.offsetHeight || NODE_DEFAULT_H) : NODE_DEFAULT_H;
         // 来源方向：用「上一个节点的锚点」相对「松开点」的方位，决定新节点哪条边朝过去
         let srcX = worldPoint.x, srcY = worldPoint.y;
         if (prevEl) {
-          const anchor = getAnchorPoint(prevEl, prevSide);
+          const anchor = getAnchorPoint(prevEl, { side: prevSide, portId: prevPortId });
           srcX = anchor.x;
           srcY = anchor.y;
         }
@@ -9512,18 +11583,27 @@
 
         const node = makePlainNode(placed.x, placed.y);
         finalizeNewNode(node);
-        addEdge(prevNodeId, prevSide, node.id, placed.side);
+        addEdge(prevNodeId, { side: prevSide, portId: prevPortId },
+                node.id, { side: placed.side, portId: defaultPortIdForSide(placed.side) });
         renderAllEdges();
         return node;
       }
 
-      function startEdgeDraw(e, nodeId, side) {
+      function startEdgeDraw(e, nodeId, portId, side) {
         e.preventDefault();
         e.stopPropagation();
 
         const svg = document.getElementById('nodeEdgeSvg');
         const fromEl = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
         if (!svg || !fromEl) return;
+        // 拖拽过程中连接点会被重绘，因此按 id 每次都重新解析
+        const fromAnchor = () => ({ side, portId });
+        const resolveFromAnchor = () => {
+          const node = state.nodes.find(n => n.id === nodeId);
+          const p = (node && portId) ? getNodePort(node, portId) : null;
+          return { side: p ? p.side : side, portId: p ? p.id : portId };
+        };
+        void fromAnchor;
 
         const temp = document.createElementNS(SVG_NS, 'path');
         temp.setAttribute('class', 'node-edge-temp');
@@ -9535,11 +11615,13 @@
         // 按下时的屏幕坐标：用于判断是否只是「点了一下」而不是真的拉线
         const startClientX = e.clientX, startClientY = e.clientY;
         state.nodeEdgeDrawActive = true;
+        // 拉线期间来源节点的连接点保持可见，避免「点下去就消失」的诡异感
+        setEdgeSourceHighlight(nodeId, true);
 
         const move = (ev) => {
           if (cancelled || ev.pointerId !== pid) return;
           const p = screenToWorld(ev.clientX, ev.clientY);
-          const a = getAnchorPoint(fromEl, side);
+          const a = getAnchorPoint(fromEl, resolveFromAnchor());
           temp.setAttribute('d', buildCurve(a, p, side, oppositeSide(side)));
 
           // elementFromPoint 在极少数环境（如无头 DOM）不可用，此时视为空白处
@@ -9560,6 +11642,7 @@
           temp.remove();
           if (hoverEl) hoverEl.classList.remove('edge-target');
           hoverEl = null;
+          setEdgeSourceHighlight(nodeId, false);
           state.nodeEdgeDrawActive = false;
           state.cancelEdgeDraw = null;
         };
@@ -9570,12 +11653,14 @@
           cleanup();
 
           if (targetEl) {
-            // 落到其它节点上 -> 建立连接
+            // 落到其它节点上 -> 建立连接（对端落到最近那条边的默认连接点）
             const toId = targetEl.dataset.nodeId;
             if (toId && toId !== nodeId) {
               const p = screenToWorld(clientX, clientY);
               const toSide = nearestSide(targetEl, p);
-              addEdge(nodeId, side, toId, toSide);
+              const src = resolveFromAnchor();
+              addEdge(nodeId, { side: src.side, portId: src.portId },
+                      toId, { side: toSide, portId: defaultPortIdForSide(toSide) });
             }
             return;
           }
@@ -9587,7 +11672,7 @@
             return;
           }
           const world = screenToWorld(clientX, clientY);
-          createConnectedNode(nodeId, side, world);
+          createConnectedNode(nodeId, resolveFromAnchor().portId, side, world);
           showToast('已新建节点并连线，可直接改名');
         };
 
@@ -9603,18 +11688,33 @@
         document.addEventListener('pointercancel', up);
       }
 
-      function addEdge(from, fromSide, to, toSide) {
+      // 连接点信息用对象传入，便于携带具体连接点；也兼容旧的 (from, fromSide, to, toSide) 调用
+      function addEdge(from, fromPortOrSide, to, toPortOrSide) {
+        const norm = (v, nodeId) => {
+          if (v && typeof v === 'object') {
+            return { side: v.side, portId: v.portId || defaultPortIdForSide(v.side) };
+          }
+          return { side: v, portId: defaultPortIdForSide(v) };
+        };
+        const a = norm(fromPortOrSide, from);
+        const b = norm(toPortOrSide, to);
         const dup = state.edges.some(e =>
           (e.from === from && e.to === to) || (e.from === to && e.to === from)
         );
-        if (dup) { showToast('这两个节点已经连接了'); return; }
-        state.edges.push({
+        if (dup) { showToast('这两个节点已经连接了'); return null; }
+        const edge = {
           id: generateId(),
-          from, to, fromSide, toSide, label: ''
-        });
+          from, to,
+          fromSide: a.side, fromPort: a.portId,
+          toSide: b.side, toPort: b.portId,
+          kind: 'relation',
+          label: ''
+        };
+        state.edges.push(edge);
         saveNodes();
         renderAllEdges();
         showToast('已连接，点连线可选中并编辑关系');
+        return edge;
       }
 
       function deleteNode(nodeId) {
@@ -9623,6 +11723,10 @@
         showConfirm('删除节点', `确定删除节点「${node.title || '未命名'}」吗？\n与它相连的连线也会一并删除。`, () => {
           state.nodes = state.nodes.filter(n => n.id !== nodeId);
           state.edges = state.edges.filter(e => e.from !== nodeId && e.to !== nodeId);
+          // 折叠记录里指向这个节点的条目要一并清掉，否则会残留污染其它节点的层级判断
+          state.nodeCollapsed.delete(nodeId);
+          pruneCollapsedState();
+          computeNodeLevels();
           const nodeEl = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
           if (nodeEl) nodeEl.remove();
           if (state.nodeSelection.nodeId === nodeId) {
@@ -9716,6 +11820,42 @@
           renderNodeImages(node, imgBox);
         }
         scheduleEdgesRedraw();
+      }
+
+      // 移除节点里的某张图片（图片上不再放悬浮按钮，改由节点菜单触发）
+      function removeNodeImage(nodeId, idx) {
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!node) return false;
+        if (!(idx >= 0) || idx >= node.images.length) return false;
+        node.images.splice(idx, 1);
+        saveNodes();
+        const nodeEl = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
+        renderNodeImages(node, nodeEl ? nodeEl.querySelector('.node-images') : null);
+        showToast('已移除图片');
+        return true;
+      }
+
+      // 菜单入口：0 张提示、1 张直接删、多张列出序号让用户选
+      function promptRemoveNodeImage(nodeId) {
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+        if (!node.images || node.images.length === 0) {
+          showToast('这个节点还没有图片', true);
+          return;
+        }
+        if (node.images.length === 1) {
+          removeNodeImage(nodeId, 0);
+          return;
+        }
+        const lines = node.images.map((_, i) => `${i + 1}. 第 ${i + 1} 张`).join('\n');
+        const pick = window.prompt(`这个节点有 ${node.images.length} 张图片，输入要移除的序号：\n${lines}`);
+        if (pick === null) return;
+        const idx = parseInt(pick, 10) - 1;
+        if (isNaN(idx) || idx < 0 || idx >= node.images.length) {
+          showToast('序号无效', true);
+          return;
+        }
+        removeNodeImage(nodeId, idx);
       }
 
       let itemNodeSyncTimer = null;
@@ -9865,6 +12005,45 @@
         refreshNodeStatus(nodeId);
         renderSidebar(true);
         showToast('已隐藏：不再出现在全局与背诵模式，掌握度已保留');
+      }
+
+      // 解除与知识点的关联，节点回到「和新建一样」的可编辑状态。
+      // 知识点本身保留在数据里（只解除链接），可随时用菜单重新关联回去。
+      function detachNodeFromItem(nodeId) {
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!node) return false;
+        const st = getNodeItemState(node);
+        if (st.kind === 'plain') {
+          showToast('这个节点本来就是普通节点');
+          return false;
+        }
+        const itemId = st.item ? st.item.id : null;
+        const itemTitle = st.item ? st.item.title : '';
+        node.linkedItemId = null;
+        state.lastDetachedItem = itemId ? { nodeId: node.id, itemId, title: itemTitle } : null;
+        saveNodes();
+        refreshNodeStatus(nodeId);
+        renderSidebar(true);
+        showToast(itemId
+          ? `已转为普通节点，现在可以直接编辑（知识点「${itemTitle}」已保留在知识库中）`
+          : '已转为普通节点');
+        return true;
+      }
+
+      // 把刚解除的关联再接回去
+      function restoreDetachedNodeLink() {
+        const last = state.lastDetachedItem;
+        if (!last) { showToast('没有可恢复的关联', true); return false; }
+        const node = state.nodes.find(n => n.id === last.nodeId);
+        const item = state.items.find(i => i.id === last.itemId);
+        if (!node || !item) { showToast('原知识点已不存在，无法恢复', true); return false; }
+        node.linkedItemId = item.id;
+        state.lastDetachedItem = null;
+        saveNodes();
+        refreshNodeStatus(node.id);
+        renderSidebar(true);
+        showToast(`已重新关联到知识点「${item.title}」`);
+        return true;
       }
 
       function openKnowledgeItem(itemId) {
@@ -10047,8 +12226,27 @@
         }
         const stats = getBatchSelectionStats(ids);
         bar.style.display = '';
+        // 选中 2 个以上时才显示对齐工具，避免单节点时出现一堆无效按钮
+        const alignHtml = ids.length >= 2
+          ? '<span class="node-batch-sep"></span>' +
+            '<span class="node-batch-group-label">对齐</span>' +
+            '<button type="button" class="node-batch-btn icon" data-batch="align-left" title="左对齐">⇤</button>' +
+            '<button type="button" class="node-batch-btn icon" data-batch="align-hcenter" title="水平居中">↔</button>' +
+            '<button type="button" class="node-batch-btn icon" data-batch="align-right" title="右对齐">⇥</button>' +
+            '<span class="node-batch-sep"></span>' +
+            '<button type="button" class="node-batch-btn icon" data-batch="align-top" title="顶对齐">⤒</button>' +
+            '<button type="button" class="node-batch-btn icon" data-batch="align-vcenter" title="垂直居中">↕</button>' +
+            '<button type="button" class="node-batch-btn icon" data-batch="align-bottom" title="底对齐">⤓</button>' +
+            (ids.length >= 3
+              ? '<span class="node-batch-sep"></span>' +
+                '<button type="button" class="node-batch-btn icon" data-batch="distribute-h" title="水平等距分布">≡</button>' +
+                '<button type="button" class="node-batch-btn icon" data-batch="distribute-v" title="垂直等距分布">⋮</button>'
+              : '') +
+            '<span class="node-batch-sep"></span>'
+          : '';
         bar.innerHTML =
           `<span class="node-batch-count">已选 ${ids.length} 个节点</span>` +
+          alignHtml +
           `<button type="button" class="node-batch-btn primary" data-batch="connect">🔗 依次连线</button>` +
           `<button type="button" class="node-batch-btn" data-batch="to-item">✓ 转为知识点` +
             (stats.plain > 0 ? ` (${stats.plain})` : '') + `</button>` +
@@ -10089,6 +12287,14 @@
         if (ids.length === 0) { showToast('请先选择节点', true); return; }
 
         if (action === 'clear') { clearNodeMultiSelect(); return; }
+
+        // 对齐 / 等距分布：直接作用于选中节点，不关闭选择
+        if (action.indexOf('align-') === 0 || action.indexOf('distribute-') === 0) {
+          const mode = action.replace('align-', '').replace('distribute-', 'distribute-');
+          const ok = alignSelectedNodes(mode);
+          if (ok) showToast('已应用对齐');
+          return;
+        }
 
         if (action === 'connect') {
           if (ids.length < 2) { showToast('至少选择 2 个节点才能连线', true); return; }
@@ -10316,36 +12522,7 @@
       }
 
 
-      function openNodeMenu(nodeId, clientX, clientY) {
-        const menu = document.getElementById('nodeMenu');
-        const viewport = document.getElementById('nodeViewport');
-        const node = state.nodes.find(n => n.id === nodeId);
-        if (!menu || !viewport || !node) return;
-
-        const st = getNodeItemState(node);
-        let html = '';
-        if (st.kind === 'plain') {
-          html =
-            '<button type="button" data-menu="to-item">✓ 转为知识点</button>' +
-            '<div class="menu-hint">转为知识点后会出现在全局与背诵模式</div>';
-        } else if (st.kind === 'linked') {
-          html =
-            '<button type="button" data-menu="open-item">↗ 打开这个知识点</button>' +
-            '<button type="button" data-menu="hide">🚫 设为普通节点（隐藏知识点）</button>' +
-            '<div class="menu-hint">隐藏后不参与全局与背诵，数据与掌握度保留</div>';
-        } else {
-          html =
-            '<button type="button" data-menu="open-item">↗ 打开这个知识点</button>' +
-            '<button type="button" data-menu="to-item">👁 取消隐藏（恢复显示）</button>' +
-            '<div class="menu-hint">来源知识点当前处于隐藏状态</div>';
-        }
-        html += '<div class="menu-sep"></div>' +
-          '<button type="button" class="danger" data-menu="delete">✕ 删除节点</button>';
-        menu.innerHTML = html;
-        menu.dataset.nodeId = nodeId;
-        menu.style.display = '';
-        menu.dataset.mode = st.kind;
-
+      function placeNodeMenu(menu, viewport, clientX, clientY) {
         // 先量尺寸再定位，避免超出视口
         menu.style.visibility = 'hidden';
         const vr = viewport.getBoundingClientRect();
@@ -10360,6 +12537,210 @@
         menu.style.visibility = '';
       }
 
+      // 连接点管理菜单：列出四边所有连接点，可新建（仅右侧）/ 重命名 / 删除。
+      // 重命名是「菜单内直接改」，不弹对话框：那一行会原地变成一个输入框。
+      function openNodePortsMenu(nodeId, renamingPortId) {
+        const menu = document.getElementById('nodeMenu');
+        const viewport = document.getElementById('nodeViewport');
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!menu || !viewport || !node) return;
+
+        const ports = getNodePorts(node);
+        const customCount = getRightCustomPorts(node).length;
+        const sideLabel = { top: '上', right: '右', bottom: '下', left: '左' };
+
+        let html = '<div class="menu-head">' +
+          '<button type="button" class="menu-back" data-menu="back" title="返回">‹</button>' +
+          '<span class="menu-title">连接点</span></div>' +
+          '<div class="menu-hint">命名后连线会绑定到具体连接点；默认点不能删除</div>';
+
+        NODE_SIDES.forEach(side => {
+          const list = ports.filter(p => p.side === side);
+          list.forEach(p => {
+            const isDefault = p.id === defaultPortIdForSide(p.side);
+            const label = p.name
+              ? escapeHtml(p.name)
+              : (p.custom ? '未命名' : '默认点');
+            if (renamingPortId === p.id) {
+              // 原地变成输入框：回车保存，Esc 取消，失焦保存
+              html +=
+                `<div class="port-row editing" data-port-id="${escapeHtml(p.id)}">` +
+                `<span class="port-side">${sideLabel[side]}</span>` +
+                `<input type="text" class="port-name-input" maxlength="12" value="${escapeHtml(p.name || '')}" ` +
+                `placeholder="连接点名称" data-port-id="${escapeHtml(p.id)}">` +
+                '<button type="button" class="port-act ok" data-port-act="rename-save" ' +
+                `data-port-id="${escapeHtml(p.id)}" title="保存">✓</button>` +
+                '<button type="button" class="port-act" data-port-act="rename-cancel" title="取消">✕</button>' +
+                '</div>';
+              return;
+            }
+            html +=
+              `<div class="port-row" data-port-id="${escapeHtml(p.id)}">` +
+              `<span class="port-side">${sideLabel[side]}</span>` +
+              `<span class="port-name" role="button" tabindex="0" data-port-act="rename" ` +
+              `data-port-id="${escapeHtml(p.id)}" title="点击直接改名">${label}</span>` +
+              (isDefault
+                ? '<span class="port-tag">默认</span>'
+                : `<button type="button" class="port-act danger" data-port-act="remove" ` +
+                  `data-port-id="${escapeHtml(p.id)}" title="删除">✕</button>`) +
+              '</div>';
+          });
+        });
+
+        html += '<div class="menu-sep"></div>';
+        if (sideCanAddPort('right') && customCount < NODE_MAX_RIGHT_PORTS) {
+          html += menuRow('add-port', '＋', '在右侧新建连接点',
+            `${customCount}/${NODE_MAX_RIGHT_PORTS}`);
+        } else {
+          html += `<div class="menu-hint">右侧已达上限 ${NODE_MAX_RIGHT_PORTS} 个；` +
+                  '其它三边各保持 1 个，只能重命名</div>';
+        }
+
+        menu.innerHTML = html;
+        menu.dataset.nodeId = nodeId;
+        menu.dataset.view = 'ports';
+        menu.dataset.prevView = 'node';
+        menu.style.display = '';
+
+        const nodeEl = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
+        if (nodeEl) {
+          const r = nodeEl.getBoundingClientRect();
+          placeNodeMenu(menu, viewport, r.right, r.top);
+        } else {
+          const vr = viewport.getBoundingClientRect();
+          placeNodeMenu(menu, viewport, vr.left + 40, vr.top + 40);
+        }
+
+        // 进入改名状态时自动聚焦并全选，用户可以直接输入新名字
+        if (renamingPortId) {
+          const inp = menu.querySelector('.port-name-input');
+          if (inp) {
+            inp.focus();
+            try { inp.select(); } catch (e) {}
+          }
+        }
+      }
+
+      // 哪些边允许新建连接点：只有右侧
+      function sideCanAddPort(side) {
+        return side === 'right';
+      }
+
+      function openNodeMenu(nodeId, clientX, clientY) {
+        const menu = document.getElementById('nodeMenu');
+        const viewport = document.getElementById('nodeViewport');
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!menu || !viewport || !node) return;
+
+        const st = getNodeItemState(node);
+        const hasDetached = !!(state.lastDetachedItem &&
+          state.lastDetachedItem.nodeId === node.id &&
+          state.items.some(i => i.id === state.lastDetachedItem.itemId));
+        let html = '';
+
+        // ---- 第 ① 组：知识点状态（要不要同步到全局/背诵） ----
+        html += '<div class="menu-section">知识点</div>';
+        if (st.kind === 'plain') {
+          html += menuRow('to-item', '✓', '转为知识点', '会出现在全局与背诵模式');
+          if (hasDetached) html += menuRow('relink', '↩', '恢复与知识点的关联');
+        } else if (st.kind === 'linked') {
+          html += menuRow('open-item', '↗', '打开知识点');
+          html += menuRow('hide', '🚫', '隐藏（不参与全局与背诵）');
+          html += menuRow('detach', '✂', '转回普通节点', '解除关联，知识点仍在知识库');
+        } else {
+          html += menuRow('open-item', '↗', '打开知识点');
+          html += menuRow('to-item', '👁', '取消隐藏');
+          html += menuRow('detach', '✂', '转回普通节点', '解除关联，知识点仍在知识库');
+        }
+
+        // ---- 第 ② 组：父子层级 ----
+        const parentId = getParentNodeId(node.id);
+        const parentNode = parentId ? state.nodes.find(n => n.id === parentId) : null;
+        const childIds = getChildNodeIds(node.id);
+        const collapsed = state.nodeCollapsed && state.nodeCollapsed.has(node.id);
+        html += '<div class="menu-section">层级</div>';
+        if (parentNode) {
+          html += `<div class="menu-note">父节点：${escapeHtml(nodeDisplayName(parentNode))}</div>` +
+                  menuRow('unset-parent', '✂', '解除父子关系');
+        } else {
+          html += '<div class="menu-note">暂无父节点（当前是顶层）</div>';
+        }
+        html += menuRow('pick-parent', '⤴', parentNode ? '更换父节点…' : '设为某节点的子节点…');
+        if (childIds.length > 0) {
+          html += menuRow('collapse', collapsed ? '▸' : '▾',
+            collapsed ? `展开 ${childIds.length} 个直接下级` : `折叠 ${childIds.length} 个直接下级`);
+        }
+
+        // ---- 第 ③ 组：节点本身 ----
+        html += '<div class="menu-section">节点</div>';
+        html += menuRow('zoom', '🔍', '最佳视图', '快捷键：空格');
+        html += menuRow('ports', '🔌', '连接点管理', nodePortSummary(getRightCustomPorts(node).length));
+        if (node.images && node.images.length) {
+          html += menuRow('remove-img', '🖼', '移除图片', `共 ${node.images.length} 张`);
+        }
+        html += '<div class="menu-sep"></div>';
+        html += menuRow('delete', '✕', '删除节点', '相连的连线会一起删除', true);
+
+        menu.innerHTML = html;
+        menu.dataset.nodeId = nodeId;
+        menu.dataset.view = 'node';
+        menu.style.display = '';
+        menu.dataset.mode = st.kind;
+        placeNodeMenu(menu, viewport, clientX, clientY);
+      }
+
+      // 菜单行统一结构：图标 + 主文字（+ 次要说明）
+      function menuRow(act, icon, label, hint, danger) {
+        return '<button type="button" class="menu-row' + (danger ? ' danger' : '') +
+          '" data-menu="' + act + '">' +
+          '<span class="mi">' + icon + '</span>' +
+          '<span class="mt">' + escapeHtml(label) + '</span>' +
+          (hint ? '<span class="mh">' + escapeHtml(hint) + '</span>' : '') +
+          '</button>';
+      }
+
+      // 选择父节点：列出所有候选，当前父节点打勾，会造环的已提前排除
+      function openNodeParentPicker(nodeId) {
+        const menu = document.getElementById('nodeMenu');
+        const viewport = document.getElementById('nodeViewport');
+        const node = state.nodes.find(n => n.id === nodeId);
+        if (!menu || !viewport || !node) return;
+
+        const candidates = getParentCandidates(nodeId);
+        let html = '<div class="menu-head">';
+        html += '<button type="button" class="menu-back" data-menu="back" title="返回">‹</button>';
+        html += '<span class="menu-title">选择父节点</span></div>';
+        html += '<div class="menu-hint">父节点会指向当前节点（箭头朝向子节点）；一个节点只能有一个父节点</div>';
+
+        if (candidates.length === 0) {
+          html += '<div class="menu-empty">没有可选的父节点<br><span>其它节点都可能是当前节点的下级</span></div>';
+        } else {
+          candidates.forEach(c => {
+            const tag = c.isCurrent
+              ? '<span class="mv current">当前</span>'
+              : (c.childCount > 0
+                  ? '<span class="mv">' + c.childCount + ' 个子节点</span>'
+                  : '<span class="mv">第 ' + (c.level + 1) + ' 层</span>');
+            html += '<button type="button" class="menu-row pick" data-menu="set-parent" data-node-id="' +
+              escapeHtml(c.node.id) + '">' +
+              '<span class="mi">' + (c.isCurrent ? '✓' : '○') + '</span>' +
+              '<span class="mt">' + escapeHtml(nodeDisplayName(c.node)) + '</span>' +
+              tag + '</button>';
+          });
+        }
+        menu.innerHTML = html;
+        menu.dataset.view = 'parents';
+        menu.dataset.prevView = 'node';
+        menu.style.display = '';
+        placeNodeMenu(menu, viewport, 200, 200);
+      }
+
+      function nodePortSummary(customCount) {
+        return customCount > 0
+          ? `右侧自定义 ${customCount}/${NODE_MAX_RIGHT_PORTS}`
+          : '四边各 1 个';
+      }
+
       function closeNodeMenu() {
         const menu = document.getElementById('nodeMenu');
         if (menu) menu.style.display = 'none';
@@ -10368,21 +12749,115 @@
       function bindNodeMenu() {
         const menu = document.getElementById('nodeMenu');
         if (!menu) return;
+
+        // 连接点改名：菜单内原地输入，不弹对话框
+        const commitPortRename = (inp) => {
+          if (!inp || !inp.isConnected) return;
+          const nodeId = menu.dataset.nodeId;
+          const node = state.nodes.find(n => n.id === nodeId);
+          if (!node) return;
+          renameNodePort(node, inp.dataset.portId, inp.value);
+          openNodePortsMenu(nodeId);
+        };
+
         menu.addEventListener('click', (e) => {
+          const nodeId = menu.dataset.nodeId;
+          // 连接点行内操作优先处理，菜单保持打开
+          const portAct = e.target.closest('[data-port-act]');
+          if (portAct) {
+            e.stopPropagation();
+            const act = portAct.dataset.portAct;
+            const portId = portAct.dataset.portId;
+            const node = state.nodes.find(n => n.id === nodeId);
+            if (!node) return;
+            if (act === 'rename') {
+              // 直接进入改名：那一行原地变成输入框并聚焦全选
+              if (getNodePort(node, portId)) openNodePortsMenu(nodeId, portId);
+            } else if (act === 'rename-save') {
+              commitPortRename(menu.querySelector('.port-name-input'));
+            } else if (act === 'rename-cancel') {
+              openNodePortsMenu(nodeId);
+            } else if (act === 'remove') {
+              removeNodePort(node, portId);
+              openNodePortsMenu(nodeId);
+            }
+            return;
+          }
+
           const btn = e.target.closest('button[data-menu]');
           if (!btn) return;
           e.stopPropagation();
-          const nodeId = menu.dataset.nodeId;
           const act = btn.dataset.menu;
-          const mode = menu.dataset.mode;
+
+          // ---- 在同一菜单里切换视图的操作，不关闭菜单 ----
+          if (act === 'ports') { openNodePortsMenu(nodeId); return; }
+          if (act === 'pick-parent') { openNodeParentPicker(nodeId); return; }
+          if (act === 'back') {
+            const prev = menu.dataset.prevView || 'node';
+            const vp = document.getElementById('nodeViewport');
+            if (prev === 'ports') openNodePortsMenu(nodeId);
+            else if (vp) {
+              const r = vp.getBoundingClientRect();
+              openNodeMenu(nodeId, r.left + r.width / 2, r.top + 60);
+            } else {
+              openNodeMenu(nodeId, 200, 200);
+            }
+            return;
+          }
+          if (act === 'add-port') {
+            const node = state.nodes.find(n => n.id === nodeId);
+            if (node) { addRightPort(node); openNodePortsMenu(nodeId); }
+            return;
+          }
+          if (act === 'set-parent') {
+            const parentId = btn.dataset.nodeId;
+            const res = setNodeParent(nodeId, parentId);
+            if (!res.ok) {
+              showToast(res.reason, true);
+              openNodeParentPicker(nodeId);
+            } else {
+              closeNodeMenu();
+              showToast('已设置父子关系（箭头由父指向子）');
+            }
+            return;
+          }
+          if (act === 'unset-parent') { clearNodeParent(nodeId); closeNodeMenu(); return; }
+          if (act === 'collapse') { toggleNodeCollapse(nodeId); closeNodeMenu(); return; }
+
           closeNodeMenu();
           if (act === 'to-item') convertNodeToItem(nodeId);
           else if (act === 'hide') hideLinkedItemOfNode(nodeId);
+          else if (act === 'detach') detachNodeFromItem(nodeId);
+          else if (act === 'relink') restoreDetachedNodeLink();
+          else if (act === 'zoom') openNodeFocusView(nodeId);
+          else if (act === 'remove-img') promptRemoveNodeImage(nodeId);
           else if (act === 'open-item') {
             const node = state.nodes.find(n => n.id === nodeId);
             const st = node ? getNodeItemState(node) : null;
             if (st && st.item) openKnowledgeItem(st.item.id);
           } else if (act === 'delete') deleteNode(nodeId);
+        });
+
+        // 连接点改名输入框：回车保存、Esc 取消、失焦保存
+        menu.addEventListener('keydown', (e) => {
+          const inp = e.target.closest && e.target.closest('.port-name-input');
+          if (!inp) return;
+          e.stopPropagation();
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            commitPortRename(inp);
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            openNodePortsMenu(menu.dataset.nodeId);
+          }
+        });
+        menu.addEventListener('focusout', (e) => {
+          const inp = e.target.closest && e.target.closest('.port-name-input');
+          if (!inp) return;
+          // 焦点落到同一行的 ✓ / ✕ 按钮上时不提交，交给按钮处理
+          const next = e.relatedTarget;
+          if (next && next.closest && next.closest('.port-row.editing')) return;
+          commitPortRename(inp);
         });
       }
 
@@ -10846,6 +13321,8 @@
       // 键盘
       // ============================================================
       document.addEventListener('keydown', (e) => {
+        // 节点模式的方向键微调（1px / Shift 10px）优先处理
+        if (handleLayoutKeydown(e)) return;
         if (e.key === 'Escape') {
           if (el.exportModal.classList.contains('show')) closeExportModal();
           if (el.importModal.classList.contains('show')) closeImportModal();
@@ -10903,6 +13380,12 @@
           }
 
           if (e.key === 'Escape') {
+            // 最佳视图优先关闭
+            if (state.nodeFocusId) {
+              e.preventDefault();
+              closeNodeFocusView();
+              return;
+            }
             if (state.nodeFilterOpen) {
               e.preventDefault();
               closeNodeFilterPanel();
@@ -10919,6 +13402,16 @@
               e.preventDefault();
               clearNodeSelection();
               clearNodeMultiSelect();
+            }
+            return;
+          }
+
+          // 空格：把选中（或唯一多选）的节点放大到最佳视图
+          if (e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space') {
+            const target = nodeId || (multiIds.length === 1 ? multiIds[0] : null);
+            if (target) {
+              e.preventDefault();
+              toggleNodeFocusView(target);
             }
             return;
           }
