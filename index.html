@@ -2695,6 +2695,24 @@
       line-height: 1.5;
     }
 
+    /* 全局模式的知识点卡片菜单：复用节点菜单的观感，但用 fixed 跟随鼠标定位 */
+    .node-menu.card-menu {
+      position: fixed;
+      z-index: 90;
+      width: 236px;
+      max-height: 70vh;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .node-menu.card-menu .menu-head { padding-right: 2px; }
+    .node-menu.card-menu .menu-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     /* 连接点管理菜单里的行 */
     .port-row {
       display: flex;
@@ -5807,9 +5825,11 @@
           el.contentArea.innerHTML = `
             <div class="global-toolbar" id="globalToolbar">${buildGlobalToolbarHtml()}</div>
             <div class="global-body" id="globalBody"></div>
+            <div class="node-menu card-menu" id="cardMenu" style="display:none;"></div>
           `;
           el.contentArea.dataset.mode = 'global';
           bindGlobalToolbarEvents();
+          bindGlobalCardMenu();
         } else {
           syncGlobalToolbarOptions();
         }
@@ -6036,6 +6056,239 @@
           clearPendingCardClick();
           setMode('recite');
         });
+      }
+
+      // ============================================================
+      // 全局模式：右键卡片设置上级目录 / 大纲等级
+      // ============================================================
+      function openCardMenu(itemId, clientX, clientY) {
+        const menu = document.getElementById('cardMenu');
+        const item = state.items.find(i => i.id === itemId);
+        if (!menu || !item) return;
+        const group = normalizeGroupPath(item.group);
+        const depth = group ? getGroupDepth(group) + 1 : 1;   // 展示成「第 N 级」
+        const parent = group ? group.split('/').slice(0, -1).join('/') : '';
+
+        let html = '<div class="menu-head">' +
+          '<span class="menu-title">' + escapeHtml(item.title || '未命名') + '</span></div>';
+        html += '<div class="menu-note">当前：第 ' + depth + ' 级' +
+          (group ? '　' + escapeHtml(group) : '　（无目录）') + '</div>';
+
+        html += '<div class="menu-section">目录</div>';
+        html += menuRow('pick-parent', '📁', parent ? '更换上级目录…' : '设置上级目录…',
+          parent ? getGroupLeafName(parent) : '当前无上级');
+        if (parent) html += menuRow('clear-parent', '⤴', '移到顶层（清除上级）');
+
+        html += '<div class="menu-section">大纲等级</div>';
+        html += menuRow('level-up', '⇧', '提升一级（Shift+Tab）');
+        html += menuRow('level-down', '⇩', '降低一级（Tab）');
+        html += menuRow('pick-level', '＃', '直接指定等级…');
+
+        menu.innerHTML = html;
+        menu.dataset.itemId = itemId;
+        menu.dataset.view = 'card';
+        menu.style.display = '';
+        placeCardMenu(menu, clientX, clientY);
+      }
+
+      function placeCardMenu(menu, clientX, clientY) {
+        menu.style.visibility = 'hidden';
+        const mw = menu.offsetWidth || 232;
+        const mh = menu.offsetHeight || 200;
+        const vw = window.innerWidth || 1024;
+        const vh = window.innerHeight || 768;
+        let left = clientX;
+        let top = clientY + 6;
+        if (left + mw > vw - 8) left = Math.max(8, vw - mw - 8);
+        if (top + mh > vh - 8) top = Math.max(8, clientY - mh - 6);
+        menu.style.left = left + 'px';
+        menu.style.top = top + 'px';
+        menu.style.visibility = '';
+      }
+
+      function closeCardMenu() {
+        const menu = document.getElementById('cardMenu');
+        if (menu) menu.style.display = 'none';
+      }
+
+      // 所有可用目录路径，含中间层（a/b/c 也会产出 a 与 a/b），
+      // 这样选择上级目录时不会漏掉「只有子目录、自己没有条目」的中间层
+      function getAllGroupPathsWithAncestors() {
+        const out = new Set();
+        state.items.forEach(i => {
+          const p = normalizeGroupPath(i.group);
+          if (!p) return;
+          const segs = p.split('/');
+          for (let k = 1; k <= segs.length; k++) out.add(segs.slice(0, k).join('/'));
+        });
+        return Array.from(out).sort();
+      }
+
+      // 选择上级目录：列出所有已有目录 + 「顶层」，并允许新建
+      function openCardParentPicker(itemId) {
+        const menu = document.getElementById('cardMenu');
+        const item = state.items.find(i => i.id === itemId);
+        if (!menu || !item) return;
+        const cur = normalizeGroupPath(item.group);
+        const curParent = cur ? cur.split('/').slice(0, -1).join('/') : '';
+        const leaf = getGroupLeafName(cur);
+        const all = getAllGroupPathsWithAncestors();
+        // 候选：已有目录去掉自己与自己的子树（避免把自己挂到自己下面）
+        const candidates = all.filter(g => g !== cur && !isDescendantGroup(g, cur));
+
+        let html = '<div class="menu-head">' +
+          '<button type="button" class="menu-back" data-menu="back" title="返回">‹</button>' +
+          '<span class="menu-title">选择上级目录</span></div>';
+        html += '<div class="menu-hint">目录用「父/子」表示层级；选中的目录会成为当前条目的上级</div>';
+        html += '<button type="button" class="menu-row" data-menu="set-parent" data-group="">' +
+          '<span class="mi">' + (curParent ? '○' : '✓') + '</span>' +
+          '<span class="mt">顶层（无上级）</span></button>';
+
+        if (candidates.length === 0) {
+          html += '<div class="menu-empty">还没有其它目录<br><span>可以先用下面的「新建目录」</span></div>';
+        } else {
+          candidates.forEach(g => {
+            const isCur = g === curParent;
+            const tag = isCur ? '<span class="mv current">当前</span>'
+              : '<span class="mv">第 ' + (getGroupDepth(g) + 1) + ' 级</span>';
+            html += '<button type="button" class="menu-row pick" data-menu="set-parent" ' +
+              'data-group="' + escapeHtml(g) + '">' +
+              '<span class="mi">' + (isCur ? '✓' : '○') + '</span>' +
+              '<span class="mt">' + escapeHtml(g) + '</span>' + tag + '</button>';
+          });
+        }
+        html += '<div class="menu-sep"></div>';
+        html += menuRow('new-parent', '＋', '新建上级目录…', leaf ? '条目名：' + leaf : '');
+
+        menu.innerHTML = html;
+        menu.dataset.itemId = itemId;
+        menu.dataset.view = 'parents';
+        menu.style.display = '';
+        const cardEl = document.querySelector(`.global-card[data-id="${itemId}"]`);
+        if (cardEl) {
+          const r = cardEl.getBoundingClientRect();
+          placeCardMenu(menu, r.left + 20, r.top + 20);
+        } else {
+          placeCardMenu(menu, 200, 200);
+        }
+      }
+
+      function setItemParentGroup(itemId, parentGroup) {
+        const item = state.items.find(i => i.id === itemId);
+        if (!item) return false;
+        const cur = normalizeGroupPath(item.group);
+        const leaf = getGroupLeafName(cur);
+        const parent = normalizeGroupPath(parentGroup);
+        if (parent && leaf && (parent === cur || isDescendantGroup(parent, cur))) {
+          showToast('不能把条目挂到它自己的下级目录里', true);
+          return false;
+        }
+        const next = parent ? (leaf ? parent + '/' + leaf : parent) : leaf;
+        if (next === cur) { showToast('目录没有变化'); return false; }
+        item.group = next;
+        saveToStorage();
+        renderGlobalMode();
+        showToast(next ? `已放入「${next}」` : '已移到顶层');
+        return true;
+      }
+
+      function setItemGroupLevel(itemId, level) {
+        const item = state.items.find(i => i.id === itemId);
+        if (!item) return false;
+        const lv = Math.max(1, Math.min(6, parseInt(level, 10) || 1));
+        const cur = normalizeGroupPath(item.group);
+        let leaf = getGroupLeafName(cur);
+        if (!leaf) {
+          // 没有目录：先取一个名字，否则无级可设
+          leaf = (item.title || '新目录').slice(0, 20);
+        }
+        const segs = [leaf];
+        // 上级沿用原路径（末级往上的已有层级），不足的补默认名
+        const origParents = cur ? cur.split('/').slice(0, -1) : [];
+        for (let i = 1; i < lv; i++) {
+          const have = origParents[origParents.length - i];
+          segs.unshift(have || ('第 ' + i + ' 级'));
+        }
+        const next = segs.join('/');
+        if (next === cur) { showToast('等级没有变化'); return false; }
+        item.group = next;
+        saveToStorage();
+        renderGlobalMode();
+        showToast(`已设为第 ${lv} 级：${next}`);
+        return true;
+      }
+
+      function bindGlobalCardMenu() {
+        const area = el.contentArea;
+        if (!area || area.dataset.cardMenuBound === '1') return;
+        area.dataset.cardMenuBound = '1';
+
+        area.addEventListener('contextmenu', (e) => {
+          if (state.mode !== 'global') return;
+          const card = e.target.closest('.global-card');
+          if (!card || !card.dataset.id) return;
+          e.preventDefault();
+          e.stopPropagation();
+          openCardMenu(card.dataset.id, e.clientX, e.clientY);
+        });
+
+        el.contentArea.addEventListener('click', (e) => {
+          const menu = document.getElementById('cardMenu');
+          if (!menu) return;
+          const itemId = menu.dataset.itemId;
+          const act = e.target.closest('[data-menu]');
+          if (!act) {
+            // 点菜单外部就收起
+            if (!e.target.closest('#cardMenu')) closeCardMenu();
+            return;
+          }
+          e.stopPropagation();
+          const action = act.dataset.menu;
+          if (action === 'pick-parent') { openCardParentPicker(itemId); return; }
+          if (action === 'back') { openCardMenu(itemId, 200, 200); return; }
+          if (action === 'set-parent') {
+            closeCardMenu();
+            setItemParentGroup(itemId, act.dataset.group || '');
+            return;
+          }
+          if (action === 'clear-parent') {
+            closeCardMenu();
+            setItemParentGroup(itemId, '');
+            return;
+          }
+          if (action === 'new-parent') {
+            const item = state.items.find(i => i.id === itemId);
+            if (!item) return;
+            const cur = normalizeGroupPath(item.group);
+            const leaf = getGroupLeafName(cur);
+            const name = window.prompt('新建上级目录名称（会成为当前条目的上级）：', '');
+            if (name === null) return;
+            const clean = normalizeGroupPath(name);
+            if (!clean) { showToast('目录名不能为空', true); return; }
+            if (leaf && (clean === leaf || isDescendantGroup(clean, leaf))) {
+              showToast('不能把条目挂到它自己的下级目录里', true);
+              return;
+            }
+            closeCardMenu();
+            setItemParentGroup(itemId, clean);
+            return;
+          }
+          if (action === 'level-up' || action === 'level-down' || action === 'pick-level') {
+            closeCardMenu();
+            const item = state.items.find(i => i.id === itemId);
+            if (!item) return;
+            const cur = normalizeGroupPath(item.group);
+            const curLevel = cur ? getGroupDepth(cur) + 1 : 1;
+            if (action === 'level-up') setItemGroupLevel(itemId, curLevel - 1);
+            else if (action === 'level-down') setItemGroupLevel(itemId, curLevel + 1);
+            else {
+              const pick = window.prompt('要设为第几级？（1-6）', String(curLevel));
+              if (pick === null) return;
+              setItemGroupLevel(itemId, pick);
+            }
+            return;
+          }
+        }, true);
       }
 
       function renderGlobalCard(item) {
@@ -9301,12 +9554,42 @@
 
       // 状态不再用文字标签表示（改为拖动按钮的颜色 + tooltip），此处只保留状态判定
 
-      // 已关联知识点的节点：正文不再可独立编辑，改为跟随知识点（避免被静默覆盖）
+      // 节点正文是否只读：已不再只读 —— 关联知识点的节点也能直接编辑，
+      // 改动会写回知识点（见 pushNodeToLinkedItem）。保留该函数是为了让
+      // 调用点语义清晰，将来若要恢复「只读」只需改这里。
       function isNodeBodyReadonly(node) {
-        return getNodeItemState(node).kind !== 'plain';
+        void node;
+        return false;
       }
 
-      const NODE_FOLLOW_HINT = '内容跟随知识点「{title}」，请到「录入」模式修改';
+      const NODE_FOLLOW_HINT = '内容与知识点「{title}」双向同步：在节点里改会直接写回知识点';
+
+      // 节点 → 知识点 回写：让节点侧编辑即时生效，同时保证不会与
+      // 「知识点 → 节点」的推送互相覆盖（写回后两边内容一致，推送会判定无差异而跳过）
+      function pushNodeToLinkedItem(node) {
+        const st = getNodeItemState(node);
+        if (!st.item) return false;
+        const item = st.item;
+        let changed = false;
+        const nextContent = node.content || '';
+        if ((item.content || '') !== nextContent) {
+          item.content = nextContent;
+          changed = true;
+        }
+        if (item.title !== node.title && node.title) {
+          item.title = node.title;
+          changed = true;
+        }
+        if (JSON.stringify(item.images || []) !== JSON.stringify(node.images || [])) {
+          item.images = (node.images || []).slice();
+          changed = true;
+        }
+        if (!changed) return false;
+        saveToStorage();
+        // 录入模式侧栏可能正显示同一个知识点，重绘让标题/目录保持同步
+        if (state.mode === 'edit') renderSidebar(true);
+        return true;
+      }
 
       function applyNodeBodyMode(nodeEl, node) {
         const body = nodeEl.querySelector('.node-body');
@@ -9314,9 +9597,10 @@
         body.contentEditable = isNodeBodyReadonly(node) ? 'false' : 'true';
         body.classList.toggle('is-readonly', body.contentEditable === 'false');
         const st = getNodeItemState(node);
+        // 关联知识点的节点也保持可编辑；用 tooltip 说明「改这里=改知识点」
         body.title = st.item ? NODE_FOLLOW_HINT.replace('{title}', st.item.title) : '';
         body.dataset.placeholder = st.item
-          ? '内容跟随知识点，请到「录入」模式修改'
+          ? '输入内容（会同步到知识点）'
           : '输入文字说明…';
         applyNodeImageOnlyMode(nodeEl, node);
       }
@@ -10253,14 +10537,10 @@
             setNodeEditing(nodeEl, true);
             const node = state.nodes.find(n => n.id === nodeEl.dataset.nodeId);
             if (node) {
-              // 已关联知识点的节点正文只读：兜底阻止写入（避免节点侧改动被同步静默覆盖）
-              if (isNodeBodyReadonly(node)) {
-                e.preventDefault && e.preventDefault();
-                body.innerHTML = node.content || '';
-                return;
-              }
               node.content = sanitizeHtml(body.innerHTML);
               saveNodes();
+              // 关联知识点的节点：把改动写回知识点（不再拦截输入）
+              pushNodeToLinkedItem(node);
               // 内容从「有文字」变回「空」时，需要重新判定是否回到「只有图片」的紧凑态
               applyNodeImageOnlyMode(nodeEl, node);
               // 正文高度变化会改变锚点，补一次对齐
@@ -10275,6 +10555,8 @@
             if (node) {
               node.title = titleInp.value;
               saveNodes();
+              // 标题也双向：改节点标题等于改知识点标题
+              pushNodeToLinkedItem(node);
             }
           }
         });
@@ -13417,6 +13699,8 @@
       // 键盘
       // ============================================================
       document.addEventListener('keydown', (e) => {
+        // 全局模式的知识点卡片菜单：Esc 收起
+        if (e.key === 'Escape' && typeof closeCardMenu === 'function') closeCardMenu();
         // 节点模式的方向键微调（1px / Shift 10px）优先处理
         if (handleLayoutKeydown(e)) return;
         if (e.key === 'Escape') {
