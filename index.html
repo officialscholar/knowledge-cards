@@ -195,7 +195,7 @@
        顶栏
        ============================================================ */
     .app-header {
-      padding: 10px 16px 8px;
+      padding: 5px 12px;
       background: var(--bg-surface);
       border-bottom: 1px solid var(--border);
       display: flex;
@@ -208,7 +208,7 @@
     }
 
     .app-header h1 {
-      font-size: 1.15rem;
+      font-size: 1rem;
       font-weight: 600;
       background: var(--primary-gradient);
       -webkit-background-clip: text;
@@ -217,23 +217,24 @@
       white-space: nowrap;
     }
 
-    .header-right { display: flex; align-items: center; gap: 6px; }
+    .header-right { display: flex; align-items: center; gap: 5px; }
 
     .mode-toggle {
       display: flex;
-      gap: 4px;
+      gap: 3px;
       background: var(--bg-subtle);
-      padding: 4px;
+      padding: 2px;
       border-radius: 40px;
     }
 
     .mode-btn {
-      padding: 6px 12px;
+      padding: 3px 11px;
       border: none;
       background: transparent;
       border-radius: 30px;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       font-weight: 500;
+      line-height: 1.4;
       color: var(--text-primary-soft);
       cursor: pointer;
       transition: all 0.15s;
@@ -249,13 +250,13 @@
 
     .theme-toggle-btn {
       flex-shrink: 0;
-      width: 36px;
-      height: 36px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       border: none;
       background: var(--bg-subtle);
       color: var(--text-muted);
-      font-size: 1rem;
+      font-size: 0.86rem;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -2740,6 +2741,115 @@
       user-select: none;
     }
 
+    /* 页面切换控件：与工具栏其它按钮同一视觉语言 */
+    .node-page-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 34px;
+      max-width: 160px;
+      padding: 0 10px;
+      border: none;
+      border-radius: 18px;
+      background: var(--bg-subtle);
+      color: var(--text-primary-soft);
+      font-size: 0.74rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 0.15s, color 0.15s;
+    }
+    .node-page-btn:hover { background: var(--bg-accent); color: var(--primary-text); }
+    .node-page-btn .page-icon { font-size: 0.85rem; line-height: 1; }
+    .node-page-btn .page-caret { font-size: 0.6rem; opacity: 0.7; }
+    .node-page-label {
+      max-width: 96px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .node-page-menu {
+      position: absolute;
+      top: 54px;
+      left: 12px;
+      z-index: 56;
+      width: 250px;
+      max-height: 62vh;
+      overflow-y: auto;
+      padding: 6px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow-elevated);
+    }
+    .node-page-title {
+      padding: 6px 8px 4px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+    .node-page-row { display: flex; align-items: center; gap: 2px; }
+    .node-page-row.active .np-name { color: var(--primary-text); font-weight: 700; }
+    .np-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 8px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.78rem;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: left;
+    }
+    .np-main:hover { background: var(--bg-accent); }
+    .np-name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .np-count {
+      font-size: 0.66rem;
+      color: var(--text-muted);
+      background: var(--bg-subtle);
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .np-icon {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-faint);
+      font-size: 0.72rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .np-icon:hover { background: var(--bg-accent); }
+    .np-icon.danger:hover { background: var(--bg-danger); color: var(--text-danger); }
+    .node-page-sep {
+      height: 1px;
+      margin: 5px 6px;
+      background: var(--border-light);
+    }
+    .node-page-hint {
+      padding: 4px 8px 6px;
+      font-size: 0.66rem;
+      color: var(--text-faint);
+    }
+
     .node-hint {
       position: absolute;
       left: 50%;
@@ -2813,11 +2923,11 @@
        响应式
        ============================================================ */
     @media (max-width: 700px) {
-      .app-header { gap: 6px; padding: 8px 10px; }
-      .app-header h1 { font-size: 0.9rem; }
-      .mode-toggle { flex: 1; padding: 3px; gap: 3px; max-width: 100%; }
-      .mode-btn { flex: 1; text-align: center; padding: 6px 3px; font-size: 0.68rem; }
-      .theme-toggle-btn { width: 32px; height: 32px; font-size: 0.9rem; }
+      .app-header { gap: 6px; padding: 5px 10px; }
+      .app-header h1 { font-size: 0.85rem; }
+      .mode-toggle { flex: 1; padding: 2px; gap: 2px; max-width: 100%; }
+      .mode-btn { flex: 1; text-align: center; padding: 4px 3px; font-size: 0.68rem; }
+      .theme-toggle-btn { width: 28px; height: 28px; font-size: 0.85rem; }
 
       /* ---------- 侧边栏 → 浮动可折叠抽屉（不占页面宽度） ---------- */
       .sidebar {
@@ -3008,7 +3118,7 @@
 
     @media (max-width: 380px) {
       .app-header h1 { font-size: 0.78rem; }
-      .mode-btn { font-size: 0.62rem; padding: 5px 2px; }
+      .mode-btn { font-size: 0.62rem; padding: 3px 2px; }
       .sidebar { width: min(88vw, 320px); }
       .global-grid { grid-template-columns: repeat(3, 1fr); gap: 5px; }
       .global-card { padding: 6px 6px; height: 95px; }
@@ -3333,6 +3443,8 @@
       const STORAGE_KEY_NODES = 'knowledge_graph_nodes_v1';
       const STORAGE_KEY_EDGES = 'knowledge_graph_edges_v1';
       const STORAGE_KEY_NODE_VIEW = 'knowledge_graph_view_v1';
+      // 分页后的统一存储（旧的上面三个 key 仍会被读取一次用于迁移）
+      const STORAGE_KEY_NODE_PAGES = 'knowledge_graph_pages_v1';
       const STORAGE_KEY_NODE_HINT = 'knowledge_graph_hint_dismissed_v1';
       const MOBILE_BREAKPOINT = 700;
       const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -3417,7 +3529,10 @@
         wordExportGroups: new Set(),
         wordExportTags: new Set(),
 
-        /* ---- 节点关系图 ---- */
+        /* ---- 节点画布分页 ---- */
+        nodePages: [],
+        nodeCurrentPageId: null,
+        // 下面三项始终指向「当前页」，由 applyCurrentPageRefs() 维护
         nodes: [],
         edges: [],
         nodeView: { x: 60, y: 60, scale: 1 },
@@ -7986,59 +8101,144 @@
         };
       }
 
-      function loadNodes() {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY_NODES);
-          if (!raw) return [];
-          const arr = JSON.parse(raw);
-          if (!Array.isArray(arr)) return [];
-          return arr.filter(n => n && typeof n === 'object').map(normalizeNode);
-        } catch (e) { return []; }
+      function parseNodesArray(arr) {
+        if (!Array.isArray(arr)) return [];
+        return arr.filter(n => n && typeof n === 'object').map(normalizeNode);
       }
 
-      function loadEdges() {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY_EDGES);
-          if (!raw) return [];
-          const arr = JSON.parse(raw);
-          if (!Array.isArray(arr)) return [];
-          const nodeIds = new Set(state.nodes.map(n => n.id));
-          const seen = new Set();
-          const out = [];
-          arr.forEach(e => {
-            if (!e || typeof e !== 'object') return;
-            const from = sanitizeId(e.from);
-            const to = sanitizeId(e.to);
-            // 端点必须真实存在，且不允许自环；否则这条边永远渲染不出来也删不掉
-            if (!nodeIds.has(from) || !nodeIds.has(to) || from === to) return;
-            // 同一对节点可能有历史遗留的重复边
-            const key = from < to ? (from + '|' + to) : (to + '|' + from);
-            if (seen.has(key)) return;
-            seen.add(key);
-            out.push({
-              id: sanitizeId(e.id),
-              from, to,
-              fromSide: NODE_SIDES.includes(e.fromSide) ? e.fromSide : 'right',
-              toSide: NODE_SIDES.includes(e.toSide) ? e.toSide : 'left',
-              label: typeof e.label === 'string' ? e.label : ''
-            });
+      function parseEdgesArray(arr, nodes) {
+        if (!Array.isArray(arr)) return [];
+        const nodeIds = new Set((nodes || []).map(n => n.id));
+        const seen = new Set();
+        const out = [];
+        arr.forEach(e => {
+          if (!e || typeof e !== 'object') return;
+          const from = sanitizeId(e.from);
+          const to = sanitizeId(e.to);
+          // 端点必须真实存在，且不允许自环；否则这条边永远渲染不出来也删不掉
+          if (!nodeIds.has(from) || !nodeIds.has(to) || from === to) return;
+          // 同一对节点可能有历史遗留的重复边
+          const key = from < to ? (from + '|' + to) : (to + '|' + from);
+          if (seen.has(key)) return;
+          seen.add(key);
+          out.push({
+            id: sanitizeId(e.id),
+            from, to,
+            fromSide: NODE_SIDES.includes(e.fromSide) ? e.fromSide : 'right',
+            toSide: NODE_SIDES.includes(e.toSide) ? e.toSide : 'left',
+            label: typeof e.label === 'string' ? e.label : ''
           });
-          return out;
-        } catch (e) { return []; }
+        });
+        return out;
       }
 
-      function loadNodeView() {
+      function normalizeNodeView(v) {
+        const src = (v && typeof v === 'object') ? v : {};
+        return {
+          x: Number.isFinite(src.x) ? src.x : 60,
+          y: Number.isFinite(src.y) ? src.y : 60,
+          scale: Number.isFinite(src.scale)
+            ? Math.min(NODE_MAX_SCALE, Math.max(NODE_MIN_SCALE, src.scale))
+            : 1
+        };
+      }
+
+      function makeDefaultPageName() {
+        return '页面 ' + (state.nodePages.length + 1);
+      }
+
+      // ---------- 节点画布分页 ----------
+      // state.nodes / state.edges / state.nodeView 始终指向「当前页」，
+      // 页面集合存放在 state.nodePages，保存时回写。
+      function loadNodePages() {
+        let pages = [];
         try {
-          const raw = localStorage.getItem(STORAGE_KEY_NODE_VIEW);
-          if (!raw) return;
-          const v = JSON.parse(raw);
-          if (!v || typeof v !== 'object') return;
-          state.nodeView = {
-            x: Number.isFinite(v.x) ? v.x : 60,
-            y: Number.isFinite(v.y) ? v.y : 60,
-            scale: Number.isFinite(v.scale) ? Math.min(NODE_MAX_SCALE, Math.max(NODE_MIN_SCALE, v.scale)) : 1
-          };
+          const raw = localStorage.getItem(STORAGE_KEY_NODE_PAGES);
+          if (raw) {
+            const obj = JSON.parse(raw);
+            const arr = obj && Array.isArray(obj.pages) ? obj.pages : null;
+            if (arr) {
+              pages = arr.filter(p => p && typeof p === 'object').map(p => {
+                const nodes = parseNodesArray(p.nodes);
+                return {
+                  id: sanitizeId(p.id),
+                  name: (typeof p.name === 'string' && p.name.trim()) ? p.name.trim().slice(0, 24) : '未命名页面',
+                  nodes,
+                  edges: parseEdgesArray(p.edges, nodes),
+                  view: normalizeNodeView(p.view)
+                };
+              });
+              state.nodeCurrentPageId = sanitizeId(obj.currentId);
+            }
+          }
         } catch (e) {}
+
+        // 兼容旧的单页存储：迁移成一张「默认页面」
+        if (pages.length === 0) {
+          let nodes = [], edges = [], view = null;
+          try {
+            const rawN = localStorage.getItem(STORAGE_KEY_NODES);
+            if (rawN) nodes = parseNodesArray(JSON.parse(rawN));
+          } catch (e) {}
+          try {
+            const rawE = localStorage.getItem(STORAGE_KEY_EDGES);
+            if (rawE) edges = parseEdgesArray(JSON.parse(rawE), nodes);
+          } catch (e) {}
+          try {
+            const rawV = localStorage.getItem(STORAGE_KEY_NODE_VIEW);
+            if (rawV) view = JSON.parse(rawV);
+          } catch (e) {}
+          pages = [{
+            id: generateId(),
+            name: '默认页面',
+            nodes,
+            edges,
+            view: normalizeNodeView(view)
+          }];
+          state.nodeCurrentPageId = pages[0].id;
+          if (nodes.length > 0 || edges.length > 0) {
+            // 迁移后立刻落盘，避免下次又走一遍迁移逻辑
+            setTimeout(() => { try { persistNodePages(); } catch (e) {} }, 0);
+          }
+        }
+
+        if (!pages.some(p => p.id === state.nodeCurrentPageId)) {
+          state.nodeCurrentPageId = pages[0].id;
+        }
+        state.nodePages = pages;
+        applyCurrentPageRefs();
+        return pages;
+      }
+
+      function getCurrentNodePage() {
+        return state.nodePages.find(p => p.id === state.nodeCurrentPageId) || state.nodePages[0] || null;
+      }
+
+      // 把当前页的节点/连线/视图接到 state 上（所有既有代码都读 state.nodes 等）
+      function applyCurrentPageRefs() {
+        const page = getCurrentNodePage();
+        if (!page) return;
+        state.nodes = page.nodes;
+        state.edges = page.edges;
+        state.nodeView = page.view;
+      }
+
+      // 把 state 上的当前页数据回写到页面集合，并整体持久化
+      function persistNodePages() {
+        const page = getCurrentNodePage();
+        if (!page) return;
+        page.nodes = state.nodes;
+        page.edges = state.edges;
+        page.view = state.nodeView;
+        try {
+          localStorage.setItem(STORAGE_KEY_NODE_PAGES, JSON.stringify({
+            v: 2,
+            currentId: state.nodeCurrentPageId,
+            pages: state.nodePages
+          }));
+        } catch (e) {
+          throw e;
+        }
       }
 
       function saveNodes() {
@@ -8046,9 +8246,7 @@
         nodeSaveTimer = setTimeout(() => {
           nodeSaveTimer = null;
           try {
-            localStorage.setItem(STORAGE_KEY_NODES, JSON.stringify(state.nodes));
-            localStorage.setItem(STORAGE_KEY_EDGES, JSON.stringify(state.edges));
-            localStorage.setItem(STORAGE_KEY_NODE_VIEW, JSON.stringify(state.nodeView));
+            persistNodePages();
           } catch (e) {
             showToast('⚠️ 节点数据保存失败', true);
           }
@@ -8057,11 +8255,180 @@
 
       function flushNodesSave() {
         if (nodeSaveTimer) { clearTimeout(nodeSaveTimer); nodeSaveTimer = null; }
-        try {
-          localStorage.setItem(STORAGE_KEY_NODES, JSON.stringify(state.nodes));
-          localStorage.setItem(STORAGE_KEY_EDGES, JSON.stringify(state.edges));
-          localStorage.setItem(STORAGE_KEY_NODE_VIEW, JSON.stringify(state.nodeView));
-        } catch (e) {}
+        try { persistNodePages(); } catch (e) {}
+      }
+
+      function sanitizePageName(raw) {
+        return String(raw || '')
+          .replace(/[\r\n\t]/g, ' ')
+          .trim()
+          .slice(0, 24);
+      }
+
+      function createNodePage(name) {
+        const pageName = sanitizePageName(name) || makeDefaultPageName();
+        const page = {
+          id: generateId(),
+          name: pageName,
+          nodes: [],
+          edges: [],
+          view: { x: 60, y: 60, scale: 1 }
+        };
+        state.nodePages.push(page);
+        switchNodePage(page.id);
+        showToast(`已新建页面「${pageName}」`);
+        return page;
+      }
+
+      function renameNodePage(pageId, name) {
+        const page = state.nodePages.find(p => p.id === pageId);
+        if (!page) return false;
+        const next = sanitizePageName(name);
+        if (!next) { showToast('页面名称不能为空', true); return false; }
+        page.name = next;
+        flushNodesSave();
+        renderNodePageSwitcher();
+        closeNodePageMenu();
+        showToast(`已重命名为「${next}」`);
+        return true;
+      }
+
+      function deleteNodePage(pageId) {
+        if (state.nodePages.length <= 1) {
+          showToast('至少要保留一个页面', true);
+          return false;
+        }
+        const page = state.nodePages.find(p => p.id === pageId);
+        if (!page) return false;
+        const n = page.nodes.length;
+        showToast(`已删除页面「${page.name}」`);
+        state.nodePages = state.nodePages.filter(p => p.id !== pageId);
+        if (state.nodeCurrentPageId === pageId) {
+          state.nodeCurrentPageId = state.nodePages[0].id;
+        }
+        void n;
+        flushNodesSave();
+        switchNodePage(state.nodeCurrentPageId, { silent: true });
+        return true;
+      }
+
+      function switchNodePage(pageId, opts) {
+        if (pageId === state.nodeCurrentPageId) { closeNodePageMenu(); return false; }
+        // 非法 id 直接忽略，否则 state 会指向不存在的页，后续保存可能写坏数据
+        if (!state.nodePages.some(p => p.id === pageId)) {
+          showToast('页面不存在', true);
+          return false;
+        }
+        // 先把当前页的改动落盘，再换页，避免编辑丢失
+        flushNodesSave();
+        state.nodeCurrentPageId = pageId;
+        applyCurrentPageRefs();
+        // 换页后旧的选择/多选/连线编辑都不再适用
+        state.nodeSelection = { nodeId: null, edgeId: null };
+        state.nodeMultiSelect = new Set();
+        state.nodeSelectAnchor = null;
+        state.activeEdgeEditor = null;
+        state.cancelEdgeDraw = null;
+        state.nodeEdgeDrawActive = false;
+        flushNodesSave();
+        if (!opts || !opts.silent) {
+          const page = getCurrentNodePage();
+          if (page) showToast(`已切换到「${page.name}」`);
+        }
+        if (state.mode === 'node') {
+          mountAllNodes();
+          updateNodeView();
+          renderAllEdges();
+          updateNodeEmptyTip();
+          renderNodePageSwitcher();
+          closeNodePageMenu();
+        }
+        return true;
+      }
+
+      function cycleNodePage(delta) {
+        const pages = state.nodePages;
+        if (pages.length < 2) { showToast('只有一个页面', true); return; }
+        const idx = pages.findIndex(p => p.id === state.nodeCurrentPageId);
+        const next = ((idx + delta) % pages.length + pages.length) % pages.length;
+        switchNodePage(pages[next].id);
+      }
+
+      // ---------- 页面切换控件 ----------
+      function renderNodePageSwitcher() {
+        const menu = document.getElementById('nodePageMenu');
+        if (!menu) return;
+        const page = getCurrentNodePage();
+        const label = document.getElementById('nodePageLabel');
+        if (label) label.textContent = page ? page.name : '页面';
+        const pages = state.nodePages;
+        let html = `<div class="node-page-title">页面（${pages.length}）</div>`;
+        pages.forEach((p, i) => {
+          const active = p.id === state.nodeCurrentPageId;
+          html += `
+            <div class="node-page-row ${active ? 'active' : ''}" data-page-id="${escapeHtml(p.id)}">
+              <button type="button" class="np-main" data-page-action="switch" data-page-id="${escapeHtml(p.id)}"
+                      title="${escapeHtml(p.name)}">
+                <span class="np-name">${active ? '● ' : ''}${escapeHtml(p.name)}</span>
+                <span class="np-count">${p.nodes.length}</span>
+              </button>
+              <button type="button" class="np-icon" data-page-action="rename" data-page-id="${escapeHtml(p.id)}" title="重命名">✏️</button>
+              <button type="button" class="np-icon danger" data-page-action="delete" data-page-id="${escapeHtml(p.id)}" title="删除页面">✕</button>
+            </div>`;
+        });
+        html += `<div class="node-page-sep"></div>
+          <div class="node-page-row">
+            <button type="button" class="np-main" data-page-action="create" title="新建页面（Ctrl+Alt+N）">
+              <span class="np-name">＋ 新建页面</span>
+            </button>
+          </div>
+          <div class="node-page-hint">Ctrl+Alt+→ / ← 切换页面</div>`;
+        menu.innerHTML = html;
+      }
+
+      function closeNodePageMenu() {
+        const menu = document.getElementById('nodePageMenu');
+        if (menu) menu.style.display = 'none';
+      }
+
+      function toggleNodePageMenu() {
+        const menu = document.getElementById('nodePageMenu');
+        if (!menu) return;
+        if (menu.style.display !== 'none') { closeNodePageMenu(); return; }
+        renderNodePageSwitcher();
+        menu.style.display = '';
+      }
+
+      function bindNodePageSwitcher() {
+        const menu = document.getElementById('nodePageMenu');
+        const btn = document.getElementById('nodePageBtn');
+        if (btn) btn.addEventListener('click', (e) => { e.stopPropagation(); toggleNodePageMenu(); });
+        if (!menu) return;
+        menu.addEventListener('click', (e) => {
+          const act = e.target.closest('[data-page-action]');
+          if (!act) return;
+          e.stopPropagation();
+          const action = act.dataset.pageAction;
+          const pageId = act.dataset.pageId;
+          if (action === 'switch') switchNodePage(pageId);
+          else if (action === 'create') {
+            const name = window.prompt('新页面名称：', makeDefaultPageName());
+            if (name === null) return;
+            createNodePage(name);
+          } else if (action === 'rename') {
+            const page = state.nodePages.find(p => p.id === pageId);
+            if (!page) return;
+            const name = window.prompt('重命名页面：', page.name);
+            if (name === null) return;
+            renameNodePage(pageId, name);
+          } else if (action === 'delete') {
+            const page = state.nodePages.find(p => p.id === pageId);
+            if (!page) return;
+            showConfirm('删除页面',
+              `确定删除页面「${page.name}」吗？\n该页面上的 ${page.nodes.length} 个节点与它们的连线会一并删除。\n（关联的知识点本身不会被删除）`,
+              () => { deleteNodePage(pageId); });
+          }
+        });
       }
 
       function renderNodeMode() {
@@ -8084,11 +8451,17 @@
                 <button class="node-tool-btn" id="nodeAddBtn" title="新建节点">➕</button>
                 <button class="node-tool-btn" id="nodeImportBtn" title="把知识点导入为节点">📥</button>
                 <button class="node-tool-btn" id="nodeSelectBtn" title="选择节点：全选、按标签、按目录">☑️</button>
+                <button class="node-page-btn" id="nodePageBtn" title="切换 / 新建 / 重命名页面（Ctrl+Alt+← →）">
+                  <span class="page-icon">🗂</span>
+                  <span class="node-page-label" id="nodePageLabel">页面</span>
+                  <span class="page-caret">▾</span>
+                </button>
                 <button class="node-tool-btn" id="nodeZoomOut" title="缩小">−</button>
                 <span class="node-zoom-label" id="nodeZoomLabel">100%</span>
                 <button class="node-tool-btn" id="nodeZoomIn" title="放大">＋</button>
                 <button class="node-tool-btn" id="nodeFitBtn" title="适应画布">⤢</button>
               </div>
+              <div class="node-page-menu" id="nodePageMenu" style="display:none;"></div>
               <div class="node-filter-panel" id="nodeFilterPanel" style="display:none;"></div>
               <div class="node-batch-bar" id="nodeBatchBar" style="display:none;"></div>
               <div class="node-hint" id="nodeHint">
@@ -8102,6 +8475,8 @@
           el.contentArea.classList.add('node-full');
           bindNodeCanvasEvents();
           bindNodeToolbar();
+          bindNodePageSwitcher();
+          renderNodePageSwitcher();
           bindNodeMenu();
           mountAllNodes();
           applyNodeHintVisibility();
@@ -8372,9 +8747,12 @@
           if (e.target.closest('.edge-label')) return;
           if (e.target.closest('.edge-toolbar')) return;
           if (e.target.closest('.node-menu')) return;
+          if (e.target.closest('.node-page-menu')) return;
+          if (e.target.closest('.node-page-btn')) return;
           if (panState || marqueeState) return;
 
           closeNodeMenu();
+          closeNodePageMenu();
 
           // Shift（或 Ctrl）在空白处按下 = 框选，否则是平移画布
           if (e.shiftKey || e.ctrlKey || e.metaKey) {
@@ -10530,6 +10908,12 @@
               closeNodeFilterPanel();
               return;
             }
+            const pageMenu = document.getElementById('nodePageMenu');
+            if (pageMenu && pageMenu.style.display !== 'none') {
+              e.preventDefault();
+              closeNodePageMenu();
+              return;
+            }
             if (multiIds.length > 0 || edgeId || nodeId) {
               // 已经在上面处理过连线取消，这里负责清选中
               e.preventDefault();
@@ -10537,6 +10921,26 @@
               clearNodeMultiSelect();
             }
             return;
+          }
+
+          // 页面切换 / 新建页面
+          if (e.altKey && (e.ctrlKey || e.metaKey)) {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+              e.preventDefault();
+              cycleNodePage(1);
+              return;
+            }
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+              e.preventDefault();
+              cycleNodePage(-1);
+              return;
+            }
+            if (e.key === 'n' || e.key === 'N') {
+              e.preventDefault();
+              const name = window.prompt('新页面名称：', makeDefaultPageName());
+              if (name !== null) createNodePage(name);
+              return;
+            }
           }
 
           if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
@@ -10594,10 +10998,8 @@
         state.activeId = state.items.length > 0 ? state.items[0].id : null;
         validateActiveId();
 
-        // 先加载节点，再加载连线：连线校验端点存在性时依赖 state.nodes
-        state.nodes = loadNodes();
-        state.edges = loadEdges();
-        loadNodeView();
+        // 一次性加载所有页面（内部会做旧数据迁移），并把当前页接到 state 上
+        loadNodePages();
         loadNodeHintDismissed();
 
         el.sidebarHeader.innerHTML = `
