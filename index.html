@@ -81,6 +81,15 @@
 
       --node-dot: #cbd5e1;
 
+      /* 节点卡片文字：比正文基准略大 + 更高行高，长段落更易读 */
+      --node-font-scale: 1;
+      --node-title-size: 0.86rem;
+      --node-body-size: 0.82rem;
+      --node-body-line: 1.68;
+      --node-text-strong: #0b1220;
+      --node-text: #1e293b;
+      --node-text-muted: #52617a;
+
       --shadow-sm: 0 2px 6px rgba(0,0,0,0.02);
       --shadow-card: 0 12px 30px rgba(0,20,50,0.08), 0 4px 8px rgba(0,0,0,0.02);
       --shadow-modal: 0 24px 60px rgba(0,0,0,0.25);
@@ -137,6 +146,15 @@
 
       --node-dot: #2d3a51;
 
+      /* 深色下节点文字提高对比：原来正文用 --text(#dbe4f0) 在 --bg-surface 上偏灰 */
+      --node-font-scale: 1;
+      --node-title-size: 0.86rem;
+      --node-body-size: 0.82rem;
+      --node-body-line: 1.68;
+      --node-text-strong: #f8fafc;
+      --node-text: #e6edf7;
+      --node-text-muted: #aab8cc;
+
       --shadow-sm: 0 2px 6px rgba(0,0,0,0.35);
       --shadow-card: 0 12px 30px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3);
       --shadow-modal: 0 24px 60px rgba(0,0,0,0.7);
@@ -150,6 +168,13 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* 节点文字统一开启抗锯齿与字形优化：
+       深色底上的浅色字容易出现「发虚 / 发胖」，这两个属性明显改善清晰度 */
+    .node-item * {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
 
     :root {
       --safe-top: env(safe-area-inset-top, 0px);
@@ -3121,14 +3146,15 @@
       min-width: 0;
       border: none;
       background: transparent;
-      font-size: 0.82rem;
+      font-size: calc(var(--node-title-size) * var(--node-font-scale, 1));
       font-weight: 700;
-      color: var(--text-strong);
+      color: var(--node-text-strong);
       outline: none;
       padding: 4px 3px;
       font-family: inherit;
       border-radius: 6px;
       text-overflow: ellipsis;
+      letter-spacing: 0.01em;
     }
     .node-title-input:focus { background: var(--bg-input); box-shadow: 0 0 0 2px var(--border-accent); }
 
@@ -3150,12 +3176,12 @@
     .node-del-btn:hover { background: var(--bg-danger); color: var(--text-danger); }
 
     .node-body {
-      padding: 8px 11px;
-      font-size: 0.78rem;
-      line-height: 1.6;
-      color: var(--text);
+      padding: 9px 12px;
+      font-size: calc(var(--node-body-size) * var(--node-font-scale, 1));
+      line-height: var(--node-body-line);
+      color: var(--node-text);
       min-height: 46px;
-      max-height: 190px;
+      max-height: 200px;
       overflow-y: auto;
       outline: none;
       word-break: break-word;
@@ -3164,12 +3190,19 @@
       touch-action: pan-y;
       cursor: text;
       overscroll-behavior: contain;
+      letter-spacing: 0.01em;
     }
     .node-body:empty::before {
       content: attr(data-placeholder);
-      color: var(--text-faint);
+      color: var(--node-text-muted);
+      opacity: 0.85;
       pointer-events: none;
     }
+    /* 正文里的段落给一点间距，长文本更好扫读 */
+    .node-body p { margin: 0 0 0.4em; }
+    .node-body p:last-child { margin-bottom: 0; }
+    .node-body ul, .node-body ol { padding-left: 1.2em; margin: 0 0 0.4em; }
+    .node-body strong, .node-body b { color: var(--node-text-strong); font-weight: 700; }
     .node-body img { display: block; max-width: 100%; height: auto; border-radius: 8px; margin: 6px 0; }
 
     /* 左右留 11px、底部留 13px：卡片是 14px 圆角，图片如果贴到左右边或底边，
@@ -9877,6 +9910,10 @@
         if (!viewport || !layer) return;
 
         let panState = null;
+        // 平移期间是否真的移动过：用来区分「点空白」与「拖空白平移后松手」
+        let panMoved = false;
+        let panMovedAt = 0;
+        const PAN_CLICK_GRACE_MS = 400;
         let pinchState = null;
         let marqueeState = null;
         bindNodeEditingState(viewport);
@@ -9924,6 +9961,8 @@
 
           closeNodeMenu();
           closeNodePageMenu();
+          // 万一上一次平移没收到 pointerup，这里先自愈，避免状态残留
+          if (panState) forceEndPan();
 
           // Shift（或 Ctrl）在空白处按下 = 框选，否则是平移画布
           if (e.shiftKey || e.ctrlKey || e.metaKey) {
@@ -9959,6 +9998,9 @@
             moved: false
           };
           viewport.classList.add('panning');
+          // 记录当前平移指针 id：便于排查「平移后误清选中」这类指针事件问题
+          viewport.dataset.panId = String(e.pointerId);
+          armPanWatchdog();
         });
 
         viewport.addEventListener('pointermove', (e) => {
@@ -9997,9 +10039,28 @@
         const endPan = (e) => {
           if (!panState) return;
           if (e && e.pointerId !== undefined && e.pointerId !== panState.id) return;
-          if (panState.moved) saveNodes();
+          if (panState.moved) {
+            saveNodes();
+            // 本次是一次真正的平移：置位标记，让随后的 click 不把选中清掉。
+            // 用时间戳而不是 setTimeout 清零 —— 不依赖事件顺序，click 早到晚到都覆盖得住。
+            panMoved = true;
+            panMovedAt = Date.now();
+          }
           panState = null;
           viewport.classList.remove('panning');
+        };
+
+        // 自愈：指针序列异常（丢 pointerup / id 对不上）时 panState 会永久残留，
+        // 后果是画布再也无法平移、点空白也再也不清除选中。这里兜底强制释放。
+        const forceEndPan = () => {
+          if (!panState) return;
+          panState = null;
+          viewport.classList.remove('panning');
+          document.removeEventListener('pointerup', forceEndPan, true);
+        };
+        const armPanWatchdog = () => {
+          document.removeEventListener('pointerup', forceEndPan, true);
+          document.addEventListener('pointerup', forceEndPan, true);
         };
         viewport.addEventListener('pointerup', (e) => { endMarquee(e); endPan(e); });
         viewport.addEventListener('pointercancel', (e) => { endMarquee(e); endPan(e); });
@@ -10084,9 +10145,18 @@
               setPasteTargetNode(nodeId);
             }
           } else if (!nodeEl && !e.target.closest('.edge-label') && !e.target.closest('.edge-toolbar')
-                     && !e.target.closest('.node-menu') && !e.target.closest('.node-filter-panel')) {
-            clearNodeSelection();
-            if (!e.shiftKey && !e.ctrlKey && !e.metaKey) clearNodeMultiSelect();
+                     && !e.target.closest('.node-menu') && !e.target.closest('.node-filter-panel')
+                     && !e.target.closest('.node-layout-panel')
+                     && !e.target.closest('.node-toolbar')
+                     && !e.target.closest('.node-page-menu')
+                     && !e.target.closest('.node-batch-bar')) {
+            // 只有「真的点击空白」才清除：平移画布拖动后松手也会产生 click，
+            // 那种情况不该把用户的选中清掉（否则平移一下选中就没了）
+            const recentlyPanned = panMoved && (Date.now() - panMovedAt) < PAN_CLICK_GRACE_MS;
+            if (!recentlyPanned && !marqueeState) {
+              clearNodeSelection();
+              if (!e.shiftKey && !e.ctrlKey && !e.metaKey) clearNodeMultiSelect();
+            }
           }
 
           const grip = e.target.closest('.node-grip');
@@ -10238,9 +10308,35 @@
           vp.style.backgroundSize = `${size}px ${size}px`;
           vp.style.backgroundPosition = `${v.x}px ${v.y}px`;
         }
+        applyNodeFontScale();
         // 计量标签按缩放反向补偿，保证任何缩放下都看得清
         applyMeasureScale();
         renderRulers();
+      }
+
+      // 缩小画布时节点文字会跟着变小到看不清：这里在「已经比较小」的区间内
+      // 反向放大字号，让缩小后仍然能读长正文。放大区间不改，避免字变得过大。
+      // 上限取 2：50% 缩放下正好回到基准字号（0.75/0.5 = 1.5），
+      // 再往小就让它继续变小，不再无限放大（否则字会把卡片挤爆）。
+      const NODE_FONT_FULL_AT = 0.75;   // >= 该缩放：原始字号
+      const NODE_FONT_MAX_BOOST = 2;    // 最多放大到 2 倍
+      function computeNodeFontScale(scale) {
+        if (!(scale > 0)) return 1;
+        if (scale >= NODE_FONT_FULL_AT) return 1;
+        return Math.min(NODE_FONT_MAX_BOOST, NODE_FONT_FULL_AT / scale);
+      }
+
+      function applyNodeFontScale() {
+        const scale = (state.nodeView && state.nodeView.scale) || 1;
+        const boost = computeNodeFontScale(scale);
+        const world = document.getElementById('nodeWorld');
+        if (!world) return;
+        // 只在变化明显时写样式，避免每次平移都触发样式重算
+        const next = String(Math.round(boost * 1000) / 1000);
+        if (world.dataset.fontScale !== next) {
+          world.style.setProperty('--node-font-scale', next);
+          world.dataset.fontScale = next;
+        }
       }
 
       // 传入的是视口内的局部坐标（各调用方自己换算），保证与屏幕位置一致
