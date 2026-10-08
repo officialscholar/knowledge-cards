@@ -2440,6 +2440,20 @@ input, textarea, select, button { font-size: 16px; }
 .node-viewport.panning { cursor: grabbing; }
 .node-viewport.grid-20 { background-size: 20px 20px; }
 
+/* 排版模式：屏蔽编辑控件，仅保留选择 / 移动 / 对齐 */
+.node-viewport.node-layout-active .node-menu-btn,
+.node-viewport.node-layout-active .node-del-btn,
+.node-viewport.node-layout-active .node-add-img,
+.node-viewport.node-layout-active .node-port,
+.node-viewport.node-layout-active .node-collapse-badge { display: none !important; }
+.node-viewport.node-layout-active .node-title-input { pointer-events: none; }
+.node-viewport.node-layout-active .node-body,
+.node-viewport.node-layout-active .node-head,
+.node-viewport.node-layout-active .node-grip { cursor: move; }
+.node-tool-btn.node-layout-mode-btn.active,
+.node-tool-btn#nodeLayoutModeBtn.active { background: var(--bg-accent); color: var(--primary-text); box-shadow: inset 0 0 0 1px var(--border-accent); }
+.node-viewport.node-layout-active #nodeHint { display: none; }
+
 .node-guide-svg {
   position: absolute;
   left: 0;
@@ -4730,6 +4744,7 @@ const state = {
   nodeImportSelection: { items: new Set(), groups: new Set(), tags: new Set() },
   nodeImportSearch: '',
   nodeMoveMode: false,
+  nodeLayoutMode: false,
   nodePadVisible: false,
   nodeBoxMode: false
 };
@@ -9489,10 +9504,11 @@ function renderNodeMode() {
           <button class="node-tool-btn" id="nodeUndoBtn" data-hist="undo" title="撤销（Ctrl+Z）" disabled>↩</button>
           <button class="node-tool-btn" id="nodeRedoBtn" data-hist="redo" title="重做（Ctrl+Y）" disabled>↪</button>
           <button class="node-tool-btn" id="nodeAddBtn" title="新建节点">➕</button>
-          <button class="node-tool-btn" id="nodePadBtn" title="方向轮盘：显示/隐藏底部半透明方向键，用于微调节点位置">⌗</button>
+          <button class="node-tool-btn" id="nodePadBtn" title="方向轮盘：显示/隐藏底部半透明方向键，用于微调节点位置">✥</button>
           <button class="node-tool-btn" id="nodeImportBtn" title="把知识点导入为节点">📥</button>
           <button class="node-tool-btn" id="nodeSelectBtn" title="选择节点：全选、按标签、按目录">☑️</button>
           <button class="node-tool-btn" id="nodeLayoutBtn" title="对齐与排版设置">📐</button>
+          <button class="node-tool-btn" id="nodeLayoutModeBtn" title="排版模式：仅选择/移动/对齐，屏蔽编辑与右键菜单">⌗</button>
           <button class="node-page-btn" id="nodePageBtn" title="切换 / 新建 / 重命名页面（Ctrl+Alt+← →）">
             <span class="page-icon">🗂</span>
             <span class="node-page-label" id="nodePageLabel">页面</span>
@@ -9589,6 +9605,9 @@ function bindNodeToolbar() {
     applyPadState();
     showToast(state.nodePadVisible ? '方向轮盘已显示（微调节点位置）' : '方向轮盘已隐藏');
   });
+  /* 排版模式：仅选择 / 移动 / 对齐，屏蔽编辑与右键菜单 */
+  const layoutModeBtn = document.getElementById('nodeLayoutModeBtn');
+  if (layoutModeBtn) layoutModeBtn.addEventListener('click', () => toggleNodeLayoutMode());
   if (dpad) {
     const dirMap = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
     const NUDGE_STEP = 10;
@@ -9669,7 +9688,7 @@ function getNodeItemState(node) {
   return { kind: item.hidden ? 'hidden-item' : 'linked', item };
 }
 
-function isNodeBodyReadonly(node) { void node; return false; }
+function isNodeBodyReadonly(node) { void node; return !!state.nodeLayoutMode; }
 
 const NODE_FOLLOW_HINT = '内容与知识点「{title}」双向同步：在节点里改会直接写回知识点';
 
@@ -9980,6 +9999,7 @@ function bindNodePasteHandler() {
   state.nodePasteBound = true;
   document.addEventListener('paste', (e) => {
     if (state.mode !== 'node') return;
+    if (state.nodeLayoutMode) { e.preventDefault(); return; } // 排版模式屏蔽粘贴
     const target = getPasteTargetNode();
     if (!target) return;
     const cd = e.clipboardData || window.clipboardData;
@@ -10222,6 +10242,7 @@ function bindNodeCanvasEvents() {
 
   /* 右键：节点菜单 / 连接点菜单 */
   layer.addEventListener('contextmenu', (e) => {
+    if (state.nodeLayoutMode) { e.preventDefault(); return; } // 排版模式屏蔽右键菜单
     const port = e.target.closest('.node-port');
     if (port) {
       e.preventDefault(); e.stopPropagation();
@@ -11241,6 +11262,53 @@ function toggleLayoutPanel() {
   if (!panel) return;
   if (panel.style.display === 'none') { renderLayoutPanel(); panel.style.display = ''; }
   else panel.style.display = 'none';
+}
+function toggleNodeLayoutMode() {
+  state.nodeLayoutMode = !state.nodeLayoutMode;
+  const btn = document.getElementById('nodeLayoutModeBtn');
+  const vp = document.getElementById('nodeViewport');
+  if (btn) btn.classList.toggle('active', state.nodeLayoutMode);
+  if (vp) vp.classList.toggle('node-layout-active', state.nodeLayoutMode);
+  /* 进入排版模式 */
+  if (state.nodeLayoutMode) {
+    state.nodeMoveMode = true;               // 整节点（含正文）可拖动、长按不弹菜单
+    const pref = getLayoutPref();            // 强制开启所有排版辅助
+    pref.snap = true; pref.grid = true; pref.guides = true; pref.spacing = true; pref.ruler = true;
+    renderLayoutPanel();
+    renderRulers();
+    renderMultiSpacings();
+    /* 关闭所有编辑类浮层与状态 */
+    try { closeNodeMenu(); } catch (e) {}
+    try { closeNodeFilterPanel(); } catch (e) {}
+    try { closeNodePageMenu(); } catch (e) {}
+    hideNodeFormatBar();
+    try { hideNodeLinkPanel(); } catch (e) {}
+    if (state.nodeEdgeDrawActive && typeof state.cancelEdgeDraw === 'function') state.cancelEdgeDraw();
+    state.nodeBoxMode = false;
+    const boxBar = document.getElementById('nodeBoxModeBar'); if (boxBar) boxBar.style.display = 'none';
+    clearNodeMultiSelect();
+    const lp = document.getElementById('nodeLayoutPanel'); if (lp) lp.style.display = 'none';
+    /* 停用新建 / 导入按钮 */
+    ['nodeAddBtn', 'nodeImportBtn'].forEach(id => {
+      const b = document.getElementById(id); if (b) b.disabled = true;
+    });
+    showToast('已进入排版模式：仅选择 / 移动 / 对齐');
+  } else {
+    state.nodeMoveMode = false;
+    ['nodeAddBtn', 'nodeImportBtn'].forEach(id => {
+      const b = document.getElementById(id); if (b) b.disabled = false;
+    });
+    renderMultiSpacings();
+    showToast('已退出排版模式');
+  }
+  /* 重设节点只读态（排版模式下正文不可编辑） */
+  state.nodes.forEach(n => {
+    const el = document.querySelector(`.node-item[data-node-id="${n.id}"]`);
+    if (el) applyNodeBodyMode(el, n);
+  });
+  updateNodeBatchBar();
+  updateNodeView();
+  saveNodes();
 }
 function bindLayoutPanel() {
   const panel = document.getElementById('nodeLayoutPanel');
@@ -12568,7 +12636,7 @@ function updateNodeBatchBar() {
         : '') +
       '<span class="node-batch-sep"></span>'
     : '';
-  const actHtml =
+  const actHtml = state.nodeLayoutMode ? '' :
     `<button type="button" class="node-batch-btn primary" data-batch="connect">🔗 连线</button>` +
     `<button type="button" class="node-batch-btn" data-batch="set-parent" title="按选中顺序依次设为父子关系（前一个为父）">◉ 设父子</button>` +
     `<button type="button" class="node-batch-btn" data-batch="unparent" title="取消选中节点之间的父子关系">⊘ 取消父子</button>` +
@@ -14390,6 +14458,7 @@ document.addEventListener('keydown', (e) => {
     const { nodeId, edgeId } = state.nodeSelection;
     const multiIds = getSelectedNodeIds();
     if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (state.nodeLayoutMode) { e.preventDefault(); return; } // 排版模式屏蔽删除
       if (edgeId) { e.preventDefault(); deleteEdge(edgeId); }
       else if (multiIds.length > 0) { e.preventDefault(); runBatchNodeAction('delete'); }
       else if (nodeId) { e.preventDefault(); deleteNode(nodeId); }
