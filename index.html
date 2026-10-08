@@ -3983,6 +3983,9 @@ input, textarea, select, button { font-size: 16px; }
   .mode-btn { flex: 1; text-align: center; padding: 4px 3px; font-size: 0.68rem; }
   .theme-toggle-btn { width: 28px; height: 28px; font-size: 0.85rem; }
 
+  /* 移动端：迷你地图会遮挡功能控件，隐藏 */
+  .node-minimap { display: none; }
+
   .sidebar {
     position: fixed;
     top: 0;
@@ -10595,45 +10598,120 @@ function nodeMeasure(nd) {
     h: el2 && el2.offsetHeight ? el2.offsetHeight : NODE_DEFAULT_H
   };
 }
-/* 一键自动排列：有父子层级则按层级分行；否则按网格排列 */
+/* 一键自动排列：
+   - 存在父子关系（kind='parent' 边）时，按"紧凑树形图"排列：叶子从左到右依次占独立列，
+     父节点居中于其子节点上方；同一层节点 y 对齐、间距合理；父子连线自上而下不交叉、节点互不重叠；
+     每棵独立子树（含孤立/环点）作为一块，从左到右依次排布。
+   - 无任何父子关系时，退化为网格排列。 */
 function autoLayoutNodes() {
   if (!state.nodes.length) { showToast('没有节点可排列', true); return; }
   histCapture('自动排列');
-  computeNodeLevels();
-  const levels = state.nodeLevels;
-  const hasHierarchy = Array.from(levels.values()).some(v => v > 0);
-  const GAP_X = 44, GAP_Y = 30, START_X = 40, START_Y = 40;
+  const START_X = 40, START_Y = 40, H_GAP = 64, V_GAP = 72, TREE_GAP = 96;
+
+  // 测量节点尺寸
+  const box = {}; let maxW = 40, maxH = 30;
+  state.nodes.forEach(n => { const m = nodeMeasure(n); box[n.id] = { w: m.w, h: m.h }; maxW = Math.max(maxW, m.w); maxH = Math.max(maxH, m.h); });
+
+  // 由父边构建子节点表，并找出根节点（没有父节点的节点）
+  const children = new Map(); state.nodes.forEach(n => children.set(n.id, []));
+  const hasParent = new Set();
+  state.edges.forEach(e => {
+    if (isParentEdge(e) && children.has(e.from) && children.has(e.to)) { children.get(e.from).push(e.to); hasParent.add(e.to); }
+  });
+  const roots = state.nodes.filter(n => !hasParent.has(n.id)).map(n => n.id);
+  const hasHierarchy = roots.length < state.nodes.length;
+
   if (!hasHierarchy) {
     const n = state.nodes.length;
     const cols = Math.max(1, Math.ceil(Math.sqrt(n * 2.4)));
     let x = START_X, y = START_Y, rowMaxH = 0;
     state.nodes.forEach((nd, i) => {
-      nd.x = Math.round(x); nd.y = Math.round(y);
-      applyNodePos(nd);
-      const m = nodeMeasure(nd);
-      x += m.w + GAP_X;
-      rowMaxH = Math.max(rowMaxH, m.h);
-      if ((i + 1) % cols === 0) { x = START_X; y += rowMaxH + GAP_Y; rowMaxH = 0; }
+      nd.x = Math.round(x); nd.y = Math.round(y); applyNodePos(nd);
+      x += box[nd.id].w + H_GAP;
+      rowMaxH = Math.max(rowMaxH, box[nd.id].h);
+      if ((i + 1) % cols === 0) { x = START_X; y += rowMaxH + V_GAP; rowMaxH = 0; }
     });
   } else {
-    const byLevel = {};
-    state.nodes.forEach(nd => { const lv = levels.get(nd.id) || 0; (byLevel[lv] = byLevel[lv] || []).push(nd); });
-    let y = START_Y;
-    Object.keys(byLevel).map(Number).sort((a, b) => a - b).forEach(lv => {
-      const nodes = byLevel[lv];
-      const widths = nodes.map(nodeMeasure).map(m => m.w);
-      const totalW = widths.reduce((a, b) => a + b, 0) + GAP_X * (nodes.length - 1);
-      let x = START_X;
-      nodes.forEach((nd, i) => { nd.x = Math.round(x); nd.y = Math.round(y); applyNodePos(nd); x += widths[i] + GAP_X; });
-      y += GAP_Y;
+    const ROW = maxH + V_GAP;
+    const trees = tidyForest(roots, children, box, H_GAP, ROW);
+    let offsetX = START_X;
+    trees.forEach(tree => {
+      tree.positions.forEach((p, id) => {
+        const nd = state.nodes.find(n => n.id === id);
+        if (nd) { nd.x = Math.round(offsetX + p.x); nd.y = Math.round(START_Y + p.y); applyNodePos(nd); }
+      });
+      offsetX += tree.width + TREE_GAP;
     });
   }
+
   saveNodes();
   renderAllEdges();
   fitNodes();
   renderMinimap();
   histCommit();
-  showToast('已自动排列节点');
+  showToast(hasHierarchy ? '已按树形关系自动排列' : '已自动排列节点');
+}
+/* 森林树形布局：每棵树内"叶子占位 + 父节点居中"的紧凑 tidy 布局；树与树之间按块依次排布，
+   保证节点不重叠、父子连线不交叉。 */
+function tidyForest(roots, children, box, H_GAP, ROW) {
+  const trees = [];
+  const visited = new Set();
+  const allIds = new Set(state.nodes.map(n => n.id));
+
+  // 根可达之外的点（环/游离节点）也作为独立根，避免被遗漏
+  const reachable = new Set();
+  const queue = roots.slice();
+  while (queue.length) { const id = queue.shift(); if (reachable.has(id)) continue; reachable.add(id); (children.get(id) || []).forEach(c => { if (!reachable.has(c)) queue.push(c); }); }
+  const extraRoots = Array.from(allIds).filter(id => !reachable.has(id));
+  const allRoots = roots.concat(extraRoots);
+
+  for (const r of allRoots) {
+    if (visited.has(r)) continue;
+    const seen = new Set();
+    const stack = [r];
+    while (stack.length) { const id = stack.pop(); if (seen.has(id)) continue; seen.add(id); (children.get(id) || []).forEach(c => { if (!seen.has(c)) stack.push(c); }); }
+    seen.forEach(id => visited.add(id));
+
+    const positions = placeTree(r, children, box, H_GAP, ROW, seen);
+    let minX = Infinity, maxX = -Infinity;
+    positions.forEach((p, id) => { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x + box[id].w); });
+    positions.forEach(p => { p.x -= minX; });
+    trees.push({ positions, width: Math.max(0, maxX - minX) });
+  }
+  return trees;
+}
+/* 单棵树的子树宽度：叶子取其自身宽度；内部节点取"自身宽度"与"全部子节点宽度之和+间距"的较大者，
+   用于保证父节点居中时子节点彼此不重叠。 */
+function treeSubtreeWidth(id, children, box, H_GAP) {
+  const kids = children.get(id) || [];
+  if (kids.length === 0) return box[id].w;
+  let sum = 0;
+  kids.forEach(k => sum += treeSubtreeWidth(k, children, box, H_GAP));
+  return Math.max(box[id].w, sum + (kids.length - 1) * H_GAP);
+}
+/* 单棵树布局：根居中于 0，子节点按各自子树宽度从左到右紧密拼排，
+   父节点水平居中于其子节点整体之上；同一层 y 对齐。
+   各子树占独立横向区间，故节点不重叠、父子连线不交叉。 */
+function placeTree(rootId, children, box, H_GAP, ROW, seen) {
+  const positions = new Map();
+  function place(id, centerX, depth) {
+    if (positions.has(id)) return; // 环保护
+    positions.set(id, { x: centerX - box[id].w / 2, y: depth * ROW });
+    const kids = (children.get(id) || []).filter(k => seen.has(k) && !positions.has(k));
+    if (kids.length === 0) return;
+    let total = 0;
+    kids.forEach(k => total += treeSubtreeWidth(k, children, box, H_GAP));
+    total += (kids.length - 1) * H_GAP;
+    let x = centerX - total / 2;
+    kids.forEach(k => {
+      const kw = treeSubtreeWidth(k, children, box, H_GAP);
+      const kc = x + kw / 2;
+      place(k, kc, depth + 1);
+      x += kw + H_GAP;
+    });
+  }
+  place(rootId, 0, 0);
+  return positions;
 }
 /* 迷你地图的世界坐标映射 */
 function minimapMapping() {
