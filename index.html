@@ -3238,6 +3238,40 @@ input, textarea, select, button { font-size: 16px; }
 .node-batch-btn.primary { background: var(--primary-bright); color: #fff; }
 .node-batch-btn.primary:hover { filter: brightness(1.08); }
 
+.node-batch-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; width: 100%;
+}
+.node-batch-done {
+  border: none; border-radius: 16px; padding: 6px 14px;
+  background: var(--bg-accent); color: var(--primary-text);
+  font-size: 0.72rem; font-weight: 700; font-family: inherit; cursor: pointer;
+  white-space: nowrap; -webkit-tap-highlight-color: transparent; flex-shrink: 0;
+}
+.node-batch-done:hover { background: var(--primary-bright); color: #fff; }
+.node-batch-groups {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  justify-content: center; min-width: 0;
+}
+.node-box-mode {
+  position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+  z-index: 36; display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px 6px 12px; background: var(--bg-surface);
+  border: 1px solid var(--border-accent); border-radius: 40px;
+  box-shadow: var(--shadow-elevated); max-width: calc(100% - 24px);
+}
+.node-box-hint {
+  font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.node-box-done {
+  border: none; border-radius: 40px; padding: 6px 16px;
+  background: var(--bg-accent); color: var(--primary-text);
+  font-size: 0.76rem; font-weight: 700; font-family: inherit; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; white-space: nowrap; flex-shrink: 0;
+}
+.node-box-done:hover { background: var(--primary-bright); color: #fff; }
+
 .node-filter-panel {
   position: absolute;
   left: 12px;
@@ -4142,12 +4176,39 @@ input, textarea, select, button { font-size: 16px; }
   .multi-select-list { max-height: 140px; }
   .multi-select-item { padding: 8px 10px; font-size: 0.8rem; }
 
-  .node-toolbar { top: 8px; left: 8px; padding: 4px 6px; gap: 4px; }
+  .node-toolbar { top: 8px; left: 8px; padding: 4px 6px; gap: 4px; max-width: calc(100% - 16px); overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; }
+  .node-toolbar::-webkit-scrollbar { display: none; }
+  .node-tool-btn, .node-page-btn, .node-zoom-label, .node-page-label { flex-shrink: 0; }
   .node-tool-btn { width: 30px; height: 30px; font-size: 0.85rem; }
   .node-zoom-label { min-width: 36px; font-size: 0.66rem; }
   .node-item { width: 200px; }
   .node-body { font-size: 0.74rem; max-height: 150px; }
   .node-hint { font-size: 0.62rem; padding: 6px 12px; bottom: 10px; }
+
+  /* 多选编辑菜单：改为底部操作栏 + 可横向滑动的按钮分组，触屏友好 */
+  .node-batch-bar {
+    left: 0; right: 0; bottom: 0; transform: none;
+    width: 100%; max-width: 100%;
+    border-radius: 18px 18px 0 0;
+    border-left: none; border-right: none; border-bottom: none;
+    flex-direction: column; align-items: stretch; flex-wrap: nowrap;
+    gap: 8px; padding: 10px 12px calc(10px + var(--safe-bottom, 0px));
+    box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.16);
+  }
+  .node-batch-count { font-size: 0.82rem; padding: 0; }
+  .node-batch-groups {
+    flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;
+    gap: 6px; padding-bottom: 2px;
+  }
+  .node-batch-groups::-webkit-scrollbar { display: none; }
+  .node-batch-btn { min-height: 40px; padding: 8px 12px; font-size: 0.8rem; border-radius: 12px; flex-shrink: 0; }
+  .node-batch-btn.icon { min-width: 40px; padding: 0 10px; font-size: 1rem; }
+  .node-batch-sep, .node-batch-group-label { flex-shrink: 0; }
+  .node-batch-done { padding: 8px 18px; border-radius: 18px; }
+
+  /* 多选模式提示条：置顶，不遮挡工具栏与控件 */
+  .node-box-mode { top: 52px; left: 8px; transform: none; max-width: calc(100% - 16px); }
 
   /* 移动端浮动工具条进一步压缩 */
   .node-format-bar { padding: 4px 5px; gap: 2px; border-radius: 12px; }
@@ -4617,7 +4678,8 @@ const state = {
   nodeImportSelection: { items: new Set(), groups: new Set(), tags: new Set() },
   nodeImportSearch: '',
   nodeMoveMode: false,
-  nodePadVisible: false
+  nodePadVisible: false,
+  nodeBoxMode: false
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -9389,6 +9451,10 @@ function renderNodeMode() {
         <div class="node-filter-panel" id="nodeFilterPanel" style="display:none;"></div>
         <div class="node-layout-panel" id="nodeLayoutPanel" style="display:none;"></div>
         <div class="node-batch-bar" id="nodeBatchBar" style="display:none;"></div>
+        <div class="node-box-mode" id="nodeBoxModeBar" style="display:none;">
+          <span class="node-box-hint">多选模式：轻点节点增删 · 拖动空白框选</span>
+          <button type="button" class="node-box-done" id="nodeBoxDone">完成</button>
+        </div>
         <div class="node-hint" id="nodeHint">
           <span>拖 ⠿ 移动 · 拖边缘圆点拉线 · 空格=最佳视图 · Ctrl+V 粘图 · 框选/Ctrl 点选多选 · 选中文字弹出格式条</span>
           <button type="button" class="hint-close" id="nodeHintClose" title="不再显示">✕</button>
@@ -9513,6 +9579,13 @@ function bindNodeToolbar() {
   const selectBtn = document.getElementById('nodeSelectBtn');
   if (selectBtn) selectBtn.addEventListener('click', toggleNodeFilterPanel);
   bindNodeBatchBar();
+  const boxDone = document.getElementById('nodeBoxDone');
+  if (boxDone) boxDone.addEventListener('click', () => setNodeBoxMode(false));
+  const boxBar = document.getElementById('nodeBoxModeBar');
+  if (boxBar) {
+    boxBar.addEventListener('pointerdown', (e) => e.stopPropagation());
+    boxBar.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+  }
   bindLayoutPanel();
   renderRulers();
 }
@@ -10131,7 +10204,8 @@ function bindNodeCanvasEvents() {
     closeNodeMenu();
     closeNodePageMenu();
     if (panState) forceEndPan();
-    if (e.shiftKey || e.ctrlKey || e.metaKey) {
+    if (e.shiftKey || e.ctrlKey || e.metaKey || state.nodeBoxMode) {
+      const boxMode = state.nodeBoxMode;
       const rect = viewport.getBoundingClientRect();
       const box = document.createElement('div');
       box.className = 'node-marquee';
@@ -10144,7 +10218,7 @@ function bindNodeCanvasEvents() {
         id: e.pointerId,
         startClientX: e.clientX, startClientY: e.clientY,
         rectLeft: rect.left, rectTop: rect.top,
-        additive: e.shiftKey || e.ctrlKey || e.metaKey,
+        additive: boxMode || e.shiftKey || e.ctrlKey || e.metaKey,
         keep: new Set(state.nodeMultiSelect),
         box, moved: false
       };
@@ -10207,12 +10281,13 @@ function bindNodeCanvasEvents() {
   };
   const forceEndPan = () => {
     if (!panState) return;
-    /* 点击画布空白（未发生平移）：取消所有节点 / 连线 / 多选 / 文字选中状态 */
+    /* 点击画布空白（未发生平移）：取消所有节点 / 连线 / 多选 / 文字选中状态（多选模式除外） */
     if (!panState.moved) {
       const tsel = window.getSelection();
       if (tsel) tsel.removeAllRanges();
-      if (state.nodeSelection.nodeId || state.nodeSelection.edgeId ||
-          state.nodeMultiSelect.size > 0) {
+      if (!state.nodeBoxMode &&
+          (state.nodeSelection.nodeId || state.nodeSelection.edgeId ||
+           state.nodeMultiSelect.size > 0)) {
         clearNodeSelection();
         clearNodeMultiSelect();
       }
@@ -10280,7 +10355,8 @@ function bindNodeCanvasEvents() {
     const isPort = !!e.target.closest('.node-port');
 
     if (nodeEl && !isPort) {
-      if (e.ctrlKey || e.metaKey) toggleNodeMultiSelectAt(nodeId);
+      if (state.nodeBoxMode) toggleNodeMultiSelect(nodeId);
+      else if (e.ctrlKey || e.metaKey) toggleNodeMultiSelectAt(nodeId);
       else if (e.shiftKey) extendNodeMultiSelect(nodeId);
       else if (state.nodeMultiSelect.has(nodeId)) {
         state.nodeSelection = { nodeId: null, edgeId: null };
@@ -12275,6 +12351,18 @@ function extendNodeMultiSelect(toId) {
   rangeSelectNodes(anchor, toId);
 }
 function toggleNodeMultiSelectAt(id) { toggleNodeMultiSelect(id); }
+/* 多选模式（触屏友好）：进入后轻点节点增删、拖动空白框选；浮动「完成」退出 */
+function setNodeBoxMode(on) {
+  on = !!on;
+  state.nodeBoxMode = on;
+  const bar = document.getElementById('nodeBoxModeBar');
+  if (bar) bar.style.display = on ? '' : 'none';
+  if (on) {
+    state.nodeSelection = { nodeId: null, edgeId: null };
+    updateNodeSelectionUI();
+    showToast('多选模式：轻点节点增删 · 拖动空白框选');
+  }
+}
 function rangeSelectNodes(fromId, toId) {
   const compact = state.nodes.map(n => n.id);
   const a = compact.indexOf(fromId);
@@ -12409,12 +12497,10 @@ function updateNodeBatchBar() {
   const stats = getBatchSelectionStats(ids);
   bar.style.display = '';
   const alignHtml = ids.length >= 2
-    ? '<span class="node-batch-sep"></span>' +
-      '<span class="node-batch-group-label">对齐</span>' +
+    ? '<span class="node-batch-group-label">对齐</span>' +
       '<button type="button" class="node-batch-btn icon" data-batch="align-left" title="左对齐">⇤</button>' +
       '<button type="button" class="node-batch-btn icon" data-batch="align-hcenter" title="水平居中">↔</button>' +
       '<button type="button" class="node-batch-btn icon" data-batch="align-right" title="右对齐">⇥</button>' +
-      '<span class="node-batch-sep"></span>' +
       '<button type="button" class="node-batch-btn icon" data-batch="align-top" title="顶对齐">⤒</button>' +
       '<button type="button" class="node-batch-btn icon" data-batch="align-vcenter" title="垂直居中">↕</button>' +
       '<button type="button" class="node-batch-btn icon" data-batch="align-bottom" title="底对齐">⤓</button>' +
@@ -12425,15 +12511,18 @@ function updateNodeBatchBar() {
         : '') +
       '<span class="node-batch-sep"></span>'
     : '';
+  const actHtml =
+    `<button type="button" class="node-batch-btn primary" data-batch="connect">🔗 连线</button>` +
+    `<button type="button" class="node-batch-btn" data-batch="to-item">✓ 转知识点` + (stats.plain > 0 ? `(${stats.plain})` : '') + `</button>` +
+    `<button type="button" class="node-batch-btn" data-batch="hide">🚫 隐藏` + (stats.linked > 0 ? `(${stats.linked})` : '') + `</button>` +
+    `<button type="button" class="node-batch-btn" data-batch="show">👁 取消隐藏` + (stats.hidden > 0 ? `(${stats.hidden})` : '') + `</button>` +
+    `<button type="button" class="node-batch-btn danger" data-batch="delete">✕ 删除 (${ids.length})</button>`;
   bar.innerHTML =
-    `<span class="node-batch-count">已选 ${ids.length} 个节点</span>` +
-    alignHtml +
-    `<button type="button" class="node-batch-btn primary" data-batch="connect">🔗 依次连线</button>` +
-    `<button type="button" class="node-batch-btn" data-batch="to-item">✓ 转为知识点` + (stats.plain > 0 ? ` (${stats.plain})` : '') + `</button>` +
-    `<button type="button" class="node-batch-btn" data-batch="hide">🚫 隐藏知识点` + (stats.linked > 0 ? ` (${stats.linked})` : '') + `</button>` +
-    `<button type="button" class="node-batch-btn" data-batch="show">👁 取消隐藏` + (stats.hidden > 0 ? ` (${stats.hidden})` : '') + `</button>` +
-    `<button type="button" class="node-batch-btn danger" data-batch="delete">✕ 删除 (${ids.length})</button>` +
-    `<button type="button" class="node-batch-btn" data-batch="clear">取消选择</button>`;
+    `<div class="node-batch-head">` +
+      `<span class="node-batch-count">已选 ${ids.length} 个节点</span>` +
+      `<button type="button" class="node-batch-done" data-batch="clear">完成</button>` +
+    `</div>` +
+    `<div class="node-batch-groups">` + alignHtml + actHtml + `</div>`;
 }
 function getBatchSelectionStats(ids) {
   let plain = 0, linked = 0, hidden = 0;
@@ -12594,6 +12683,7 @@ function renderNodeFilterPanel() {
   html += `<div class="node-filter-title">快速选择</div>`;
   html += `<div class="node-filter-row" data-filter="all"><span class="f-name">全选所有节点</span><span class="f-count">${state.nodes.length}</span></div>`;
   html += `<div class="node-filter-row" data-filter="none"><span class="f-name">取消选择</span><span class="f-count">${getSelectedNodeIds().length}</span></div>`;
+  html += `<div class="node-filter-row" data-filter="box"><span class="f-name">◻️ 多选模式（点选 / 框选）</span><span class="f-count"></span></div>`;
   const gb = getNodeGroupBuckets();
   const groupPaths = Array.from(gb.map.keys()).filter(p => p !== WORD_UNGROUPED_KEY);
   html += `<div class="node-filter-title">按目录（含子目录）</div>`;
@@ -12638,6 +12728,7 @@ function applyNodeFilterSelection(kind, value) {
   if (kind === 'close') { closeNodeFilterPanel(); return; }
   if (kind === 'none') { clearNodeMultiSelect(); return; }
   if (kind === 'all') { selectAllNodes(); return; }
+  if (kind === 'box') { closeNodeFilterPanel(); setNodeBoxMode(true); return; }
   let ids = [];
   if (kind === 'plain') ids = getNodeGroupBuckets().unlinked;
   else if (kind === 'group') {
