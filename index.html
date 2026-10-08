@@ -3084,6 +3084,7 @@ input, textarea, select, button { font-size: 16px; }
   background: var(--bg-surface-2);
   border-bottom: 1px solid var(--border-light);
   border-radius: 12.5px 12.5px 0 0;
+  touch-action: none;
 }
 
 .node-grip {
@@ -3527,6 +3528,22 @@ input, textarea, select, button { font-size: 16px; }
   pointer-events: none;
 }
 .node-empty-tip .big { font-size: 2rem; display: block; margin-bottom: 6px; }
+
+/* ---------- 移动模式：节点任意位置可拖动 ---------- */
+.node-move-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--text-on-primary);
+}
+.node-move-mode .node-item { touch-action: none; cursor: move; }
+.node-move-mode .node-item.dragging { cursor: grabbing; }
+.node-move-mode .node-head { cursor: move; }
+.node-move-mode .node-body {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  pointer-events: none;
+}
 
 /* ---------- 节点浮动富文本工具条（不占节点区域） ---------- */
 .node-format-bar {
@@ -4228,7 +4245,8 @@ const state = {
   nodeImportScope: 'all',
   nodeImportConflict: 'skip',
   nodeImportSelection: { items: new Set(), groups: new Set(), tags: new Set() },
-  nodeImportSearch: ''
+  nodeImportSearch: '',
+  nodeMoveMode: false
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -8733,6 +8751,7 @@ function renderNodeMode() {
         </div>
         <div class="node-toolbar">
           <button class="node-tool-btn" id="nodeAddBtn" title="新建节点">➕</button>
+          <button class="node-tool-btn node-move-btn" id="nodeMoveBtn" title="移动模式：开启后按住节点任意位置（含正文）拖动即可移动">✥</button>
           <button class="node-tool-btn" id="nodeImportBtn" title="把知识点导入为节点">📥</button>
           <button class="node-tool-btn" id="nodeSelectBtn" title="选择节点：全选、按标签、按目录">☑️</button>
           <button class="node-tool-btn" id="nodeLayoutBtn" title="对齐与排版设置">📐</button>
@@ -8799,6 +8818,26 @@ function updateNodeEmptyTip() {
 function bindNodeToolbar() {
   const addBtn = document.getElementById('nodeAddBtn');
   if (addBtn) addBtn.addEventListener('click', () => addNodeAtCenter());
+  const moveBtn = document.getElementById('nodeMoveBtn');
+  if (moveBtn) {
+    const applyMoveState = () => {
+      const layer = document.getElementById('nodeLayer');
+      if (layer) layer.classList.toggle('node-move-mode', !!state.nodeMoveMode);
+      moveBtn.classList.toggle('active', !!state.nodeMoveMode);
+    };
+    applyMoveState();
+    moveBtn.addEventListener('click', () => {
+      state.nodeMoveMode = !state.nodeMoveMode;
+      applyMoveState();
+      if (state.nodeMoveMode) {
+        hideNodeFormatBar();
+        closeNodeMenu();
+        showToast('移动模式已开启：按住节点任意位置（含正文）拖动即可移动');
+      } else {
+        showToast('移动模式已关闭');
+      }
+    });
+  }
   const impBtn = document.getElementById('nodeImportBtn');
   if (impBtn) impBtn.addEventListener('click', openNodeImportPanel);
   const zi = document.getElementById('nodeZoomIn');
@@ -9333,6 +9372,7 @@ function bindNodeCanvasEvents() {
   };
   layer.addEventListener('pointerdown', (e) => {
     if (e.pointerType !== 'touch') return;
+    if (state.nodeMoveMode) return;
     const nodeEl = e.target.closest('.node-item');
     if (!nodeEl) return;
     if (e.target.closest('.node-port') || e.target.closest('.node-grip') ||
@@ -9563,14 +9603,17 @@ function bindNodeCanvasEvents() {
     }
 
     // 触屏：整条头部都可拖动（除输入框、删除按钮、菜单按钮、折叠按钮）
+    // 移动模式：开启后节点任意位置（含正文）都可按住拖动，正文不再进入编辑
     const isTouchPointer = e.pointerType === 'touch';
+    const inMoveMode = !!state.nodeMoveMode;
+    const isExcludedGrip = () => !e.target.closest('.node-title-input') &&
+      !e.target.closest('.node-del-btn') && !e.target.closest('.node-menu-btn') &&
+      !e.target.closest('.node-collapse-badge') && !e.target.closest('.node-add-img') &&
+      !e.target.closest('.node-port');
     const grip = e.target.closest('.node-grip') ||
-      (isTouchPointer && e.target.closest('.node-head'));
-    if (grip &&
-        !e.target.closest('.node-title-input') &&
-        !e.target.closest('.node-del-btn') &&
-        !e.target.closest('.node-menu-btn') &&
-        !e.target.closest('.node-collapse-badge')) {
+      (isTouchPointer && e.target.closest('.node-head')) ||
+      (inMoveMode && nodeEl && isExcludedGrip());
+    if (grip && isExcludedGrip()) {
       if (!nodeEl) return;
       if (state.nodeMultiSelect.size > 1 && state.nodeMultiSelect.has(nodeId)) {
         const els = Array.from(state.nodeMultiSelect)
@@ -12358,42 +12401,143 @@ function syncNodeBodyContent() {
   applyNodeImageOnlyMode(nodeEl, node);
   scheduleEdgesRedraw();
 }
-function runNodeInlineCommand(cmd) {
+/* ---- 直接对已保存选区做 DOM 包裹（不依赖焦点与 execCommand，移动端可靠） ---- */
+function nodeRange() {
   const body = nodeFormat.body;
-  if (!body) return;
-  body.focus({ preventScroll: true });
-  restoreNodeSelection();
-  ensureNodeStyleWithCSS();
-  try { document.execCommand(cmd, false, null); } catch (e) {}
-  saveNodeSelection();
+  const r = nodeFormat.range;
+  if (!body || !r) return null;
+  if (!body.contains(r.commonAncestorContainer)) return null;
+  const c = r.cloneRange();
+  if (c.collapsed) return null;
+  return c;
+}
+function nodeWrapRange(range, tag, styleObj) {
+  const el = document.createElement(tag);
+  if (styleObj) for (const k in styleObj) el.style.setProperty(k, styleObj[k], 'important');
+  try { range.surroundContents(el); }
+  catch (err) { const frag = range.extractContents(); el.appendChild(frag); range.insertNode(el); }
+  const nr = document.createRange();
+  nr.selectNodeContents(el);
+  nodeFormat.range = nr;
+  return el;
+}
+function nodeRangeAlreadyHas(range, cmd) {
+  let node = range.startContainer;
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+  else if (node.nodeType === 1) {
+    const c = node.childNodes[range.startOffset];
+    if (c && c.nodeType === Node.TEXT_NODE) node = c.parentElement;
+    else if (c && c.nodeType === 1) node = c;
+  }
+  const body = nodeFormat.body;
+  let el = node;
+  while (el && el !== body) {
+    if (el.nodeType === 1) {
+      const tag = el.tagName;
+      if (cmd === 'bold' && (tag === 'B' || tag === 'STRONG')) return true;
+      if (cmd === 'italic' && (tag === 'I' || tag === 'EM')) return true;
+      if (cmd === 'underline' && (tag === 'U' || tag === 'INS')) return true;
+      if (cmd !== 'bold' && cmd !== 'italic' && cmd !== 'underline' && el.getAttribute && el.getAttribute('style')) {
+        const st = el.style;
+        if (cmd === 'foreColor' && st.color) return true;
+        if (cmd === 'hiliteColor' && st.backgroundColor &&
+            st.backgroundColor !== 'transparent' &&
+            st.backgroundColor !== 'rgba(0, 0, 0, 0)') return true;
+        if (cmd === 'fontFamily' && st.fontFamily) return true;
+        if (cmd === 'fontSize' && st.fontSize) return true;
+      }
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
+function nodeFindFormatAncestor(range, tag) {
+  let node = range.startContainer;
+  if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+  else if (node.nodeType === 1) {
+    const c = node.childNodes[range.startOffset];
+    if (c && c.nodeType === Node.TEXT_NODE) node = c.parentElement;
+    else if (c && c.nodeType === 1) node = c;
+  }
+  let walk = node;
+  while (walk && walk !== nodeFormat.body) {
+    if (walk.nodeType === 1 && walk.tagName === tag) return walk;
+    walk = walk.parentElement;
+  }
+  return null;
+}
+function unwrapElement(el) {
+  const parent = el.parentNode;
+  while (el.firstChild) parent.insertBefore(el.firstChild, el);
+  el.remove();
+  return parent;
+}
+function applyNodeInlineToRange(range, cmd, value) {
+  if (cmd === 'bold' || cmd === 'italic' || cmd === 'underline') {
+    const tag = cmd === 'bold' ? 'B' : cmd === 'italic' ? 'I' : 'U';
+    const target = nodeFindFormatAncestor(range, tag);
+    const start = range.startContainer, end = range.endContainer;
+    if (target && target.contains(start) && target.contains(end)) {
+      // 选区完全落在该格式元素内：整体解包（取消格式）
+      const parent = unwrapElement(target);
+      const nr = document.createRange();
+      nr.selectNodeContents(parent);
+      nodeFormat.range = nr;
+      return;
+    }
+    nodeWrapRange(range, tag.toLowerCase(), null);
+    return;
+  }
+  const map = {
+    foreColor: ['span', { color: value }],
+    hiliteColor: ['span', { 'background-color': value }],
+    fontFamily: ['span', { 'font-family': value }],
+    fontSize: ['span', { 'font-size': value }]
+  };
+  const pair = map[cmd];
+  if (pair) nodeWrapRange(range, pair[0], pair[1]);
+}
+function nodeClearFormat() {
+  const range = nodeRange();
+  if (!range) return;
+  const inlineTags = ['B', 'STRONG', 'I', 'EM', 'U', 'INS', 'SPAN', 'FONT', 'MARK'];
+  const frag = range.extractContents();
+  const list = [];
+  const walker = document.createTreeWalker(frag, NodeFilter.SHOW_ELEMENT, null);
+  let nd; while ((nd = walker.nextNode())) list.push(nd);
+  list.reverse().forEach(elm => {
+    if (elm.nodeType !== 1 || !inlineTags.includes(elm.tagName)) return;
+    while (elm.firstChild) elm.parentNode.insertBefore(elm.firstChild, elm);
+    elm.remove();
+  });
+  range.deleteContents();
+  range.insertNode(frag);
+  nodeFormat.range = range;
+}
+function runNodeInlineCommand(cmd) {
+  const range = nodeRange();
+  if (!range) return;
+  applyNodeInlineToRange(range, cmd, null);
   syncNodeFormatBarState();
   syncNodeBodyContent();
 }
 function clearNodeFormat() {
-  const body = nodeFormat.body;
-  if (!body) return;
-  body.focus({ preventScroll: true });
-  restoreNodeSelection();
-  ensureNodeStyleWithCSS();
-  try { document.execCommand('removeFormat', false, null); } catch (e) {}
-  try { document.execCommand('hiliteColor', false, 'transparent'); } catch (e) {}
-  try { document.execCommand('backColor', false, 'transparent'); } catch (e) {}
-  const sel = window.getSelection();
-  if (sel && sel.rangeCount > 0 && body.contains(sel.getRangeAt(0).commonAncestorContainer)) {
-    clearInlineStyleFromSelection(body, 'font-size');
-    clearInlineStyleFromSelection(body, 'font-family');
-  }
-  saveNodeSelection();
+  const range = nodeRange();
+  if (!range) return;
+  nodeClearFormat();
   syncNodeFormatBarState();
   syncNodeBodyContent();
 }
 function readNodeFormatClip() {
   const body = nodeFormat.body;
+  if (!body) return null;
+  let node = null;
   const sel = window.getSelection();
-  if (!body || !sel || sel.rangeCount === 0) return null;
-  const range = sel.getRangeAt(0);
-  if (!body.contains(range.startContainer)) return null;
-  let node = range.startContainer;
+  if (sel && sel.rangeCount > 0 && body.contains(sel.getRangeAt(0).startContainer)) {
+    node = sel.getRangeAt(0).startContainer;
+  } else if (nodeFormat.range && body.contains(nodeFormat.range.startContainer)) {
+    node = nodeFormat.range.startContainer;
+  } else return null;
   if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
   if (!node) return null;
   const cs = window.getComputedStyle(node);
@@ -12408,31 +12552,16 @@ function readNodeFormatClip() {
   };
 }
 function applyNodeFormatClip(clip) {
-  const body = nodeFormat.body;
-  if (!body || !clip) return false;
-  const sel = window.getSelection();
-  if (!sel || sel.rangeCount === 0) return false;
-  const range = sel.getRangeAt(0);
-  if (range.collapsed || !body.contains(range.commonAncestorContainer)) return false;
-  body.focus({ preventScroll: true });
-  try { sel.removeAllRanges(); sel.addRange(range); }
-  catch (e) { return false; }
-  ensureNodeStyleWithCSS();
-  try {
-    const curBold = document.queryCommandState('bold');
-    if (!!clip.bold !== !!curBold) document.execCommand('bold', false, null);
-    const curItalic = document.queryCommandState('italic');
-    if (!!clip.italic !== !!curItalic) document.execCommand('italic', false, null);
-    const curU = document.queryCommandState('underline');
-    if (!!clip.underline !== !!curU) document.execCommand('underline', false, null);
-    if (clip.foreColor) document.execCommand('foreColor', false, clip.foreColor);
-    if (clip.hiliteColor) {
-      try { document.execCommand('hiliteColor', false, clip.hiliteColor); }
-      catch (e) { try { document.execCommand('backColor', false, clip.hiliteColor); } catch (e2) {} }
-    }
-  } catch (e) {}
-  if (clip.fontFamily) applyInlineStyleToSelection(body, 'font-family', clip.fontFamily);
-  if (clip.fontSize) applyInlineStyleToSelection(body, 'font-size', clip.fontSize);
+  const range = nodeRange();
+  if (!range || !clip) return false;
+  if (clip.bold) nodeWrapRange(range, 'b', null);
+  if (clip.italic) nodeWrapRange(range, 'i', null);
+  if (clip.underline) nodeWrapRange(range, 'u', null);
+  if (clip.foreColor) nodeWrapRange(range, 'span', { color: clip.foreColor });
+  if (clip.hiliteColor) nodeWrapRange(range, 'span', { 'background-color': clip.hiliteColor });
+  if (clip.fontFamily) nodeWrapRange(range, 'span', { 'font-family': clip.fontFamily });
+  if (clip.fontSize) nodeWrapRange(range, 'span', { 'font-size': clip.fontSize });
+  syncNodeBodyContent();
   return true;
 }
 function toggleNodeFormatPainter() {
@@ -12470,25 +12599,16 @@ function toggleNodeFormatPainter() {
   showToast('格式已复制，选中目标文字后再次点击🖌');
 }
 function applyNodeColor(kind, color) {
-  const body = nodeFormat.body;
-  if (!body) return;
-  body.focus({ preventScroll: true });
-  restoreNodeSelection();
-  ensureNodeStyleWithCSS();
-  if (kind === 'text') {
-    try { document.execCommand('foreColor', false, color); } catch (e) {}
-    state.lastTextColor = color;
-  } else {
-    try { document.execCommand('hiliteColor', false, color); }
-    catch (e) { try { document.execCommand('backColor', false, color); } catch (e2) {} }
-    state.lastBgColor = color;
-  }
+  const range = nodeRange();
+  if (!range) return;
+  applyNodeInlineToRange(range, kind === 'text' ? 'foreColor' : 'hiliteColor', color);
+  if (kind === 'text') state.lastTextColor = color;
+  else state.lastBgColor = color;
   const bar = getNodeFormatBar();
   if (bar) {
     const dot = bar.querySelector(`[data-nf-color-main="${kind}"] .color-bar`);
     if (dot) dot.style.background = color;
   }
-  saveNodeSelection();
   syncNodeBodyContent();
 }
 function ensureNodePalettes() {
@@ -12562,21 +12682,17 @@ function bindNodeFormatBarEvents() {
   bar.querySelectorAll('select[data-nf-select]').forEach(sel => {
     sel.addEventListener('pointerdown', (e) => { e.stopPropagation(); saveNodeSelection(); });
     sel.addEventListener('change', () => {
-      const body = nodeFormat.body;
-      if (!body) return;
-      body.focus({ preventScroll: true });
-      restoreNodeSelection();
-      ensureNodeStyleWithCSS();
+      const range = nodeRange();
+      if (!range) return;
       const kind = sel.dataset.nfSelect;
       if (kind === 'family') {
         const f = FONT_FAMILIES[parseInt(sel.value, 10)];
-        if (f && f.value) applyInlineStyleToSelection(body, 'font-family', f.value);
-        else clearInlineStyleFromSelection(body, 'font-family');
+        if (f && f.value) applyNodeInlineToRange(range, 'fontFamily', f.value);
+        else nodeClearFormat();
       } else {
-        if (sel.value) applyInlineStyleToSelection(body, 'font-size', sel.value);
-        else clearInlineStyleFromSelection(body, 'font-size');
+        if (sel.value) applyNodeInlineToRange(range, 'fontSize', sel.value);
+        else nodeClearFormat();
       }
-      saveNodeSelection();
       syncNodeBodyContent();
       sel.blur();
       setTimeout(() => syncNodeFormatBarState(), 0);
