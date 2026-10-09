@@ -15118,6 +15118,117 @@ function unwrapElement(el) {
   el.remove();
   return parent;
 }
+/* 对选区应用内联样式属性（颜色/背景/字体/字号）：
+   先移除选区范围内已有的同一属性（含边界拆分处理），再用一个 span 包裹新值，
+   避免反复设色时生成层层嵌套 span，导致外层旧色覆盖新色而“不生效”。 */
+function applyNodeStylePropToRange(range, prop, value) {
+  const body = nodeFormat.body;
+  if (!body || !range) return;
+  // 1) 边界拆分到干净文本节点（与 nodeClearFormat 相同的拆分机制）
+  if (range.startContainer.nodeType === 3 && range.startOffset > 0 && range.startOffset < range.startContainer.length) {
+    range.setStart(range.startContainer.splitText(range.startOffset), 0);
+  }
+  if (range.endContainer.nodeType === 3 && range.endOffset > 0 && range.endOffset < range.endContainer.length) {
+    range.endContainer.splitText(range.endOffset);
+  }
+  const sNode = range.startContainer, sOff = range.startOffset;
+  const eNode = range.endContainer, eOff = range.endOffset;
+  const childIdx = (parent, child) => Array.prototype.indexOf.call(parent.childNodes, child);
+  const inlinePath = (container, offset) => {
+    const path = [];
+    let cur, idx;
+    if (container.nodeType === 3) {
+      const p = container.parentNode;
+      if (!p || p.nodeType !== 1 || p === body) return path;
+      cur = p; idx = childIdx(p, container);
+    } else { cur = container; idx = offset; }
+    let prev = null;
+    while (cur && cur.nodeType === 1 && cur !== body) {
+      path.push({ el: cur, idx });
+      prev = cur; cur = cur.parentNode;
+      if (cur && cur.nodeType === 1) idx = childIdx(cur, prev);
+    }
+    return path;
+  };
+  const splitAt = (el, idx) => {
+    if (idx <= 0 || idx >= el.childNodes.length) return;
+    const right = el.cloneNode(false);
+    while (el.childNodes[idx]) right.appendChild(el.childNodes[idx]);
+    if (el.parentNode) el.parentNode.insertBefore(right, el.nextSibling);
+  };
+  inlinePath(sNode, sOff).forEach(({ el, idx }) => splitAt(el, idx));
+  inlinePath(eNode, eOff).forEach(({ el, idx }) => splitAt(el, idx));
+  const mkRange = () => { try { const r = document.createRange(); r.setStart(sNode, sOff); r.setEnd(eNode, eOff); return r; } catch (e) { return null; } };
+  const r2 = mkRange();
+  if (!r2 || r2.collapsed) return;
+  // 边界点比较：比 compareBoundaryPoints 更稳，正确处理“父容器边界 vs 子文本边界”类型不一致的情况
+  const contains = (a, b) => { let n = b; while (n) { if (n === a) return true; n = n.parentNode; } return false; };
+  const childIndexOf = (p, c) => { for (let i = 0; i < p.childNodes.length; i++) if (p.childNodes[i] === c) return i; return -1; };
+  const endOffsetOf = (nd) => nd.nodeType === 3 ? nd.length : nd.childNodes.length;
+  const pointCmp = (c1, o1, c2, o2) => {
+    if (c1 === c2) return o1 < o2 ? -1 : (o1 > o2 ? 1 : 0);
+    if (contains(c1, c2)) {
+      let n = c2; while (n.parentNode !== c1) n = n.parentNode;
+      const k = childIndexOf(c1, n);
+      if (o1 < k) return -1;
+      if (o1 > k) {
+        if (o1 === k + 1 && k === c1.childNodes.length - 1) return pointCmp(c2, endOffsetOf(c2), c2, o2);
+        return 1;
+      }
+      return pointCmp(n, 0, c2, o2);
+    }
+    if (contains(c2, c1)) {
+      let n = c1; while (n.parentNode !== c2) n = n.parentNode;
+      const k = childIndexOf(c2, n);
+      if (o2 < k) return 1;
+      if (o2 > k) {
+        if (o2 === k + 1 && k === c2.childNodes.length - 1) return pointCmp(c1, o1, c1, endOffsetOf(c1));
+        return -1;
+      }
+      return pointCmp(c1, o1, n, 0);
+    }
+    const set = new Set(); let a = c1; while (a) { set.add(a); a = a.parentNode; }
+    let ca = c2; while (ca && !set.has(ca)) ca = ca.parentNode;
+    let a2 = c1; while (a2.parentNode !== ca) a2 = a2.parentNode;
+    let b2 = c2; while (b2.parentNode !== ca) b2 = b2.parentNode;
+    const ka = childIndexOf(ca, a2), kb = childIndexOf(ca, b2);
+    return ka < kb ? -1 : (ka > kb ? 1 : 0);
+  };
+  // 元素 el 的整体是否落在选区 r2 内（el 内容起点 >= 选区起点 且 终点 <= 选区终点）
+  const elInside = (el) => {
+    const s = pointCmp(el, 0, r2.startContainer, r2.startOffset);
+    const e = pointCmp(el, endOffsetOf(el), r2.endContainer, r2.endOffset);
+    return s >= 0 && e <= 0;
+  };
+  const toFix = [];
+  // 2a) 后代方向：完整落在选区内的元素
+  const walker = document.createTreeWalker(r2.commonAncestorContainer, NodeFilter.SHOW_ELEMENT, null);
+  let nd; while ((nd = walker.nextNode())) {
+    if (nd.nodeType !== 1 || nd === body || !nd.style) continue;
+    if (!nd.style.getPropertyValue(prop)) continue;
+    if (elInside(nd)) toFix.push(nd);
+  }
+  // 2b) 祖先方向：选区整段选中旧色文字时，旧色 span 是选区的祖先而非后代，同样要清除
+  let anc = (sNode.nodeType === 3 ? sNode.parentElement : sNode);
+  while (anc && anc !== body) {
+    if (anc.nodeType === 1 && anc.style && anc.style.getPropertyValue(prop)) {
+      if (elInside(anc)) toFix.push(anc);
+    }
+    anc = anc.parentElement;
+  }
+  toFix.forEach(el => {
+    el.style.removeProperty(prop);
+    if (el.style.length === 0) {
+      const parent = el.parentNode;
+      while (el.firstChild) parent.insertBefore(el.firstChild, el);
+      el.remove();
+    }
+  });
+  // 3) 重建范围并整体包裹新值（统一用端点引用重建，避免结构改动使范围失效）
+  const r3 = mkRange();
+  if (!r3 || r3.collapsed) return;
+  nodeWrapRange(r3, 'span', { [prop]: value });
+}
 function applyNodeInlineToRange(range, cmd, value) {
   if (cmd === 'bold' || cmd === 'italic' || cmd === 'underline') {
     const tag = cmd === 'bold' ? 'B' : cmd === 'italic' ? 'I' : 'U';
@@ -15134,14 +15245,14 @@ function applyNodeInlineToRange(range, cmd, value) {
     nodeWrapRange(range, tag.toLowerCase(), null);
     return;
   }
-  const map = {
-    foreColor: ['span', { color: value }],
-    hiliteColor: ['span', { 'background-color': value }],
-    fontFamily: ['span', { 'font-family': value }],
-    fontSize: ['span', { 'font-size': value }]
+  const PROP = {
+    foreColor: 'color',
+    hiliteColor: 'background-color',
+    fontFamily: 'font-family',
+    fontSize: 'font-size'
   };
-  const pair = map[cmd];
-  if (pair) nodeWrapRange(range, pair[0], pair[1]);
+  const prop = PROP[cmd];
+  if (prop) { applyNodeStylePropToRange(range, prop, value); return; }
 }
 function nodeClearFormat() {
   const range = nodeRange();
@@ -15468,9 +15579,10 @@ function toggleNodeFormatPainter() {
   const body = nodeFormat.body;
   if (!body) return;
   if (state.formatPainterArmed && state.formatPainterEditorId === NODE_PALETTE_KEY) {
-    const sel = window.getSelection();
-    const hasSel = sel && sel.rangeCount > 0 && !sel.isCollapsed &&
-      sel.toString().length > 0 && body.contains(sel.anchorNode);
+    // 用已保存的 nodeFormat.range 判断，而非实时选区：
+    // 移动端点击工具按钮时 contenteditable 的实时选区会先折叠，用实时选区会误判为“已取消格式刷”，导致无法应用
+    const range = nodeRange();
+    const hasSel = range && !range.collapsed;
     if (hasSel) {
       const ok = applyNodeFormatClip(state.formatPainterClip);
       state.formatPainterArmed = false;
