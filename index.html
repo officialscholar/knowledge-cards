@@ -4141,6 +4141,7 @@ input, textarea, select, button { font-size: 16px; }
   z-index: 8200;
   display: none;
   align-items: center;
+  flex-wrap: nowrap;
   gap: 3px;
   padding: 5px 7px;
   background: var(--bg-surface);
@@ -4156,6 +4157,14 @@ input, textarea, select, button { font-size: 16px; }
 }
 .node-format-bar.show { display: flex; }
 .node-format-bar::-webkit-scrollbar { display: none; }
+/* 隐藏功能组：始终单行横向排列，随外层条一起横向滚动，不在窄屏换行 */
+.node-format-bar .nf-more-group {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
 
 .nf-btn {
   flex-shrink: 0;
@@ -14514,7 +14523,7 @@ function buildNodeFormatBarHtml() {
     <span class="nf-divider"></span>
     <button type="button" class="nf-btn" data-nf="clear" title="清除全部格式">✕</button>
     <span class="nf-divider"></span>
-    <button type="button" class="nf-btn" data-nf="more" title="更多格式（斜体 / 字体 / 字号 / 格式刷 / 超链接 / 列表对齐）">⋯</button>
+    <button type="button" class="nf-btn" data-nf="more" title="更多格式（斜体 / 字体 / 字号 / 格式刷 / 超链接 / 列表 / 对齐）">⋯</button>
     <span class="nf-more-group" style="display:none">
       <button type="button" class="nf-btn nf-italic" data-nf="italic" title="斜体">I</button>
       <select class="nf-select" data-nf-select="family" title="字体">${familyOptions}</select>
@@ -14525,21 +14534,16 @@ function buildNodeFormatBarHtml() {
       <button type="button" class="nf-btn" data-nf="painter" title="格式刷">🖌</button>
       <button type="button" class="nf-btn" data-nf="link" title="超链接：链接到知识点 / 节点 / 页面 / 网址">🔗</button>
       <span class="nf-divider"></span>
-      <button type="button" class="nf-btn" data-nf="blocks" title="块级格式（列表 / 对齐 / 引用 / 代码）">▤</button>
-      <span class="nf-block-group" style="display:none">
-        <button type="button" class="nf-btn" data-nf="ul" title="无序列表">≡</button>
-        <button type="button" class="nf-btn" data-nf="ol" title="有序列表">1.</button>
-        <button type="button" class="nf-btn" data-nf="blockquote" title="引用块">❝</button>
-        <button type="button" class="nf-btn" data-nf="code" title="代码块">&lt;/&gt;</button>
-        <span class="nf-divider"></span>
-        <button type="button" class="nf-btn" data-nf="align-left" title="左对齐">⇤</button>
-        <button type="button" class="nf-btn" data-nf="align-center" title="居中">⇔</button>
-        <button type="button" class="nf-btn" data-nf="align-right" title="右对齐">⇥</button>
-        <button type="button" class="nf-btn" data-nf="align-justify" title="两端对齐">⇶</button>
-      </span>
-    </span>
-    <span class="nf-divider"></span>
-    <button type="button" class="nf-btn" data-nf="close" title="收起工具条">▴</button>`;
+      <button type="button" class="nf-btn" data-nf="ul" title="无序列表">≡</button>
+      <button type="button" class="nf-btn" data-nf="ol" title="有序列表">1.</button>
+      <button type="button" class="nf-btn" data-nf="blockquote" title="引用块">❝</button>
+      <button type="button" class="nf-btn" data-nf="code" title="代码块">&lt;/&gt;</button>
+      <span class="nf-divider"></span>
+      <button type="button" class="nf-btn" data-nf="align-left" title="左对齐">⇤</button>
+      <button type="button" class="nf-btn" data-nf="align-center" title="居中">⇔</button>
+      <button type="button" class="nf-btn" data-nf="align-right" title="右对齐">⇥</button>
+      <button type="button" class="nf-btn" data-nf="align-justify" title="两端对齐">⇶</button>
+    </span>`;
 }
 function ensureNodeStyleWithCSS() {
   try { document.execCommand('styleWithCSS', false, true); } catch (e) {}
@@ -15266,12 +15270,11 @@ function bindNodeFormatBarEvents() {
     if (!btn) return;
     e.preventDefault();
     const cmd = btn.dataset.nf;
-    if (cmd === 'close') { hideNodeFormatBar(); return; }
     if (cmd === 'painter') { toggleNodeFormatPainter(); return; }
     if (cmd === 'clear') { clearNodeFormat(); return; }
     if (cmd === 'link') { openNodeLinkPanel(); return; }
-    if (cmd === 'more' || cmd === 'blocks') {
-      const g = bar.querySelector(cmd === 'more' ? '.nf-more-group' : '.nf-block-group');
+    if (cmd === 'more') {
+      const g = bar.querySelector('.nf-more-group');
       if (g) {
         const open = g.style.display !== 'none';
         g.style.display = open ? 'none' : '';
