@@ -3594,8 +3594,9 @@ input, textarea, select, button { font-size: 16px; }
   flex-wrap: wrap;
   align-content: flex-start;
 }
-/* 单图：填满整个图像区（cover 裁剪以适配固定尺寸，居中显示） */
+/* 单图：填满整个图像区，完整显示不裁剪（contain 适配固定尺寸，居中） */
 .node-item.image-only:not(.selected):not(.multi-selected):not(.editing):not(:focus-within) .node-img-item:only-child { width: 100%; height: 100%; aspect-ratio: auto; }
+.node-item.image-only:not(.selected):not(.multi-selected):not(.editing):not(:focus-within) .node-img-item:only-child img { object-fit: contain; }
 /* 多图：等比例方形缩略图，超出可滚动 */
 .node-item.image-only:not(.selected):not(.multi-selected):not(.editing):not(:focus-within) .node-img-item { width: 50%; aspect-ratio: 1 / 1; overflow: hidden; }
 .node-item.image-only:not(.selected):not(.multi-selected):not(.editing):not(:focus-within) .node-img-item img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
@@ -10264,9 +10265,13 @@ function bindNodeCanvasEvents() {
     const dragArea = e.target.closest('.node-grip') || e.target.closest('.node-head') ||
       (nodeEl && !excluded);   // 触屏兜底：整节点（除编辑控件）均可拖动
     if (!dragArea || excluded) return;
-    if (nodeEl.classList.contains('dragging')) return;
-    // 兜底路径（无 Pointer Events 的老设备）：同样阻止进入编辑态，保证整卡拖动顺畅
+    // 关键：只要本次触摸落在可拖拽区域，就在 touchstart 阶段阻止浏览器默认
+    //（聚焦正文 / 滚动 / 文本选择）。即便 pointerdown 已先行启动拖拽（.dragging），
+    // 也必须 preventDefault——否则 iOS 上 preventDefault(pointerdown) 不足以阻止
+    // contenteditable 正文聚焦，进入编辑态后正文变 pan-y，手指一动就被浏览器抢占
+    // → pointercancel → 拖拽秒断。
     if (e.cancelable) e.preventDefault();
+    if (nodeEl.classList.contains('dragging')) return;
     const t = e.touches[0];
     const sim = { clientX: t.clientX, clientY: t.clientY, pointerId: null,
       preventDefault(){}, stopPropagation(){} };
