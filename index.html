@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>知识点记忆卡片</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="知识点">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1e3a8a">
@@ -386,6 +386,37 @@ body {
   user-select: none;
   touch-action: manipulation;
   transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* 启动骨架屏：首帧展示，随后自动淡出（不影响交互与布局） */
+#bootSplash {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-page);
+  pointer-events: none;
+  animation: bootFade 0.5s ease 0.55s forwards;
+}
+@keyframes bootFade { to { opacity: 0; } }
+.boot-inner { text-align: center; }
+.boot-logo { font-size: 46px; line-height: 1; margin-bottom: 14px; }
+.boot-title { font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 18px; }
+.boot-bar {
+  width: 132px; height: 4px; border-radius: 2px;
+  background: var(--bg-subtle); overflow: hidden; margin: 0 auto;
+}
+.boot-bar span {
+  display: block; height: 100%; width: 40%;
+  border-radius: 2px;
+  background: var(--primary);
+  animation: bootSlide 0.9s ease-in-out infinite;
+}
+@keyframes bootSlide {
+  0% { transform: translateX(-110%); }
+  100% { transform: translateX(320%); }
 }
 
 input, textarea, [contenteditable] {
@@ -3098,7 +3129,12 @@ input, textarea, select, button { font-size: 16px; }
   z-index: 50;
   box-shadow: var(--shadow-drag);
   cursor: grabbing;
+  transform: scale(1.02);
 }
+.node-item { transition: box-shadow 0.14s ease, border-color 0.14s ease, transform 0.14s ease; }
+.node-item.dragging { transition: box-shadow 0.1s ease, transform 0.1s ease; }
+/* 移动端大画布视口剔除：远离视口的节点隐藏渲染，随平移/缩放重算 */
+.node-item.ncull { display: none !important; }
 .node-item.multi-selected {
   border-color: var(--primary-bright);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.16), var(--shadow-elevated);
@@ -3717,14 +3753,28 @@ input, textarea, select, button { font-size: 16px; }
 
 /* 触屏：放大抓手与连接点，常显连接点 */
 @media (hover: none) {
-  .node-grip { width: 40px; height: 40px; font-size: 1.15rem; }
+  .node-grip { width: 44px; height: 44px; font-size: 1.15rem; }
   .node-head { padding: 7px 7px 7px 5px; gap: 4px; }
   .node-port { --port-size: 20px; border-width: 3px; }
-  .port-hit { inset: -11px; }
+  .port-hit { inset: -12px; }
   .node-item .node-port { opacity: 0.5; pointer-events: auto; }
   .node-item.selected .node-port,
   .node-item.multi-selected .node-port,
   .node-item.edge-source .node-port { opacity: 1; }
+  /* 触屏小按钮命中区统一到 ≥40px：视觉不变，透明扩展层扩大点按区 */
+  .node-toolbar .tb-btn, .node-toolbar button,
+  .edge-toolbar .tb-btn, .edge-toolbar button,
+  .node-batch-bar button,
+  .node-page-btn { position: relative; }
+  .node-toolbar .tb-btn::after, .node-toolbar button::after,
+  .edge-toolbar .tb-btn::after, .edge-toolbar button::after,
+  .node-batch-bar button::after,
+  .node-page-btn::after {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    border-radius: inherit;
+  }
 }
 
 .node-toolbar {
@@ -3916,6 +3966,9 @@ input, textarea, select, button { font-size: 16px; }
 .nem-page-row .np-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .nem-page-row .np-count { font-size: 0.64rem; color: var(--text-faint); background: var(--bg-subtle); padding: 0 6px; border-radius: 8px; flex-shrink: 0; }
 .nem-actions { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 6px; border-top: 1px solid var(--border-light); }
+.nem-actions.data { border-top: none; padding-top: 0; }
+.nem-sep { height: 1px; background: var(--border-light); margin: 12px 0 8px; }
+.nem-data-title { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); margin: 0 0 6px; }
 .nem-btn { padding: 7px 11px; font-size: 0.74rem; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-surface); color: var(--text); cursor: pointer; }
 .nem-btn.primary { background: var(--accent, #4c8dff); border-color: var(--accent, #4c8dff); color: #fff; }
 .nem-btn:hover { background: var(--bg-accent); }
@@ -4089,7 +4142,7 @@ input, textarea, select, button { font-size: 16px; }
 .node-dpad {
   position: absolute;
   right: 16px;
-  bottom: 16px;
+  bottom: calc(var(--safe-bottom, 0px) + 16px);
   z-index: 30;
   display: grid;
   grid-template-columns: 44px 44px 44px;
@@ -4242,6 +4295,14 @@ input, textarea, select, button { font-size: 16px; }
   .mode-toggle { flex: 1; padding: 2px; gap: 2px; max-width: 100%; }
   .mode-btn { flex: 1; text-align: center; padding: 4px 3px; font-size: 0.68rem; }
   .theme-toggle-btn { width: 28px; height: 28px; font-size: 0.85rem; }
+  /* 触屏小按钮命中区统一放大到 ≥44px（视觉不变，透明扩展区扩大点按范围） */
+  .theme-toggle-btn, .sidebar-icon-btn { position: relative; }
+  .theme-toggle-btn::after, .sidebar-icon-btn::after {
+    content: '';
+    position: absolute;
+    inset: -9px;
+    border-radius: inherit;
+  }
 
   /* 移动端：迷你地图会遮挡功能控件，隐藏 */
   .node-minimap { display: none; }
@@ -4409,7 +4470,7 @@ input, textarea, select, button { font-size: 16px; }
   .node-zoom-label { min-width: 36px; font-size: 0.66rem; }
   .node-item { width: 200px; }
   .node-body { font-size: 0.74rem; max-height: 150px; }
-  .node-hint { font-size: 0.62rem; padding: 6px 12px; bottom: 10px; }
+  .node-hint { font-size: 0.62rem; padding: 6px 12px; bottom: calc(var(--safe-bottom, 0px) + 10px); }
 
   /* 多选编辑菜单：改为底部操作栏 + 可横向滑动的按钮分组，触屏友好 */
   .node-batch-bar {
@@ -4433,6 +4494,27 @@ input, textarea, select, button { font-size: 16px; }
   .node-batch-sep, .node-batch-group-label { flex-shrink: 0; }
   .node-batch-done { padding: 8px 18px; border-radius: 18px; }
 
+  /* 移动端节点菜单 → 底部 Sheet */
+  .node-menu.sheet {
+    position: fixed;
+    left: 0 !important; right: 0;
+    top: auto !important;
+    bottom: calc(var(--safe-bottom, 0px));
+    width: 100%; max-width: 100%;
+    max-height: 74vh;
+    border-radius: 20px 20px 0 0;
+    border-left: none; border-right: none; border-bottom: none;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.20);
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 6px calc(6px + var(--safe-bottom, 0px));
+  }
+  .node-menu.sheet button.menu-row {
+    min-height: 46px; padding: 10px 12px; font-size: 0.82rem; border-radius: 12px;
+  }
+  .node-menu.sheet .menu-head { padding: 8px 6px 4px; }
+  .node-menu.sheet .port-row { min-height: 44px; }
+
   /* 多选模式提示条：置顶，不遮挡工具栏与控件 */
   .node-box-mode { top: 52px; left: 8px; transform: none; max-width: calc(100% - 16px); }
 
@@ -4446,6 +4528,19 @@ input, textarea, select, button { font-size: 16px; }
   .node-format-bar .color-btn-group { height: 30px; }
   .node-format-bar .color-btn-main { width: 30px; }
   .node-format-bar .color-btn-arrow { width: 16px; }
+}
+
+/* 平板 / 大屏中间态：701–1024px 触控目标与工具栏密度适度放大 */
+@media (min-width: 701px) and (max-width: 1024px) {
+  .node-toolbar { padding: 6px 9px; gap: 6px; }
+  .node-toolbar .tb-btn { min-width: 38px; min-height: 38px; }
+  .node-grip { width: 38px; height: 38px; }
+  .node-port { --port-size: 16px; }
+  .node-dpad .dpad-btn { width: 48px; height: 48px; }
+  .node-dpad { grid-template-columns: 48px 48px 48px; grid-template-rows: 48px 48px 48px; }
+  .node-batch-btn { min-height: 42px; }
+  .nf-btn { min-width: 34px; height: 34px; }
+  .node-format-bar .color-btn-main { width: 34px; }
 }
 
 @media (max-width: 380px) {
@@ -4468,6 +4563,14 @@ input, textarea, select, button { font-size: 16px; }
 </style>
 </head>
 <body>
+<!-- 启动骨架屏：首帧快速渲染，随后淡出（纯展示，不阻塞交互） -->
+<div id="bootSplash" aria-hidden="true">
+  <div class="boot-inner">
+    <div class="boot-logo">📚</div>
+    <div class="boot-title">知识点记忆卡片</div>
+    <div class="boot-bar"><span></span></div>
+  </div>
+</div>
 <div class="offline-banner" id="offlineBanner">📡 当前处于离线状态</div>
 <div class="toast" id="toast"></div>
 
@@ -9811,6 +9914,12 @@ function renderNodeMode() {
             <button type="button" class="nem-btn" id="nemAllBtn">全部页面</button>
             <button type="button" class="nem-btn" id="nemCancelBtn">取消</button>
           </div>
+          <div class="nem-sep"></div>
+          <div class="nem-data-title">数据备份与维护</div>
+          <div class="nem-actions data">
+            <button type="button" class="nem-btn" id="nemBackupBtn">💾 备份全部数据(JSON)</button>
+            <button type="button" class="nem-btn" id="nemCleanBtn" title="清理临时/中间数据以释放存储">🧹 清理临时数据</button>
+          </div>
         </div>
         <div class="cmd-palette" id="commandPalette" style="display:none;">
           <div class="cmd-input-wrap"><input id="cmdInput" type="text" placeholder="输入命令或搜索…（↑↓选择，Enter 执行，Esc 关闭）"></div>
@@ -10511,16 +10620,8 @@ function bindNodeCanvasEvents() {
     if (e.touches.length !== 1) return;
     const nodeEl = e.target.closest('.node-item');
     if (!nodeEl) return;
-    const inMoveMode = !!state.nodeMoveMode;
-    const inEdit = nodeEl.classList.contains('editing');
-    const excluded = e.target.closest('.node-title-input') ||
-      e.target.closest('.node-del-btn') || e.target.closest('.node-menu-btn') ||
-      e.target.closest('.node-collapse-badge') || e.target.closest('.node-add-img') ||
-      e.target.closest('.node-port') ||
-      (inEdit && e.target.closest('.node-body'));   // 编辑态：正文用于选择/滚动，不整卡拖拽
-    const dragArea = e.target.closest('.node-grip') || e.target.closest('.node-head') ||
-      (nodeEl && !excluded);   // 触屏兜底：整节点（除编辑控件）均可拖动
-    if (!dragArea || excluded) return;
+    const dragTarget = resolveNodeDragTarget(e, nodeEl);
+    if (!dragTarget) return;
     // 关键：只要本次触摸落在可拖拽区域，就在 touchstart 阶段阻止浏览器默认
     //（聚焦正文 / 滚动 / 文本选择）。即便 pointerdown 已先行启动拖拽（.dragging），
     // 也必须 preventDefault——否则 iOS 上 preventDefault(pointerdown) 不足以阻止
@@ -10781,19 +10882,10 @@ function bindNodeCanvasEvents() {
       }
     }
 
-    // 头部（除输入框、删除按钮、菜单按钮、折叠按钮）都可拖动；移动模式：节点任意位置（含正文）可拖动
-    const inMoveMode = !!state.nodeMoveMode;
-    const inEdit = nodeEl ? nodeEl.classList.contains('editing') : false;
-    const isExcludedGrip = () => !e.target.closest('.node-title-input') &&
-      !e.target.closest('.node-del-btn') && !e.target.closest('.node-menu-btn') &&
-      !e.target.closest('.node-collapse-badge') && !e.target.closest('.node-add-img') &&
-      !e.target.closest('.node-port') &&
-      !(inEdit && e.target.closest('.node-body')); // 编辑态：正文用于选择/滚动文字，不整卡拖拽
-    const grip = e.target.closest('.node-grip') ||
-      e.target.closest('.node-head') ||
-      ((inMoveMode || e.pointerType === 'touch') && nodeEl && isExcludedGrip());
-    if (grip && isExcludedGrip()) {
-      if (!nodeEl) return;
+    // 拖拽入口统一判定（抓手/标题区/整卡[仅move或触屏]），并排除编辑控件
+    const dragTarget = resolveNodeDragTarget(e, nodeEl);
+    if (dragTarget && nodeEl) {
+      const inEdit = nodeEl.classList.contains('editing');
       // 触屏整卡拖拽：阻止默认聚焦进入编辑态（否则正文 touch-action 变 pan-y，
       // 拖动被浏览器抢占为滚动/文本选择 → pointercancel → 拖拽秒断）
       if (e.pointerType === 'touch' && !inEdit) {
@@ -10992,6 +11084,34 @@ function updateNodeView() {
   renderRulers();
   repositionNodeFormatBarIfVisible();
   renderMinimap();
+  applyNodeViewportCulling();
+}
+
+/* 移动端大画布视口剔除：仅当节点数多 + 触屏时，把远离视口的节点隐藏（display:none），
+   随平移/缩放经 updateNodeView 重算；保留 DOM，连线与选中逻辑不受影响。 */
+const NODE_CULL_MIN = 60;
+const NODE_CULL_MARGIN = 460;
+function applyNodeViewportCulling() {
+  const layer = document.getElementById('nodeLayer');
+  const vp = document.getElementById('nodeViewport');
+  if (!layer || !vp) return;
+  if (typeof isMobileLayout === 'function' && !isMobileLayout()) return;
+  const nodes = layer.querySelectorAll('.node-item');
+  if (nodes.length < NODE_CULL_MIN) return;
+  const vr = vp.getBoundingClientRect();
+  const v = state.nodeView;
+  const m = NODE_CULL_MARGIN / (v.scale || 1);
+  const wx0 = -v.x / (v.scale || 1) - m;
+  const wy0 = -v.y / (v.scale || 1) - m;
+  const wx1 = (vr.width - v.x) / (v.scale || 1) + m;
+  const wy1 = (vr.height - v.y) / (v.scale || 1) + m;
+  const w = 232, h = 140;
+  nodes.forEach(el => {
+    if (el.classList.contains('dragging') || el.classList.contains('editing')) { el.classList.remove('ncull'); return; }
+    const x = parseFloat(el.style.left) || 0, y = parseFloat(el.style.top) || 0;
+    const off = x + w < wx0 || x > wx1 || y + h < wy0 || y > wy1;
+    el.classList.toggle('ncull', off);
+  });
 }
 
 const NODE_FONT_FULL_AT = 0.75;
@@ -11730,6 +11850,24 @@ function handleLayoutKeydown(e) {
   return true;
 }
 
+/* 拖拽目标判定：统一指针/触屏/move-mode 的入口，返回 'grip' | 'head' | 'card' | null
+   （grip=抓手, head=标题区, card=整卡，仅 move 模式或触屏生效）。排除编辑控件。 */
+function resolveNodeDragTarget(e, nodeEl) {
+  if (!nodeEl) return null;
+  const inEdit = nodeEl.classList.contains('editing');
+  const excluded = e.target.closest('.node-title-input') ||
+    e.target.closest('.node-del-btn') || e.target.closest('.node-menu-btn') ||
+    e.target.closest('.node-collapse-badge') || e.target.closest('.node-add-img') ||
+    e.target.closest('.node-port') ||
+    (inEdit && e.target.closest('.node-body')); // 编辑态正文用于选择/滚动，不整卡拖拽
+  if (excluded) return null;
+  const grip = e.target.closest('.node-grip') || e.target.closest('.node-head');
+  if (grip) return 'grip';
+  const isTouch = e.pointerType === 'touch' || (!!e.touches && e.touches.length > 0);
+  if (state.nodeMoveMode || isTouch) return 'card';
+  return null;
+}
+
 function startNodeDrag(e, nodeEl) {
   const nodeId = nodeEl.dataset.nodeId;
   const node = state.nodes.find(n => n.id === nodeId);
@@ -11749,6 +11887,7 @@ function startNodeDrag(e, nodeEl) {
   // 触发 lostpointercapture → 拖拽被秒杀）；触屏已由 touchstart 阶段 preventDefault 抢占手势
   nodeEl.parentNode.appendChild(nodeEl);
   nodeEl.classList.add('dragging');
+  try { if (navigator.vibrate) navigator.vibrate(8); } catch (err) {}
   const dragBox = measureNodeBox(node);
   const candidates = buildSnapCandidates([nodeId]);
   const pref = getLayoutPref();
@@ -11761,6 +11900,7 @@ function startNodeDrag(e, nodeEl) {
   let channel = null;        // 'pointer' | 'touch'，先到的接管
   let touchId = null;
   let cancelTimer = null;
+  let lastSnapVibrate = 0;
   const finish = () => {
     if (finished) return;
     finished = true;
@@ -11798,6 +11938,13 @@ function startNodeDrag(e, nodeEl) {
     const rawX = ox + (coords.clientX - startX) / scale;
     const rawY = oy + (coords.clientY - startY) / scale;
     const snap = snapNodePosition(rawX, rawY, dragBox.w, dragBox.h, candidates, true);
+    if (snap.guides && snap.guides.length > 0) {
+      const now = Date.now();
+      if (now - lastSnapVibrate > 60) {
+        lastSnapVibrate = now;
+        try { if (navigator.vibrate) navigator.vibrate(6); } catch (err) {}
+      }
+    }
     node.x = Math.round(snap.x);
     node.y = Math.round(snap.y);
     nodeEl.style.left = node.x + 'px';
@@ -12976,6 +13123,7 @@ function startMultiNodeDrag(e, anchorEl, nodeEls) {
     return { el: el2, node, x: node ? node.x : 0, y: node ? node.y : 0 };
   });
   nodeEls.forEach(el2 => el2.classList.add('dragging'));
+  try { if (navigator.vibrate) navigator.vibrate(12); } catch (err) {}
   let rafId = null;
   const schedule = () => {
     if (rafId !== null) return;
@@ -13468,7 +13616,42 @@ function openExportModal() {
     if (b3) b3.addEventListener('click', () => { const o = collectExportOpts(); closeExportModal(); exportNodeImagePages(state.nodePages || [], o); });
     const b4 = document.getElementById('nemCancelBtn');
     if (b4) b4.addEventListener('click', closeExportModal);
+    const b5 = document.getElementById('nemBackupBtn');
+    if (b5) b5.addEventListener('click', backupAllData);
+    const b6 = document.getElementById('nemCleanBtn');
+    if (b6) b6.addEventListener('click', cleanTempData);
   }
+}
+/* 备份全部数据：把所有本地存储键打包为 JSON 下载 */
+const BACKUP_KEYS = [
+  STORAGE_KEY_ITEMS, STORAGE_KEY_COLLAPSED, STORAGE_KEY_THEME,
+  STORAGE_KEY_NODES, STORAGE_KEY_EDGES, STORAGE_KEY_NODE_VIEW,
+  STORAGE_KEY_NODE_PAGES, STORAGE_KEY_NODE_HINT, 'knowledge_node_pad_v1'
+];
+function backupAllData() {
+  try {
+    const out = { app: 'knowledge-cards', version: 1, time: new Date().toISOString(), keys: {} };
+    BACKUP_KEYS.forEach(k => { try { out.keys[k] = localStorage.getItem(k); } catch (e) {} });
+    const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, '知识点卡片备份_' + new Date().toISOString().slice(0, 10) + '.json');
+    showToast('已导出全部数据备份 (JSON)');
+  } catch (e) { showToast('备份失败：' + e.message, true); }
+}
+/* 清理临时/中间数据：视图状态、损坏副本等，保留主题与偏好 */
+function cleanTempData() {
+  let freed = 0;
+  const targets = [];
+  try {
+    targets.push([STORAGE_KEY_NODE_VIEW, localStorage.getItem(STORAGE_KEY_NODE_VIEW)]);
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.indexOf('_corrupt_backup') > -1) targets.push([k, localStorage.getItem(k)]);
+    }
+    targets.forEach(([k, v]) => {
+      if (v != null) { freed += String(v).length; try { localStorage.removeItem(k); } catch (e) {} }
+    });
+  } catch (e) {}
+  showToast(freed > 0 ? `已清理临时数据，释放约 ${(freed / 1024).toFixed(1)} KB` : '没有可清理的临时数据');
 }
 function closeExportModal() {
   const panel = document.getElementById('nodeExportModal');
@@ -13781,6 +13964,16 @@ function applyNodeFilterSelection(kind, value) {
 }
 
 function placeNodeMenu(menu, viewport, clientX, clientY) {
+  // 移动端：菜单改为底部 Sheet（固定贴底），不再跟随指针定位，避免小弹窗误触与遮挡
+  if (typeof isMobileLayout === 'function' && isMobileLayout()) {
+    menu.classList.add('sheet');
+    menu.style.left = '0px'; menu.style.right = '0px';
+    menu.style.top = 'auto'; menu.style.bottom = '0px';
+    menu.style.width = '100%';
+    menu.style.visibility = '';
+    return;
+  }
+  menu.classList.remove('sheet');
   menu.style.visibility = 'hidden';
   const vr = viewport.getBoundingClientRect();
   const mw = menu.offsetWidth || 176;
