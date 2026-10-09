@@ -4611,7 +4611,7 @@ input, textarea, select, button { font-size: 16px; }
       <button class="modal-close" id="exportModalClose">✕</button>
     </div>
     <div class="modal-body">
-      <p>以下是当前所有知识点数据。点击"复制到剪贴板"后，可粘贴保存到记事本或发送到其他设备。</p>
+      <p>以下是完整备份（知识点 + 节点画布 + 主题，含图片）。点击"复制到剪贴板"或"下载 JSON"，即可在其他设备用「导入」/「还原备份」完整恢复。</p>
       <textarea class="modal-textarea" id="exportTextarea" readonly></textarea>
       <div class="status-msg" id="exportStatus"></div>
     </div>
@@ -8636,15 +8636,17 @@ el.editModeBtn.addEventListener('click', () => setMode('edit'));
    导出 / 导入（JSON）
    ============================================================ */
 async function openExportModal() {
-  el.exportStatus.textContent = '正在准备数据...';
+  el.exportStatus.textContent = '正在打包完整备份…';
   el.exportStatus.className = 'status-msg';
   el.exportModal.classList.add('show');
-  const exportItems = await Promise.all(state.items.map(async (item) => {
-    const resolved = await resolveImageArray(item.images);
-    return { ...item, images: resolved };
-  }));
-  el.exportTextarea.value = JSON.stringify(exportItems, null, 2);
-  el.exportStatus.textContent = '';
+  try {
+    const out = await buildUnifiedBackup();
+    el.exportTextarea.value = JSON.stringify(out, null, 2);
+    el.exportStatus.textContent = '✓ 已生成完整备份（知识点 + 节点画布，含图片），可复制或下载';
+  } catch (e) {
+    el.exportStatus.textContent = '❌ 打包失败：' + e.message;
+    el.exportStatus.className = 'status-msg error';
+  }
 }
 function closeExportModal() { el.exportModal.classList.remove('show'); }
 function openImportModal() {
@@ -8688,7 +8690,7 @@ async function copyExportData() {
 }
 function downloadExportData() {
   try {
-    downloadText(el.exportTextarea.value, `知识点备份_${dateStamp()}.json`, 'application/json');
+    downloadText(el.exportTextarea.value, `知识点备份_${dateTimeStamp()}.json`, 'application/json');
     el.exportStatus.textContent = '✓ 文件已开始下载';
     el.exportStatus.className = 'status-msg';
   } catch (e) {
@@ -8699,6 +8701,12 @@ function downloadExportData() {
 function dateStamp() {
   const d = new Date();
   return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+/* 备份文件名时间戳：YYYYMMDD_HHMMSS，便于区分同一日的多次备份 */
+function dateTimeStamp() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
 }
 function downloadText(content, filename, type) {
   const blob = new Blob([content], { type });
@@ -8748,6 +8756,101 @@ function downloadHtmlExport() {
   setExportStatus('✓ 已导出 HTML 文件');
 }
 
+/* 完整还原：把备份对象 obj.keys 里的所有存储键写回 localStorage，并刷新页面 */
+function restoreFullBackup(obj) {
+  if (!obj || typeof obj !== 'object' || !obj.keys || typeof obj.keys !== 'object') return 0;
+  let n = 0;
+  Object.keys(obj.keys).forEach(k => {
+    const v = obj.keys[k];
+    if (v == null) return;
+    try { localStorage.setItem(k, v); n++; } catch (e) {}
+  });
+  return n;
+}
+/* 取消待触发的防抖保存：防止还原写回后、刷新前被旧内存数据覆盖 */
+function cancelPendingSaves() {
+  if (typeof saveTimer !== 'undefined' && saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  if (typeof nodeSaveTimer !== 'undefined' && nodeSaveTimer) { clearTimeout(nodeSaveTimer); nodeSaveTimer = null; }
+}
+function restoreFullBackupConfirm(obj) {
+  const n = Object.keys(obj.keys).length;
+  const kinds = [];
+  if (obj.keys[STORAGE_KEY_ITEMS]) kinds.push('知识点');
+  if (obj.keys[STORAGE_KEY_NODES] || obj.keys[STORAGE_KEY_EDGES]) kinds.push('节点画布(节点/连线)');
+  if (obj.keys[STORAGE_KEY_NODE_PAGES]) kinds.push('节点页面');
+  if (obj.keys[STORAGE_KEY_THEME]) kinds.push('主题');
+  const desc = kinds.length ? kinds.join('、') : `全部 ${n} 项数据`;
+  showConfirm('还原完整备份', `将用备份恢复：${desc}（共 ${n} 项存储）。\n当前数据会被替换。\n\n确定继续吗？`, () => {
+    cancelPendingSaves();   // 先停掉待执行的防抖保存，避免旧数据在刷新前覆盖还原结果
+    const restored = restoreFullBackup(obj);
+    closeImportModal();
+    if (restored > 0) { showToast(`已还原 ${restored} 项，正在刷新…`); setTimeout(() => location.reload(), 600); }
+    else { showToast('备份为空，未还原', true); }
+  });
+}
+
+/* 统一备份还原：把完整备份 data（知识点 + 节点画布 + 主题 + 偏好）写回并刷新 */
+async function applyUnifiedBackup(data) {
+  cancelPendingSaves();
+  const items = [];
+  for (const it of (data.items || [])) {
+    const images = [];
+    for (const ref of (it.images || [])) {
+      if (typeof ref === 'string' && ref.startsWith('data:image/')) {
+        const id = generateId();
+        try { await saveImage(id, ref); images.push('img://' + id); } catch (e) { images.push(ref); }
+      } else if (ref) images.push(ref);
+    }
+    items.push({ ...it, images });
+  }
+  const nodePages = [];
+  for (const p of (data.nodePages || [])) {
+    const nodes = [];
+    for (const n of (p.nodes || [])) {
+      const images = [];
+      for (const ref of (n.images || [])) {
+        if (typeof ref === 'string' && ref.startsWith('data:image/')) {
+          const id = generateId();
+          try { await saveImage(id, ref); images.push('img://' + id); } catch (e) { images.push(ref); }
+        } else if (ref) images.push(ref);
+      }
+      nodes.push({ ...n, images });
+    }
+    nodePages.push({ id: p.id || generateId(), name: p.name || '未命名页面', nodes, edges: p.edges || [], view: p.view || null, collapsed: p.collapsed || [] });
+  }
+  state.items = items;
+  state.nodePages = nodePages;
+  const curPage = nodePages.find(q => q.id === data.currentId) || nodePages[0] || null;
+  state.nodeCurrentPageId = curPage ? curPage.id : null;
+  // 关键：persistNodePages 会用全局 state.nodes/state.edges 覆盖当前页数据，
+  // 必须先把全局当前页同步为还原后的当前页，否则写盘时会把旧的（已删除的）空数据覆盖回去
+  state.nodeCollapsed = new Set(curPage && Array.isArray(curPage.collapsed) ? curPage.collapsed : []);
+  state.nodes = curPage ? curPage.nodes : [];
+  state.edges = curPage ? curPage.edges : [];
+  state.nodeView = (curPage && curPage.view) ? { x: curPage.view.x, y: curPage.view.y, scale: curPage.view.scale } : { x: 60, y: 60, scale: 1 };
+  if (Array.isArray(data.collapsedGroups)) state.collapsedGroups = data.collapsedGroups;
+  state.nodeHintDismissed = data.hint === true;
+  state.nodePadVisible = data.pad === true;
+  try { localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(state.items)); } catch (e) {}
+  saveCollapsedState();
+  persistNodePages();
+  if (data.theme && typeof setTheme === 'function') { try { setTheme(data.theme, true); } catch (e) {} }
+}
+function restoreUnifiedConfirm(obj) {
+  const d = obj.data;
+  const kinds = [];
+  if (Array.isArray(d.items) && d.items.length !== undefined) kinds.push(`知识点 ${d.items.length} 条`);
+  if (Array.isArray(d.nodePages) && d.nodePages.length) kinds.push(`节点画布 ${d.nodePages.length} 页`);
+  const desc = kinds.length ? kinds.join('、') : '全部数据';
+  showConfirm('还原完整备份', `将用备份恢复：${desc}（含内嵌图片）。\n当前全部数据会被替换。\n\n确定继续吗？`, () => {
+    applyUnifiedBackup(d).then(() => {
+      closeImportModal();
+      showToast('已还原，正在刷新…');
+      setTimeout(() => location.reload(), 600);
+    }).catch(err => { showToast('还原失败：' + err.message, true); });
+  });
+}
+
 async function parseAndImport(rawText) {
   if (!rawText || !rawText.trim()) {
     el.importStatus.textContent = '❌ 没有可导入的数据';
@@ -8759,6 +8862,18 @@ async function parseAndImport(rawText) {
   catch (e) {
     el.importStatus.textContent = '❌ JSON 格式错误，请检查数据';
     el.importStatus.className = 'status-msg error';
+    return;
+  }
+  // 识别统一完整备份 {app,version,data:{items,nodePages,…}}：完整还原（知识点 + 节点画布 + 主题）
+  if (!Array.isArray(parsed) && parsed && typeof parsed === 'object' &&
+      parsed.data && typeof parsed.data === 'object' && Array.isArray(parsed.data.items)) {
+    restoreUnifiedConfirm(parsed);
+    return;
+  }
+  // 识别旧版“备份全部数据”导出对象 {app,version,keys:{…}}：完整还原全部数据
+  if (!Array.isArray(parsed) && parsed && typeof parsed === 'object' &&
+      parsed.keys && typeof parsed.keys === 'object') {
+    restoreFullBackupConfirm(parsed);
     return;
   }
   if (!Array.isArray(parsed)) {
@@ -8811,14 +8926,30 @@ async function parseAndImport(rawText) {
       cleanupImages(oldImgs).catch(() => {});
     });
   } else {
+    // 合并去重：仅当「标题 + 所属目录」都相同才视为重复，予以跳过；
+    // 同时跳过导入数据内部重复的项，避免产生重复知识点。
     const existingIds = new Set(state.items.map(i => i.id));
-    const merged = cleaned.map(item => {
+    const norm = s => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    const dedupKey = it => norm(it.title) + '\u0001' + norm(it.group);
+    const existingKeys = new Set(state.items.map(dedupKey));
+    const seen = new Set();
+    const merged = [];
+    cleaned.forEach(item => {
+      const k = dedupKey(item);
+      if (existingKeys.has(k) || seen.has(k)) return;
+      seen.add(k);
       const newItem = { ...item };
       while (existingIds.has(newItem.id)) newItem.id = generateId();
       existingIds.add(newItem.id);
-      return newItem;
+      merged.push(newItem);
     });
-    showConfirm('确认合并', `即将追加 ${merged.length} 个知识点，\n当前 ${state.items.length} 个知识点将被保留。\n合并后共 ${state.items.length + merged.length} 个。\n\n确定继续吗？`, () => {
+    if (merged.length === 0) {
+      el.importStatus.textContent = '✓ 没有需要导入的新知识点（全部与现有重复）';
+      el.importStatus.className = 'status-msg';
+      return;
+    }
+    const skipped = cleaned.length - merged.length;
+    showConfirm('确认合并', `即将追加 ${merged.length} 个知识点${skipped ? `（已自动跳过 ${skipped} 个重复）` : ''}，\n当前 ${state.items.length} 个知识点将被保留。\n合并后共 ${state.items.length + merged.length} 个。\n\n确定继续吗？`, () => {
       histCapture('合并导入');
       state.items = state.items.concat(merged);
       if (!state.activeId && state.items.length > 0) state.activeId = state.items[0].id;
@@ -9914,12 +10045,6 @@ function renderNodeMode() {
             <button type="button" class="nem-btn" id="nemAllBtn">全部页面</button>
             <button type="button" class="nem-btn" id="nemCancelBtn">取消</button>
           </div>
-          <div class="nem-sep"></div>
-          <div class="nem-data-title">数据备份与维护</div>
-          <div class="nem-actions data">
-            <button type="button" class="nem-btn" id="nemBackupBtn">💾 备份全部数据(JSON)</button>
-            <button type="button" class="nem-btn" id="nemCleanBtn" title="清理临时/中间数据以释放存储">🧹 清理临时数据</button>
-          </div>
         </div>
         <div class="cmd-palette" id="commandPalette" style="display:none;">
           <div class="cmd-input-wrap"><input id="cmdInput" type="text" placeholder="输入命令或搜索…（↑↓选择，Enter 执行，Esc 关闭）"></div>
@@ -10053,7 +10178,7 @@ function bindNodeToolbar() {
   const outlineBtn = document.getElementById('nodeOutlineBtn');
   if (outlineBtn) outlineBtn.addEventListener('click', toggleNodeOutlinePanel);
   const exportBtn = document.getElementById('nodeExportBtn');
-  if (exportBtn) exportBtn.addEventListener('click', openExportModal);
+  if (exportBtn) exportBtn.addEventListener('click', openNodeExportModal);
   bindCommandPalette();
   renderRulers();
 }
@@ -13601,7 +13726,7 @@ function getCheckedExportPages() {
   const checked = new Set(Array.from(document.querySelectorAll('#nemPages input:checked')).map(c => c.value));
   return pages.filter(p => checked.has(p.id));
 }
-function openExportModal() {
+function openNodeExportModal() {
   closeNodeToolbarPanels('nodeExportModal');
   const panel = document.getElementById('nodeExportModal');
   if (panel) panel.style.display = '';
@@ -13609,17 +13734,13 @@ function openExportModal() {
   if (!panel.__bound) {
     panel.__bound = true;
     const b1 = document.getElementById('nemCurrentBtn');
-    if (b1) b1.addEventListener('click', () => { const o = collectExportOpts(); closeExportModal(); exportNodeImage(o); });
+    if (b1) b1.addEventListener('click', () => { const o = collectExportOpts(); closeNodeExportModal(); exportNodeImage(o); });
     const b2 = document.getElementById('nemSelectedBtn');
-    if (b2) b2.addEventListener('click', () => { const o = collectExportOpts(); closeExportModal(); exportNodeImagePages(getCheckedExportPages(), o); });
+    if (b2) b2.addEventListener('click', () => { const o = collectExportOpts(); closeNodeExportModal(); exportNodeImagePages(getCheckedExportPages(), o); });
     const b3 = document.getElementById('nemAllBtn');
-    if (b3) b3.addEventListener('click', () => { const o = collectExportOpts(); closeExportModal(); exportNodeImagePages(state.nodePages || [], o); });
+    if (b3) b3.addEventListener('click', () => { const o = collectExportOpts(); closeNodeExportModal(); exportNodeImagePages(state.nodePages || [], o); });
     const b4 = document.getElementById('nemCancelBtn');
-    if (b4) b4.addEventListener('click', closeExportModal);
-    const b5 = document.getElementById('nemBackupBtn');
-    if (b5) b5.addEventListener('click', backupAllData);
-    const b6 = document.getElementById('nemCleanBtn');
-    if (b6) b6.addEventListener('click', cleanTempData);
+    if (b4) b4.addEventListener('click', closeNodeExportModal);
   }
 }
 /* 备份全部数据：把所有本地存储键打包为 JSON 下载 */
@@ -13628,13 +13749,46 @@ const BACKUP_KEYS = [
   STORAGE_KEY_NODES, STORAGE_KEY_EDGES, STORAGE_KEY_NODE_VIEW,
   STORAGE_KEY_NODE_PAGES, STORAGE_KEY_NODE_HINT, 'knowledge_node_pad_v1'
 ];
-function backupAllData() {
+/* 统一完整备份：把知识点 + 节点画布(节点/连线/页面) + 主题 + 偏好，连同图片内嵌为 dataURL，
+   打包成一份可跨设备完整还原的 JSON。所有数据备份入口统一走这里。 */
+async function buildUnifiedBackup() {
+  try { if (typeof flushSave === 'function') flushSave(); } catch (e) {}
+  try { if (typeof flushNodesSave === 'function') flushNodesSave(); } catch (e) {}
+  const items = [];
+  for (const it of (state.items || [])) {
+    const images = (typeof resolveImageArray === 'function') ? await resolveImageArray(it.images) : (it.images || []);
+    items.push({ ...it, images });
+  }
+  const nodePages = [];
+  for (const p of (state.nodePages || [])) {
+    const nodes = [];
+    for (const n of (p.nodes || [])) {
+      const images = (typeof resolveImageArray === 'function') ? await resolveImageArray(n.images) : (n.images || []);
+      nodes.push({ ...n, images });
+    }
+    nodePages.push({ id: p.id, name: p.name, nodes, edges: p.edges || [], view: p.view || null, collapsed: p.collapsed || [] });
+  }
+  return {
+    app: 'knowledge-cards',
+    version: 2,
+    time: new Date().toISOString(),
+    data: {
+      items,
+      nodePages,
+      currentId: state.nodeCurrentPageId || null,
+      collapsedGroups: state.collapsedGroups || [],
+      theme: state.theme || 'auto',
+      hint: state.nodeHintDismissed === true,
+      pad: state.nodePadVisible === true
+    }
+  };
+}
+async function backupAllData() {
   try {
-    const out = { app: 'knowledge-cards', version: 1, time: new Date().toISOString(), keys: {} };
-    BACKUP_KEYS.forEach(k => { try { out.keys[k] = localStorage.getItem(k); } catch (e) {} });
+    const out = await buildUnifiedBackup();
     const blob = new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' });
-    downloadBlob(blob, '知识点卡片备份_' + new Date().toISOString().slice(0, 10) + '.json');
-    showToast('已导出全部数据备份 (JSON)');
+    downloadBlob(blob, '知识点卡片备份_' + dateTimeStamp() + '.json');
+    showToast('已导出完整备份 (知识点 + 节点画布，含图片)');
   } catch (e) { showToast('备份失败：' + e.message, true); }
 }
 /* 清理临时/中间数据：视图状态、损坏副本等，保留主题与偏好 */
@@ -13653,7 +13807,7 @@ function cleanTempData() {
   } catch (e) {}
   showToast(freed > 0 ? `已清理临时数据，释放约 ${(freed / 1024).toFixed(1)} KB` : '没有可清理的临时数据');
 }
-function closeExportModal() {
+function closeNodeExportModal() {
   const panel = document.getElementById('nodeExportModal');
   if (panel) panel.style.display = 'none';
 }
@@ -13810,7 +13964,7 @@ const COMMAND_REGISTRY = [
   { icon: '⤢', title: '适应画布', hint: '', run: () => fitNodes() },
   { icon: '🔍', title: '搜索节点', hint: 'Ctrl+F', run: () => { closeCommandPalette(); toggleNodeSearchPanel(); } },
   { icon: '☰', title: '大纲视图', hint: '', run: () => { closeCommandPalette(); toggleNodeOutlinePanel(); } },
-  { icon: '💾', title: '导出图片 / PDF', hint: '', run: () => { closeCommandPalette(); openExportModal(); } },
+  { icon: '💾', title: '导出图片 / PDF', hint: '', run: () => { closeCommandPalette(); openNodeExportModal(); } },
   { icon: '↩', title: '撤销', hint: 'Ctrl+Z', run: () => { const b = document.getElementById('nodeUndoBtn'); if (b) b.click(); } },
   { icon: '↪', title: '重做', hint: 'Ctrl+Y', run: () => { const b = document.getElementById('nodeRedoBtn'); if (b) b.click(); } },
   { icon: '☑️', title: '全选节点', hint: 'Ctrl+A', run: () => selectAllNodes() },
@@ -15739,7 +15893,7 @@ document.addEventListener('keydown', (e) => {
     }
     if (state.mode === 'node') closeNodeMenu();
     if (state.mode === 'node') closeNodeFilterPanel();
-    if (state.mode === 'node') { closeNodeSearchPanel(); closeExportModal(); const op = document.getElementById('nodeOutlinePanel'); if (op) op.style.display = 'none'; closeCommandPalette(); }
+    if (state.mode === 'node') { closeNodeSearchPanel(); closeNodeExportModal(); const op = document.getElementById('nodeOutlinePanel'); if (op) op.style.display = 'none'; closeCommandPalette(); }
   }
   const ae = document.activeElement;
   const isInputting = ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable);
