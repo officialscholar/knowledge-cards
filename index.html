@@ -2784,8 +2784,6 @@ input, textarea, select, button { font-size: 16px; }
 .node-item.item-hidden .node-body { color: var(--text-muted); }
 .node-body.is-readonly {
   cursor: default;
-  -webkit-user-select: text;
-  user-select: text;
 }
 
 .node-menu {
@@ -3504,17 +3502,19 @@ input, textarea, select, button { font-size: 16px; }
   overflow-y: auto;
   outline: none;
   word-break: break-word;
-  -webkit-user-select: text;
-  user-select: text;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
   /* 默认整卡可拖拽（含正文）：不能为 pan-y，否则触屏拖动正文会被浏览器抢占为
-     滚动/文本选择 → pointercancel → 拖拽秒断。编辑态由下方覆盖为 pan-y 以支持滚动/选字 */
+     滚动/文本选择 → pointercancel → 拖拽秒断。编辑态由下方覆盖为 pan-y + 可选中文字 */
   touch-action: none;
   cursor: text;
   overscroll-behavior: contain;
   letter-spacing: 0.01em;
 }
-/* 编辑态：正文允许内部滚动 / 选择文字（此时不参与整卡拖拽） */
-.node-item.editing .node-body { touch-action: pan-y; }
+/* 编辑态：正文允许滚动 / 选择文字（此时不参与整卡拖拽） */
+.node-item.editing .node-body { touch-action: pan-y; -webkit-user-select: text; user-select: text; -webkit-touch-callout: default; }
 .node-body:empty::before {
   content: attr(data-placeholder);
   color: var(--node-text-muted);
@@ -11474,8 +11474,8 @@ function startNodeDrag(e, nodeEl) {
   const ox = node.x, oy = node.y;
   const scale = state.nodeView.scale || 1;
   const pid = e.pointerId !== undefined ? e.pointerId : null;
-  // 关键：首次实际移动时捕获指针，确保后续 pointermove/pointerup 持续送达，
-  // 不被移动端手势竞争 / pointercancel 中断；点按（无移动）不捕获，保留编辑能力
+  // 监听挂在 document 上即可，无需 setPointerCapture（iOS 上 pointer capture 可能
+  // 触发 lostpointercapture → 拖拽被秒杀）；触屏已由 touchstart 阶段 preventDefault 抢占手势
   nodeEl.parentNode.appendChild(nodeEl);
   nodeEl.classList.add('dragging');
   const dragBox = measureNodeBox(node);
@@ -11489,18 +11489,18 @@ function startNodeDrag(e, nodeEl) {
   let finished = false;
   let channel = null;        // 'pointer' | 'touch'，先到的接管
   let touchId = null;
-  let captured = false;
+  let cancelTimer = null;
   const finish = () => {
     if (finished) return;
     finished = true;
     document.removeEventListener('pointermove', onMove);
     document.removeEventListener('pointerup', onUp);
-    document.removeEventListener('pointercancel', onUp);
-    document.removeEventListener('lostpointercapture', onUp);
+    document.removeEventListener('pointercancel', onCancel);
     document.removeEventListener('touchmove', onMove, true);
     document.removeEventListener('touchend', onTouchEnd);
     document.removeEventListener('touchcancel', onTouchEnd);
     if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+    if (cancelTimer !== null) { clearTimeout(cancelTimer); cancelTimer = null; }
     nodeEl.classList.remove('dragging');
     clearLayoutGuides();
     renderAllEdges();
@@ -11517,15 +11517,12 @@ function startNodeDrag(e, nodeEl) {
       if (touchId === null) touchId = coords.identifier;
       else if (coords.identifier !== touchId) return;
       channel = 'touch';
+      if (cancelTimer !== null) { clearTimeout(cancelTimer); cancelTimer = null; }
       if (ev.cancelable) ev.preventDefault();
     } else {
       if (channel === 'touch') return;
       if (pid !== null && ev.pointerId !== pid) return;
       channel = 'pointer';
-      if (pid !== null && typeof nodeEl.setPointerCapture === 'function' && !captured) {
-        captured = true;
-        try { nodeEl.setPointerCapture(pid); } catch (err) {}
-      }
     }
     const rawX = ox + (coords.clientX - startX) / scale;
     const rawY = oy + (coords.clientY - startY) / scale;
@@ -11549,16 +11546,27 @@ function startNodeDrag(e, nodeEl) {
     if (ev.pointerId !== undefined && pid !== null && ev.pointerId !== pid) return;
     finish();
   };
+  const onCancel = (ev) => {
+    // 浏览器抢占手势（iOS 文本选择 / 滚动等）触发 pointercancel：
+    // 切到 touch 通道续拖，由 touchend/touchcancel 或安全定时器收尾，避免拖拽被秒杀
+    if (finished) return;
+    if (ev.pointerId !== undefined && pid !== null && ev.pointerId !== pid) return;
+    channel = 'touch';
+    touchId = null;
+    if (cancelTimer === null) {
+      cancelTimer = setTimeout(() => { finish(); }, 160);
+    }
+  };
   const onTouchEnd = (ev) => {
     if (finished) return;
     if (ev.touches.length > 0) return;
+    if (cancelTimer !== null) { clearTimeout(cancelTimer); cancelTimer = null; }
     finish();
   };
   document.addEventListener('pointermove', onMove);
   document.addEventListener('pointerup', onUp);
-  document.addEventListener('pointercancel', onUp);
-  document.addEventListener('lostpointercapture', onUp);
-  document.addEventListener('touchmove', onMove, true);
+  document.addEventListener('pointercancel', onCancel);
+  document.addEventListener('touchmove', onMove, { capture: true, passive: false });
   document.addEventListener('touchend', onTouchEnd);
   document.addEventListener('touchcancel', onTouchEnd);
 }
@@ -12634,9 +12642,6 @@ function startMultiNodeDrag(e, anchorEl, nodeEls) {
   if (anchorEl.classList.contains('dragging')) return;
   const scale = state.nodeView.scale || 1;
   const pid = e.pointerId !== undefined ? e.pointerId : null;
-  if (typeof anchorEl.setPointerCapture === 'function' && pid !== null) {
-    try { anchorEl.setPointerCapture(pid); } catch (err) {}
-  }
   const startX = e.clientX, startY = e.clientY;
   const orig = nodeEls.map(el2 => {
     const node = state.nodes.find(n => n.id === el2.dataset.nodeId);
@@ -12654,17 +12659,18 @@ function startMultiNodeDrag(e, anchorEl, nodeEls) {
   let finished = false;
   let channel = null;
   let touchId = null;
-  let captured = false;
+  let cancelTimer = null;
   const finish = () => {
     if (finished) return;
     finished = true;
     document.removeEventListener('pointermove', onMove);
     document.removeEventListener('pointerup', onUp);
-    document.removeEventListener('pointercancel', onUp);
+    document.removeEventListener('pointercancel', onCancel);
     document.removeEventListener('touchmove', onMove, true);
     document.removeEventListener('touchend', onTouchEnd);
     document.removeEventListener('touchcancel', onTouchEnd);
     if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+    if (cancelTimer !== null) { clearTimeout(cancelTimer); cancelTimer = null; }
     nodeEls.forEach(el2 => el2.classList.remove('dragging'));
     renderAllEdges();
     saveNodes();
@@ -12679,15 +12685,12 @@ function startMultiNodeDrag(e, anchorEl, nodeEls) {
       if (touchId === null) touchId = coords.identifier;
       else if (coords.identifier !== touchId) return;
       channel = 'touch';
+      if (cancelTimer !== null) { clearTimeout(cancelTimer); cancelTimer = null; }
       if (ev.cancelable) ev.preventDefault();
     } else {
       if (channel === 'touch') return;
       if (pid !== null && ev.pointerId !== pid) return;
       channel = 'pointer';
-      if (pid !== null && typeof anchorEl.setPointerCapture === 'function' && !captured) {
-        captured = true;
-        try { anchorEl.setPointerCapture(pid); } catch (err) {}
-      }
     }
     const dx = (coords.clientX - startX) / scale;
     const dy = (coords.clientY - startY) / scale;
@@ -12705,15 +12708,26 @@ function startMultiNodeDrag(e, anchorEl, nodeEls) {
     if (ev.pointerId !== undefined && pid !== null && ev.pointerId !== pid) return;
     finish();
   };
+  const onCancel = (ev) => {
+    // 浏览器抢占手势（iOS 文本选择 / 滚动等）：切到 touch 通道续拖，避免被秒杀
+    if (finished) return;
+    if (ev.pointerId !== undefined && pid !== null && ev.pointerId !== pid) return;
+    channel = 'touch';
+    touchId = null;
+    if (cancelTimer === null) {
+      cancelTimer = setTimeout(() => { finish(); }, 160);
+    }
+  };
   const onTouchEnd = (ev) => {
     if (finished) return;
     if (ev.touches.length > 0) return;
+    if (cancelTimer !== null) { clearTimeout(cancelTimer); cancelTimer = null; }
     finish();
   };
   document.addEventListener('pointermove', onMove);
   document.addEventListener('pointerup', onUp);
-  document.addEventListener('pointercancel', onUp);
-  document.addEventListener('touchmove', onMove, true);
+  document.addEventListener('pointercancel', onCancel);
+  document.addEventListener('touchmove', onMove, { capture: true, passive: false });
   document.addEventListener('touchend', onTouchEnd);
   document.addEventListener('touchcancel', onTouchEnd);
 }
