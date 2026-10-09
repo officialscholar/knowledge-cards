@@ -14502,14 +14502,7 @@ function buildNodeFormatBarHtml() {
     `<option value="${s}">${parseInt(s, 10)}</option>`).join('');
   return `
     <button type="button" class="nf-btn nf-bold" data-nf="bold" title="加粗">B</button>
-    <button type="button" class="nf-btn nf-italic" data-nf="italic" title="斜体">I</button>
     <button type="button" class="nf-btn nf-underline" data-nf="underline" title="下划线">U</button>
-    <span class="nf-divider"></span>
-    <select class="nf-select" data-nf-select="family" title="字体">${familyOptions}</select>
-    <select class="nf-select" data-nf-select="size" title="字号">
-      <option value="">字号</option>${sizeOptions}
-    </select>
-    <span class="nf-divider"></span>
     <div class="color-btn-group" data-nf-color="text">
       <button type="button" class="color-btn-main" data-nf-color-main="text" title="文字颜色">A<span class="color-bar" style="background:${state.lastTextColor}"></span></button>
       <button type="button" class="color-btn-arrow" data-nf-color-arrow="text" title="选择颜色">▼</button>
@@ -14519,22 +14512,33 @@ function buildNodeFormatBarHtml() {
       <button type="button" class="color-btn-arrow" data-nf-color-arrow="bg" title="选择颜色">▼</button>
     </div>
     <span class="nf-divider"></span>
-    <button type="button" class="nf-btn" data-nf="blocks" title="块级格式（列表 / 对齐 / 引用 / 代码）">▤</button>
-    <span class="nf-block-group" style="display:none">
-      <button type="button" class="nf-btn" data-nf="ul" title="无序列表">≡</button>
-      <button type="button" class="nf-btn" data-nf="ol" title="有序列表">1.</button>
-      <button type="button" class="nf-btn" data-nf="blockquote" title="引用块">❝</button>
-      <button type="button" class="nf-btn" data-nf="code" title="代码块">&lt;/&gt;</button>
+    <button type="button" class="nf-btn" data-nf="clear" title="清除全部格式">✕</button>
+    <span class="nf-divider"></span>
+    <button type="button" class="nf-btn" data-nf="more" title="更多格式（斜体 / 字体 / 字号 / 格式刷 / 超链接 / 列表对齐）">⋯</button>
+    <span class="nf-more-group" style="display:none">
+      <button type="button" class="nf-btn nf-italic" data-nf="italic" title="斜体">I</button>
+      <select class="nf-select" data-nf-select="family" title="字体">${familyOptions}</select>
+      <select class="nf-select" data-nf-select="size" title="字号">
+        <option value="">字号</option>${sizeOptions}
+      </select>
       <span class="nf-divider"></span>
-      <button type="button" class="nf-btn" data-nf="align-left" title="左对齐">⇤</button>
-      <button type="button" class="nf-btn" data-nf="align-center" title="居中">⇔</button>
-      <button type="button" class="nf-btn" data-nf="align-right" title="右对齐">⇥</button>
-      <button type="button" class="nf-btn" data-nf="align-justify" title="两端对齐">⇶</button>
+      <button type="button" class="nf-btn" data-nf="painter" title="格式刷">🖌</button>
+      <button type="button" class="nf-btn" data-nf="link" title="超链接：链接到知识点 / 节点 / 页面 / 网址">🔗</button>
+      <span class="nf-divider"></span>
+      <button type="button" class="nf-btn" data-nf="blocks" title="块级格式（列表 / 对齐 / 引用 / 代码）">▤</button>
+      <span class="nf-block-group" style="display:none">
+        <button type="button" class="nf-btn" data-nf="ul" title="无序列表">≡</button>
+        <button type="button" class="nf-btn" data-nf="ol" title="有序列表">1.</button>
+        <button type="button" class="nf-btn" data-nf="blockquote" title="引用块">❝</button>
+        <button type="button" class="nf-btn" data-nf="code" title="代码块">&lt;/&gt;</button>
+        <span class="nf-divider"></span>
+        <button type="button" class="nf-btn" data-nf="align-left" title="左对齐">⇤</button>
+        <button type="button" class="nf-btn" data-nf="align-center" title="居中">⇔</button>
+        <button type="button" class="nf-btn" data-nf="align-right" title="右对齐">⇥</button>
+        <button type="button" class="nf-btn" data-nf="align-justify" title="两端对齐">⇶</button>
+      </span>
     </span>
     <span class="nf-divider"></span>
-    <button type="button" class="nf-btn" data-nf="painter" title="格式刷">🖌</button>
-    <button type="button" class="nf-btn" data-nf="link" title="超链接：链接到知识点 / 节点 / 页面 / 网址">🔗</button>
-    <button type="button" class="nf-btn" data-nf="clear" title="清除格式">✕</button>
     <button type="button" class="nf-btn" data-nf="close" title="收起工具条">▴</button>`;
 }
 function ensureNodeStyleWithCSS() {
@@ -14604,6 +14608,13 @@ function repositionNodeFormatBarIfVisible() {
   if (!bar || !bar.classList.contains('show')) return;
   if (nodeFormat.nodeEl && nodeFormat.nodeEl.isConnected) positionNodeFormatBar(nodeFormat.nodeEl);
   else hideNodeFormatBar();
+}
+/* 展开/收起格式条隐藏组后：重新定位（按展开后的宽度重新夹紧到视口内），
+   并把条滚动到最右，让刚展开的按钮在窄屏（移动端）上可见。 */
+function afterNodeFormatGroupToggle(bar) {
+  if (!bar) return;
+  if (nodeFormat.nodeEl && nodeFormat.nodeEl.isConnected) positionNodeFormatBar(nodeFormat.nodeEl);
+  setTimeout(() => { if (bar) bar.scrollLeft = bar.scrollWidth; }, 30);
 }
 function hideNodeFormatBar() {
   const bar = getNodeFormatBar();
@@ -15259,12 +15270,13 @@ function bindNodeFormatBarEvents() {
     if (cmd === 'painter') { toggleNodeFormatPainter(); return; }
     if (cmd === 'clear') { clearNodeFormat(); return; }
     if (cmd === 'link') { openNodeLinkPanel(); return; }
-    if (cmd === 'blocks') {
-      const g = bar.querySelector('.nf-block-group');
+    if (cmd === 'more' || cmd === 'blocks') {
+      const g = bar.querySelector(cmd === 'more' ? '.nf-more-group' : '.nf-block-group');
       if (g) {
         const open = g.style.display !== 'none';
         g.style.display = open ? 'none' : '';
         btn.classList.toggle('active', !open);
+        afterNodeFormatGroupToggle(bar);
       }
       return;
     }
