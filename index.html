@@ -3506,11 +3506,15 @@ input, textarea, select, button { font-size: 16px; }
   word-break: break-word;
   -webkit-user-select: text;
   user-select: text;
-  touch-action: pan-y;
+  /* 默认整卡可拖拽（含正文）：不能为 pan-y，否则触屏拖动正文会被浏览器抢占为
+     滚动/文本选择 → pointercancel → 拖拽秒断。编辑态由下方覆盖为 pan-y 以支持滚动/选字 */
+  touch-action: none;
   cursor: text;
   overscroll-behavior: contain;
   letter-spacing: 0.01em;
 }
+/* 编辑态：正文允许内部滚动 / 选择文字（此时不参与整卡拖拽） */
+.node-item.editing .node-body { touch-action: pan-y; }
 .node-body:empty::before {
   content: attr(data-placeholder);
   color: var(--node-text-muted);
@@ -3574,6 +3578,27 @@ input, textarea, select, button { font-size: 16px; }
 .node-item.image-only .node-img-item:last-child { border-radius: 0 0 12.5px 12.5px; }
 .node-item.image-only .node-img-item:only-child { border-radius: 12.5px; }
 .node-item.image-only .node-head { display: flex; }
+
+/* ---- 图片节点固定尺寸：仅图片 / 图片+标题，静止时统一卡片大小，图像区填满 ----
+   选中 / 编辑时自动撑开，以便录入文字说明 */
+.node-item.image-only:not(.selected):not(.multi-selected):not(.editing):not(:focus-within) { height: 200px; }
+
+.node-item.image-only:not(.selected):not(.multi-selected):not(.editing):not(:focus-within) .node-images {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  gap: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+}
+/* 单图：填满整个图像区（cover 裁剪以适配固定尺寸，居中显示） */
+.node-item.image-only:not(.selected):not(.multi-selected):not(.editing):not(:focus-within) .node-img-item:only-child { width: 100%; height: 100%; aspect-ratio: auto; }
+/* 多图：等比例方形缩略图，超出可滚动 */
+.node-item.image-only:not(.selected):not(.multi-selected):not(.editing):not(:focus-within) .node-img-item { width: 50%; aspect-ratio: 1 / 1; overflow: hidden; }
+.node-item.image-only:not(.selected):not(.multi-selected):not(.editing):not(:focus-within) .node-img-item img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
 
 .node-item.image-only.selected .node-head,
 .node-item.image-only.multi-selected .node-head,
@@ -10183,6 +10208,7 @@ function bindNodeCanvasEvents() {
   const PAN_CLICK_GRACE_MS = 400;
   let pinchState = null;
   let marqueeState = null;
+  let touchDrag = null; // 触屏整卡拖拽判别：{x,y,bodyEl}，用于“点按=编辑 vs 拖动=移动”
   bindNodeEditingState(viewport);
 
   /* 触屏：长按节点弹出菜单 */
@@ -10208,6 +10234,7 @@ function bindNodeCanvasEvents() {
       touchMenuTimer = null;
       if (!touchMenuStart) return;
       try { if (navigator.vibrate) navigator.vibrate(20); } catch (err) {}
+      touchDrag = null; // 长按弹出菜单时不再执行“点按进入编辑”
       openNodeMenu(touchMenuStart.nodeId, touchMenuStart.x, touchMenuStart.y);
       touchMenuStart = null;
     }, 480);
@@ -10219,6 +10246,7 @@ function bindNodeCanvasEvents() {
   }, true);
   document.addEventListener('pointerup', cancelTouchMenu, true);
   document.addEventListener('pointercancel', cancelTouchMenu, true);
+  document.addEventListener('pointercancel', () => { touchDrag = null; }, true);
 
   /* 触屏兜底：老设备/WebView 不派发 Pointer Events 时，用 touch 事件启动节点拖拽。
      现代浏览器会同时派发 pointerdown（先）与 touchstart，这里用 .dragging 状态避免双启动 */
@@ -10227,16 +10255,19 @@ function bindNodeCanvasEvents() {
     const nodeEl = e.target.closest('.node-item');
     if (!nodeEl) return;
     const inMoveMode = !!state.nodeMoveMode;
+    const inEdit = nodeEl.classList.contains('editing');
     const excluded = e.target.closest('.node-title-input') ||
       e.target.closest('.node-del-btn') || e.target.closest('.node-menu-btn') ||
       e.target.closest('.node-collapse-badge') || e.target.closest('.node-add-img') ||
-      e.target.closest('.node-port');
+      e.target.closest('.node-port') ||
+      (inEdit && e.target.closest('.node-body'));   // 编辑态：正文用于选择/滚动，不整卡拖拽
     const dragArea = e.target.closest('.node-grip') || e.target.closest('.node-head') ||
       (nodeEl && !excluded);   // 触屏兜底：整节点（除编辑控件）均可拖动
     if (!dragArea || excluded) return;
     if (nodeEl.classList.contains('dragging')) return;
-    const t = e.touches[0];
+    // 兜底路径（无 Pointer Events 的老设备）：同样阻止进入编辑态，保证整卡拖动顺畅
     if (e.cancelable) e.preventDefault();
+    const t = e.touches[0];
     const sim = { clientX: t.clientX, clientY: t.clientY, pointerId: null,
       preventDefault(){}, stopPropagation(){} };
     if (state.nodeMultiSelect.size > 1 && state.nodeMultiSelect.has(nodeEl.dataset.nodeId)) {
@@ -10491,15 +10522,23 @@ function bindNodeCanvasEvents() {
 
     // 头部（除输入框、删除按钮、菜单按钮、折叠按钮）都可拖动；移动模式：节点任意位置（含正文）可拖动
     const inMoveMode = !!state.nodeMoveMode;
+    const inEdit = nodeEl ? nodeEl.classList.contains('editing') : false;
     const isExcludedGrip = () => !e.target.closest('.node-title-input') &&
       !e.target.closest('.node-del-btn') && !e.target.closest('.node-menu-btn') &&
       !e.target.closest('.node-collapse-badge') && !e.target.closest('.node-add-img') &&
-      !e.target.closest('.node-port');
+      !e.target.closest('.node-port') &&
+      !(inEdit && e.target.closest('.node-body')); // 编辑态：正文用于选择/滚动文字，不整卡拖拽
     const grip = e.target.closest('.node-grip') ||
       e.target.closest('.node-head') ||
       ((inMoveMode || e.pointerType === 'touch') && nodeEl && isExcludedGrip());
     if (grip && isExcludedGrip()) {
       if (!nodeEl) return;
+      // 触屏整卡拖拽：阻止默认聚焦进入编辑态（否则正文 touch-action 变 pan-y，
+      // 拖动被浏览器抢占为滚动/文本选择 → pointercancel → 拖拽秒断）
+      if (e.pointerType === 'touch' && !inEdit) {
+        if (e.preventDefault) e.preventDefault();
+        touchDrag = { x: e.clientX, y: e.clientY, bodyEl: e.target.closest('.node-body') || null };
+      }
       if (state.nodeMultiSelect.size > 1 && state.nodeMultiSelect.has(nodeId)) {
         const els = Array.from(state.nodeMultiSelect)
           .map(id => document.querySelector(`.node-item[data-node-id="${id}"]`))
@@ -10628,6 +10667,18 @@ function bindNodeCanvasEvents() {
     scheduleHideNodeFormatBar();
   });
   layer.addEventListener('pointerup', (e) => {
+    if (touchDrag) {
+      const moved = Math.hypot(e.clientX - touchDrag.x, e.clientY - touchDrag.y) > 6;
+      const bodyEl = touchDrag.bodyEl;
+      touchDrag = null;
+      // 点按（未移动）正文进入编辑：pointerdown 已 preventDefault，需在此手动聚焦
+      if (!moved && bodyEl && !state.nodeLayoutMode) {
+        const ndEl = bodyEl.closest && bodyEl.closest('.node-item');
+        if (ndEl && !ndEl.classList.contains('editing')) {
+          try { bodyEl.focus({ preventScroll: true }); } catch (err) { try { bodyEl.focus(); } catch (err2) {} }
+        }
+      }
+    }
     const body = e.target.closest && e.target.closest('.node-body');
     if (!body) return;
     setTimeout(() => {
