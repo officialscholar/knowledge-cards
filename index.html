@@ -2573,6 +2573,22 @@ input, textarea, select, button { font-size: 16px; }
   border-bottom: 1px solid var(--border-light);
   margin-bottom: 4px;
 }
+.node-layout-panel .lp-sec { margin-top: 8px; }
+.node-layout-actions { display: flex; flex-direction: column; gap: 6px; padding: 2px 4px 6px; }
+.node-layout-action {
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text);
+  font-size: 0.75rem;
+  text-align: left;
+  cursor: pointer;
+}
+.node-layout-action:hover { background: var(--bg-accent); }
+.node-layout-action.danger { color: var(--danger, #e5484d); }
+.node-layout-action.danger:hover { background: rgba(229, 72, 77, 0.09); }
 .node-layout-row {
   display: flex;
   align-items: center;
@@ -5289,7 +5305,10 @@ function histSnapshot() {
   return JSON.stringify({
     items: state.items,
     nodes: state.nodes || [],
-    edges: state.edges || []
+    edges: state.edges || [],
+    pages: state.nodePages || [],
+    currentId: state.nodeCurrentPageId || null,
+    collapsed: state.nodeCollapsed ? Array.from(state.nodeCollapsed) : []
   });
 }
 /* 在一次性变更前调用，记录“变更前”快照；变更结束后调用 histCommit() 落一条记录 */
@@ -5308,11 +5327,21 @@ function histCommit() {
 function histApply(data) {
   let s;
   try { s = JSON.parse(data); } catch (e) { console.warn('历史恢复失败', e); return; }
+  if (Array.isArray(s.pages)) state.nodePages = s.pages;
+  if (s.currentId) state.nodeCurrentPageId = s.currentId;
   if (Array.isArray(s.items)) state.items = s.items;
-  if (Array.isArray(s.nodes)) state.nodes = s.nodes;
-  if (Array.isArray(s.edges)) state.edges = s.edges;
+  // 由恢复后的当前页统一重导 nodes/edges/view/collapsed，保证与页面快照一致（支持跨页撤销）
+  try { applyCurrentPageRefs(); } catch (e) {}
   try { flushSave(); } catch (e) {}
+  try { flushNodesSave(); } catch (e) {}
+  try { renderNodePageSwitcher(); } catch (e) {}
   if (state.mode === 'node') {
+    state.nodeSelection = { nodeId: null, edgeId: null };
+    state.nodeMultiSelect = new Set();
+    state.nodeSelectAnchor = null;
+    state.activeEdgeEditor = null;
+    state.cancelEdgeDraw = null;
+    state.nodeEdgeDrawActive = false;
     if (nodeDomReady) { mountAllNodes(); updateNodeView(); }
     renderContent();
   } else {
@@ -5348,6 +5377,18 @@ function histContentCapture() {
     histCommit();
     hist.__contentPending = false;
   }, 1200);
+}
+/* 节点微调/方向键的撤销：合并连续微调为一条记录，避免一次按键一条 */
+function histNudgeCapture() {
+  if (!hist.__nudgePending) {
+    histCapture('微调节点');
+    hist.__nudgePending = true;
+  }
+  clearTimeout(hist.__nudgeTimer);
+  hist.__nudgeTimer = setTimeout(() => {
+    histCommit();
+    hist.__nudgePending = false;
+  }, 600);
 }
 /* 全局键盘：Ctrl+Z 撤销 / Ctrl+Y 或 Ctrl+Shift+Z 重做（编辑框中保留原生行为） */
 document.addEventListener('keydown', (e) => {
@@ -9365,8 +9406,10 @@ function createNodePage(name) {
     id: generateId(), name: pageName,
     nodes: [], edges: [], view: { x: 60, y: 60, scale: 1 }, collapsed: [], layout: null
   };
+  histCapture('新建页面');
   state.nodePages.push(page);
   switchNodePage(page.id);
+  histCommit();
   showToast(`已新建页面「${pageName}」`);
   return page;
 }
@@ -9375,8 +9418,10 @@ function renameNodePage(pageId, name) {
   if (!page) return false;
   const next = sanitizePageName(name);
   if (!next) { showToast('页面名称不能为空', true); return false; }
+  histCapture('重命名页面');
   page.name = next;
   flushNodesSave();
+  histCommit();
   renderNodePageSwitcher();
   closeNodePageMenu();
   showToast(`已重命名为「${next}」`);
@@ -9386,11 +9431,14 @@ function deleteNodePage(pageId) {
   if (state.nodePages.length <= 1) { showToast('至少要保留一个页面', true); return false; }
   const page = state.nodePages.find(p => p.id === pageId);
   if (!page) return false;
-  showToast(`已删除页面「${page.name}」`);
+  histCapture('删除页面');
+  const deletedName = page.name;
   state.nodePages = state.nodePages.filter(p => p.id !== pageId);
   if (state.nodeCurrentPageId === pageId) state.nodeCurrentPageId = state.nodePages[0].id;
   flushNodesSave();
   switchNodePage(state.nodeCurrentPageId, { silent: true });
+  histCommit();
+  showToast(`已删除页面「${deletedName}」`);
   return true;
 }
 function switchNodePage(pageId, opts) {
@@ -9461,10 +9509,24 @@ function closeNodePageMenu() {
   const menu = document.getElementById('nodePageMenu');
   if (menu) menu.style.display = 'none';
 }
+/* 节点模式互斥浮层：打开一个面板/菜单时自动收起其它同级面板/菜单，避免相互遮挡。
+   exceptId 传当前要打开的元素的 id；nodeFormatBar 与 nodeLinkPanel 是选区上下文，
+   由 openNodeLinkPanel 自行协调，这里按需统一关闭。 */
+function closeNodeToolbarPanels(exceptId) {
+  const hide = (el) => { if (el) el.style.display = 'none'; };
+  if (exceptId !== 'nodePageMenu') hide(document.getElementById('nodePageMenu'));
+  if (exceptId !== 'nodeFilterPanel') closeNodeFilterPanel();
+  if (exceptId !== 'nodeLayoutPanel') hide(document.getElementById('nodeLayoutPanel'));
+  if (exceptId !== 'nodeMenu') closeNodeMenu();
+  if (exceptId !== 'nodeBoxModeBar' && state.nodeBoxMode) setNodeBoxMode(false);
+  if (exceptId !== 'nodeLinkPanel') closeNodeLinkPanel();
+  if (exceptId !== 'nodeFormatBar' && exceptId !== 'nodeLinkPanel') hideNodeFormatBar();
+}
 function toggleNodePageMenu() {
   const menu = document.getElementById('nodePageMenu');
   if (!menu) return;
   if (menu.style.display !== 'none') { closeNodePageMenu(); return; }
+  closeNodeToolbarPanels('nodePageMenu');
   renderNodePageSwitcher();
   menu.style.display = '';
 }
@@ -11215,6 +11277,7 @@ function alignSelectedNodes(mode) {
     return n ? measureNodeBox(n) : null;
   }).filter(Boolean);
   if (boxes.length < 2) return false;
+  histCapture('对齐节点');
   if (mode === 'left') {
     const v = Math.min(...boxes.map(b => b.x));
     boxes.forEach(b => moveNodeTo(b.id, v, b.y));
@@ -11235,12 +11298,13 @@ function alignSelectedNodes(mode) {
     const sum = boxes.reduce((a, b) => a + b.y + b.h / 2, 0);
     const c = sum / boxes.length;
     boxes.forEach(b => moveNodeTo(b.id, b.x, Math.round(c - b.h / 2)));
-  } else if (mode === 'distribute-h') return distributeNodes(boxes, 'h');
-  else if (mode === 'distribute-v') return distributeNodes(boxes, 'v');
-  else return false;
+  } else if (mode === 'distribute-h') { const ok = distributeNodes(boxes, 'h'); if (ok) histCommit(); return ok; }
+  else if (mode === 'distribute-v') { const ok = distributeNodes(boxes, 'v'); if (ok) histCommit(); return ok; }
+  else { hist.pendingBefore = null; return false; }
   saveNodes();
   renderAllEdges();
   renderMultiSpacings();
+  histCommit();
   return true;
 }
 function moveNodeTo(id, x, y) {
@@ -11340,12 +11404,17 @@ function renderLayoutPanel() {
     row('grid', '▦', '网格吸附', `${GRID_SIZE}px`) +
     row('guides', '┿', '对齐参考线') +
     row('spacing', '↔', '间距提示') +
-    row('ruler', '📏', '标尺');
+    row('ruler', '📏', '标尺') +
+    '<div class="lp-title lp-sec">连线管理</div>' +
+    '<div class="node-layout-actions">' +
+      '<button type="button" class="node-layout-action danger" data-edge-action="delete-selected">⊘ 删除选中节点间连线</button>' +
+      '<button type="button" class="node-layout-action danger" data-edge-action="delete-all">✕ 删除全部连线</button>' +
+    '</div>';
 }
 function toggleLayoutPanel() {
   const panel = document.getElementById('nodeLayoutPanel');
   if (!panel) return;
-  if (panel.style.display === 'none') { renderLayoutPanel(); panel.style.display = ''; }
+  if (panel.style.display === 'none') { closeNodeToolbarPanels('nodeLayoutPanel'); renderLayoutPanel(); panel.style.display = ''; }
   else panel.style.display = 'none';
 }
 function toggleNodeLayoutMode() {
@@ -11401,6 +11470,13 @@ function bindLayoutPanel() {
   if (btn) btn.addEventListener('click', (e) => { e.stopPropagation(); toggleLayoutPanel(); });
   if (!panel) return;
   panel.addEventListener('click', (e) => {
+    const actBtn = e.target.closest('[data-edge-action]');
+    if (actBtn) {
+      e.stopPropagation();
+      if (actBtn.dataset.edgeAction === 'delete-all') deleteAllEdges();
+      else deleteEdgesBetweenSelected();
+      return;
+    }
     const rowEl = e.target.closest('[data-layout]');
     if (!rowEl) return;
     e.stopPropagation();
@@ -11429,6 +11505,7 @@ function nudgeSelectedNodes(dx, dy) {
     if (!cur) return false;
     ids.push(cur);
   }
+  histNudgeCapture(); // 必须先于移动记录“变更前”快照，否则撤销起点偏移
   ids.forEach(id => {
     const n = state.nodes.find(v => v.id === id);
     if (!n) return;
@@ -11582,6 +11659,49 @@ function deleteEdge(edgeId) {
   histCommit();
   renderAllEdges();
   showToast('已删除连线');
+}
+/* 批量删除当前页面全部连线（节点保留；父子/折叠层级随连线清除而重建） */
+function deleteAllEdges() {
+  const total = state.edges.length;
+  if (total === 0) { showToast('当前页面没有连线'); return; }
+  showConfirm('删除全部连线',
+    `确定删除当前页面的全部 ${total} 条连线吗？\n（节点本身不会删除，父子关系与折叠层级将一并清除）`,
+    () => {
+      histCapture('删除全部连线');
+      state.edges = [];
+      state.nodeSelection = { nodeId: null, edgeId: null };
+      state.nodeCollapsed = new Set();
+      computeNodeLevels();
+      applyCollapseVisibility();
+      renderAllEdges();
+      saveNodes();
+      histCommit();
+      updateNodeBatchBar();
+      showToast(`已删除全部 ${total} 条连线`);
+    });
+}
+/* 批量删除“选中节点之间”的连线（两端都在选中集合内） */
+function deleteEdgesBetweenSelected() {
+  const ids = getSelectedNodeIds();
+  if (ids.length === 0) { showToast('请先选择节点', true); return; }
+  const sel = new Set(ids);
+  const targets = state.edges.filter(e => sel.has(e.from) && sel.has(e.to));
+  if (targets.length === 0) { showToast('选中节点之间没有连线'); return; }
+  showConfirm('删除选中连线',
+    `确定删除选中节点之间的 ${targets.length} 条连线吗？`,
+    () => {
+      const tid = new Set(targets.map(e => e.id));
+      histCapture('删除选中连线');
+      state.edges = state.edges.filter(e => !tid.has(e.id));
+      if (state.nodeSelection.edgeId && tid.has(state.nodeSelection.edgeId)) state.nodeSelection = { nodeId: null, edgeId: null };
+      computeNodeLevels();
+      applyCollapseVisibility();
+      renderAllEdges();
+      saveNodes();
+      histCommit();
+      updateNodeBatchBar();
+      showToast(`已删除选中节点间的 ${targets.length} 条连线`);
+    });
 }
 
 function wouldReverseCreateCycle(edge) {
@@ -11808,6 +11928,7 @@ function canBeParent(parentId, childId) {
 function wouldCreateCycle(parentId, childId) { return !canBeParent(parentId, childId); }
 function toggleNodeCollapse(nodeId) {
   if (!hasChildNodes(nodeId)) return false;
+  histCapture('折叠/展开节点');
   if (!state.nodeCollapsed) state.nodeCollapsed = new Set();
   if (state.nodeCollapsed.has(nodeId)) state.nodeCollapsed.delete(nodeId);
   else state.nodeCollapsed.add(nodeId);
@@ -11815,6 +11936,7 @@ function toggleNodeCollapse(nodeId) {
   applyCollapseVisibility();
   renderAllEdges();
   saveNodes();
+  histCommit();
   return true;
 }
 function applyCollapseVisibility() {
@@ -11855,11 +11977,13 @@ function setEdgeKind(edgeId, kind) {
     showToast('会形成循环层级，无法设为父子关系', true);
     return false;
   }
+  histCapture('修改连线关系');
   edge.kind = next;
   computeNodeLevels();
   applyCollapseVisibility();
   renderAllEdges();
   saveNodes();
+  histCommit();
   showToast(next === 'parent' ? '已设为父子关系（箭头指向子节点）' : '已设为直线关系');
   return true;
 }
@@ -12462,10 +12586,12 @@ function convertNodeToItem(nodeId) {
     return st.item;
   }
   if (st.kind === 'hidden-item') {
+    histCapture('恢复知识点');
     st.item.hidden = false;
     saveToStorage();
     setNodeLinkedItem(node, st.item.id);
     renderSidebar(true);
+    histCommit();
     showToast('已恢复为知识点，重新出现在全局与背诵模式');
     return st.item;
   }
@@ -12476,10 +12602,12 @@ function convertNodeToItem(nodeId) {
     group: '', masteryLevel: 0,
     images: (node.images || []).slice(), tags: [], hidden: false
   };
+  histCapture('转知识点');
   state.items.push(item);
   saveToStorage();
   setNodeLinkedItem(node, item.id);
   renderSidebar(true);
+  histCommit();
   showToast('已转为知识点，可在全局与背诵模式查看');
   return item;
 }
@@ -12488,6 +12616,7 @@ function hideLinkedItemOfNode(nodeId) {
   if (!node) return;
   const st = getNodeItemState(node);
   if (st.kind !== 'linked') { showToast('这个节点还没有关联知识点'); return; }
+  histCapture('隐藏知识点');
   st.item.hidden = true;
   saveToStorage();
   if (state.activeId === st.item.id) {
@@ -12498,6 +12627,7 @@ function hideLinkedItemOfNode(nodeId) {
   saveNodes();
   refreshNodeStatus(nodeId);
   renderSidebar(true);
+  histCommit();
   showToast('已隐藏：不再出现在全局与背诵模式，掌握度已保留');
 }
 function detachNodeFromItem(nodeId) {
@@ -12505,6 +12635,7 @@ function detachNodeFromItem(nodeId) {
   if (!node) return false;
   const st = getNodeItemState(node);
   if (st.kind === 'plain') { showToast('这个节点本来就是普通节点'); return false; }
+  histCapture('转为普通节点');
   const itemId = st.item ? st.item.id : null;
   const itemTitle = st.item ? st.item.title : '';
   node.linkedItemId = null;
@@ -12512,6 +12643,7 @@ function detachNodeFromItem(nodeId) {
   saveNodes();
   refreshNodeStatus(nodeId);
   renderSidebar(true);
+  histCommit();
   showToast(itemId
     ? `已转为普通节点，现在可以直接编辑（知识点「${itemTitle}」已保留在知识库中）`
     : '已转为普通节点');
@@ -12590,6 +12722,7 @@ function setNodeBoxMode(on) {
   const bar = document.getElementById('nodeBoxModeBar');
   if (bar) bar.style.display = on ? '' : 'none';
   if (on) {
+    closeNodeToolbarPanels('nodeBoxModeBar');
     state.nodeSelection = { nodeId: null, edgeId: null };
     updateNodeSelectionUI();
     showToast('多选模式：轻点节点增删 · 拖动空白框选');
@@ -12640,6 +12773,7 @@ function startMultiNodeDrag(e, anchorEl, nodeEls) {
   if (!isTouchStart && e.preventDefault) e.preventDefault();
   if (e.stopPropagation) e.stopPropagation();
   if (anchorEl.classList.contains('dragging')) return;
+  histCapture('移动节点');
   const scale = state.nodeView.scale || 1;
   const pid = e.pointerId !== undefined ? e.pointerId : null;
   const startX = e.clientX, startY = e.clientY;
@@ -12657,6 +12791,7 @@ function startMultiNodeDrag(e, anchorEl, nodeEls) {
     });
   };
   let finished = false;
+  let moved = false;
   let channel = null;
   let touchId = null;
   let cancelTimer = null;
@@ -12674,6 +12809,7 @@ function startMultiNodeDrag(e, anchorEl, nodeEls) {
     nodeEls.forEach(el2 => el2.classList.remove('dragging'));
     renderAllEdges();
     saveNodes();
+    if (moved) histCommit();
   };
   const onMove = (ev) => {
     if (finished) return;
@@ -12694,6 +12830,7 @@ function startMultiNodeDrag(e, anchorEl, nodeEls) {
     }
     const dx = (coords.clientX - startX) / scale;
     const dy = (coords.clientY - startY) / scale;
+    if (dx !== 0 || dy !== 0) moved = true;
     orig.forEach(o => {
       if (!o.node) return;
       o.node.x = Math.round(o.x + dx);
@@ -12760,6 +12897,7 @@ function updateNodeBatchBar() {
     : '';
   const actHtml = state.nodeLayoutMode ? '' :
     `<button type="button" class="node-batch-btn primary" data-batch="connect">🔗 连线</button>` +
+    `<button type="button" class="node-batch-btn danger" data-batch="del-edge-sel">⊘ 删选中连线</button>` +
     `<button type="button" class="node-batch-btn" data-batch="set-parent" title="按选中顺序依次设为父子关系（前一个为父）">◉ 设父子</button>` +
     `<button type="button" class="node-batch-btn" data-batch="unparent" title="取消选中节点之间的父子关系">⊘ 取消父子</button>` +
     `<button type="button" class="node-batch-btn" data-batch="to-item">✓ 转知识点` + (stats.plain > 0 ? `(${stats.plain})` : '') + `</button>` +
@@ -12805,9 +12943,12 @@ function runBatchNodeAction(action) {
     if (ok) showToast('已应用对齐');
     return;
   }
+  if (action === 'del-edge-sel') { deleteEdgesBetweenSelected(); return; }
+  if (action === 'del-all-edge') { deleteAllEdges(); return; }
   if (action === 'connect') {
     if (ids.length < 2) { showToast('至少选择 2 个节点才能连线', true); return; }
     const order = state.nodes.filter(n => state.nodeMultiSelect.has(n.id)).map(n => n.id);
+    histCapture('批量连线');
     let created = 0, skipped = 0;
     for (let i = 0; i < order.length - 1; i++) {
       const a = order[i], b = order[i + 1];
@@ -12818,6 +12959,7 @@ function runBatchNodeAction(action) {
     }
     saveNodes();
     renderAllEdges();
+    histCommit();
     showToast(`已按顺序连线 ${created} 条` + (skipped ? `，跳过已存在的 ${skipped} 条` : ''));
     return;
   }
@@ -12898,6 +13040,7 @@ function runBatchNodeAction(action) {
       `确定删除 ${ids.length} 个节点吗？\n${titles}${more}\n与它们相连的连线也会一并删除。\n（关联的知识点本身不会被删除）`,
       () => {
         const del = new Set(ids);
+        histCapture('批量删除节点');
         state.nodes = state.nodes.filter(n => !del.has(n.id));
         state.edges = state.edges.filter(e => !del.has(e.from) && !del.has(e.to));
         ids.forEach(id => {
@@ -12909,6 +13052,7 @@ function runBatchNodeAction(action) {
         state.nodeSelection = { nodeId: null, edgeId: null };
         saveNodes();
         renderAllEdges();
+        histCommit();
         updateNodeEmptyTip();
         updateNodeBatchBar();
         showToast(`已删除 ${ids.length} 个节点`);
@@ -12920,6 +13064,7 @@ function toggleNodeFilterPanel() {
   const panel = document.getElementById('nodeFilterPanel');
   if (!panel) return;
   if (state.nodeFilterOpen) { closeNodeFilterPanel(); return; }
+  closeNodeToolbarPanels('nodeFilterPanel');
   state.nodeFilterOpen = true;
   renderNodeFilterPanel();
   panel.style.display = '';
@@ -13107,6 +13252,8 @@ function openNodeMenu(nodeId, clientX, clientY) {
   const viewport = document.getElementById('nodeViewport');
   const node = state.nodes.find(n => n.id === nodeId);
   if (!menu || !viewport || !node) return;
+  /* 打开右键菜单时自动收起其它面板/菜单，避免遮挡 */
+  closeNodeToolbarPanels('nodeMenu');
   /* 右键菜单与浮动富文本工具条互不遮挡：打开菜单时收起格式条 */
   hideNodeFormatBar();
   const st = getNodeItemState(node);
@@ -14548,6 +14695,8 @@ function populateNodeLinkNodeSelects() {
   nodeSel.innerHTML = nodes.map(n => `<option value="${n.id}">${escapeHtml(n.title)}</option>`).join('') || '<option value="">（该页暂无节点）</option>';
 }
 function openNodeLinkPanel() {
+  /* 打开超链接面板前自动收起其它面板/菜单（保留选区与富文本状态，链接面板自行协调格式条） */
+  closeNodeToolbarPanels('nodeLinkPanel');
   const range = nodeRange();
   if (!range) { showToast('请先选中要加链接的文字', true); return; }
   buildNodeLinkPanel();
