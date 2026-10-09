@@ -2621,6 +2621,7 @@ input, textarea, select, button { font-size: 16px; }
   height: 0;
   transform-origin: 0 0;
   will-change: transform;
+  touch-action: none;
 }
 
 .node-edge-svg {
@@ -2751,7 +2752,7 @@ input, textarea, select, button { font-size: 16px; }
   z-index: 10;
 }
 
-.node-layer { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+.node-layer { position: absolute; left: 0; top: 0; width: 0; height: 0; touch-action: none; }
 
 .node-item {
   position: absolute;
@@ -2763,7 +2764,7 @@ input, textarea, select, button { font-size: 16px; }
   display: flex;
   flex-direction: column;
   transition: border-color 0.15s, box-shadow 0.15s;
-  touch-action: pan-y;
+  touch-action: none;
 }
 
 .node-item:hover { border-color: var(--border-accent); }
@@ -3572,7 +3573,7 @@ input, textarea, select, button { font-size: 16px; }
 .node-item.image-only .node-img-item:first-child { border-radius: 12.5px 12.5px 0 0; }
 .node-item.image-only .node-img-item:last-child { border-radius: 0 0 12.5px 12.5px; }
 .node-item.image-only .node-img-item:only-child { border-radius: 12.5px; }
-.node-item.image-only .node-head { display: none; }
+.node-item.image-only .node-head { display: flex; }
 
 .node-item.image-only.selected .node-head,
 .node-item.image-only.multi-selected .node-head,
@@ -9423,7 +9424,7 @@ function renderNodePageSwitcher() {
   });
   html += `<div class="node-page-sep"></div>
     <div class="node-page-row">
-      <button type="button" class="np-main" data-page-action="create" title="新建页面（Ctrl+Alt+N）">
+      <button type="button" class="np-main" data-page-action="create" title="新建页面（Ctrl+N）">
         <span class="np-name">＋ 新建页面</span>
       </button>
     </div>
@@ -9951,17 +9952,25 @@ async function pasteImagesIntoNode(nodeId, e) {
   const files = [];
   const dataUrls = [];
   const httpUrls = [];
+  // 同一张图片可能同时出现在 clipboardData.items 与 clipboardData.files，
+  // 用类型+大小+名称做签名去重，避免粘贴成两张并引发双重处理卡顿
+  const seen = new Set();
+  const addFile = (f) => {
+    if (!f || !f.type || f.type.indexOf('image/') !== 0) return;
+    const key = (f.type || '') + '|' + (f.size || 0) + '|' + (f.name || '');
+    if (seen.has(key)) return;
+    seen.add(key);
+    files.push(f);
+  };
   if (cd.items && cd.items.length) {
     for (const it of Array.from(cd.items)) {
       if (it.kind !== 'file' || !it.type || it.type.indexOf('image/') !== 0) continue;
       const f = it.getAsFile && it.getAsFile();
-      if (f) files.push(f);
+      addFile(f);
     }
   }
   if (cd.files && cd.files.length) {
-    Array.from(cd.files).forEach(f => {
-      if (f && f.type && f.type.indexOf('image/') === 0) files.push(f);
-    });
+    Array.from(cd.files).forEach(f => addFile(f));
   }
   const html = cd.getData ? (cd.getData('text/html') || '') : '';
   if (html) {
@@ -10223,7 +10232,7 @@ function bindNodeCanvasEvents() {
       e.target.closest('.node-collapse-badge') || e.target.closest('.node-add-img') ||
       e.target.closest('.node-port');
     const dragArea = e.target.closest('.node-grip') || e.target.closest('.node-head') ||
-      (inMoveMode && nodeEl && !excluded);
+      (nodeEl && !excluded);   // 触屏兜底：整节点（除编辑控件）均可拖动
     if (!dragArea || excluded) return;
     if (nodeEl.classList.contains('dragging')) return;
     const t = e.touches[0];
@@ -10383,6 +10392,26 @@ function bindNodeCanvasEvents() {
   viewport.addEventListener('pointercancel', (e) => { endMarquee(e); endPan(e); });
   viewport.addEventListener('pointerleave', (e) => { endMarquee(e); endPan(e); });
 
+  /* 双击空白处新建节点 */
+  viewport.addEventListener('dblclick', (e) => {
+    if (state.nodeLayoutMode) return;          // 排版模式屏蔽新建
+    if (state.nodeBoxMode) return;             // 多选模式不误建
+    if (state.nodeEdgeDrawActive) return;      // 连线中不新建
+    if (e.target.closest('.node-item')) return;
+    if (e.target.closest('.node-marquee')) return;
+    if (e.target.closest('.node-toolbar')) return;
+    if (e.target.closest('.node-page-menu')) return;
+    if (e.target.closest('.node-filter-panel')) return;
+    if (e.target.closest('.node-format-bar')) return;
+    if (e.target.closest('.node-batch-bar')) return;
+    if (e.target.closest('.node-menu')) return;
+    if (e.target.closest('.node-dpad')) return;
+    if (e.target.closest('.node-minimap')) return;
+    if (e.target.closest('.node-hint')) return;
+    e.preventDefault();
+    addNodeAtScreenPoint(e.clientX, e.clientY);
+  });
+
   viewport.addEventListener('wheel', (e) => {
     if (e.target.closest && e.target.closest('.node-body')) return;
     e.preventDefault();
@@ -10468,7 +10497,7 @@ function bindNodeCanvasEvents() {
       !e.target.closest('.node-port');
     const grip = e.target.closest('.node-grip') ||
       e.target.closest('.node-head') ||
-      (inMoveMode && nodeEl && isExcludedGrip());
+      ((inMoveMode || e.pointerType === 'touch') && nodeEl && isExcludedGrip());
     if (grip && isExcludedGrip()) {
       if (!nodeEl) return;
       if (state.nodeMultiSelect.size > 1 && state.nodeMultiSelect.has(nodeId)) {
@@ -11363,11 +11392,10 @@ function handleLayoutKeydown(e) {
   if (!state.nodeSelection.nodeId && state.nodeMultiSelect.size === 0) return false;
   // 输入框 / 文本域：不劫持方向键
   if (tag === 'INPUT' || tag === 'TEXTAREA') return false;
-  // 焦点在节点正文：若存在文字选区则让方向键处理选区/光标；否则视为移动选中节点
+  // 焦点在节点正文（正在编辑文字，含仅有一个插入符）：方向键应移动光标/选区，不移动节点
   if (e.target && e.target.isContentEditable) {
     if (!(e.target.closest && e.target.closest('.node-body'))) return false;
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0 && !sel.isCollapsed) return false;
+    return false;
   }
   const step = e.shiftKey ? 10 : 1;
   e.preventDefault();
@@ -11382,12 +11410,16 @@ function startNodeDrag(e, nodeEl) {
   histCapture('移动节点');
   // 防止 pointer+touch 双通道重复启动
   if (nodeEl.classList.contains('dragging')) return;
-  if (e.preventDefault) e.preventDefault();
+  const isTouchStart = e.pointerType === 'touch';
+  // 触屏点按时不阻止默认，保留“点按正文可编辑”能力；拖动过程由 touchmove 的 preventDefault 接管
+  if (!isTouchStart && e.preventDefault) e.preventDefault();
   if (e.stopPropagation) e.stopPropagation();
   const startX = e.clientX, startY = e.clientY;
   const ox = node.x, oy = node.y;
   const scale = state.nodeView.scale || 1;
   const pid = e.pointerId !== undefined ? e.pointerId : null;
+  // 关键：首次实际移动时捕获指针，确保后续 pointermove/pointerup 持续送达，
+  // 不被移动端手势竞争 / pointercancel 中断；点按（无移动）不捕获，保留编辑能力
   nodeEl.parentNode.appendChild(nodeEl);
   nodeEl.classList.add('dragging');
   const dragBox = measureNodeBox(node);
@@ -11401,6 +11433,7 @@ function startNodeDrag(e, nodeEl) {
   let finished = false;
   let channel = null;        // 'pointer' | 'touch'，先到的接管
   let touchId = null;
+  let captured = false;
   const finish = () => {
     if (finished) return;
     finished = true;
@@ -11433,6 +11466,10 @@ function startNodeDrag(e, nodeEl) {
       if (channel === 'touch') return;
       if (pid !== null && ev.pointerId !== pid) return;
       channel = 'pointer';
+      if (pid !== null && typeof nodeEl.setPointerCapture === 'function' && !captured) {
+        captured = true;
+        try { nodeEl.setPointerCapture(pid); } catch (err) {}
+      }
     }
     const rawX = ox + (coords.clientX - startX) / scale;
     const rawY = oy + (coords.clientY - startY) / scale;
@@ -12210,6 +12247,12 @@ function addNodeAtCenter() {
   finalizeNewNode(makePlainNode(center.x - NODE_DEFAULT_W / 2, center.y - NODE_DEFAULT_H / 2));
 }
 
+/* 在画布指定屏幕坐标处新建节点（双击空白处使用） */
+function addNodeAtScreenPoint(clientX, clientY) {
+  const p = screenToWorld(clientX, clientY);
+  finalizeNewNode(makePlainNode(p.x - NODE_DEFAULT_W / 2, p.y - NODE_DEFAULT_H / 2));
+}
+
 function syncItemToLinkedNodes(item) {
   if (!item) return 0;
   let changed = 0;
@@ -12529,11 +12572,15 @@ function applyMarqueeSelection(clientRect, mq) {
   updateNodeBatchBar();
 }
 function startMultiNodeDrag(e, anchorEl, nodeEls) {
-  if (e.preventDefault) e.preventDefault();
+  const isTouchStart = e.pointerType === 'touch';
+  if (!isTouchStart && e.preventDefault) e.preventDefault();
   if (e.stopPropagation) e.stopPropagation();
   if (anchorEl.classList.contains('dragging')) return;
   const scale = state.nodeView.scale || 1;
   const pid = e.pointerId !== undefined ? e.pointerId : null;
+  if (typeof anchorEl.setPointerCapture === 'function' && pid !== null) {
+    try { anchorEl.setPointerCapture(pid); } catch (err) {}
+  }
   const startX = e.clientX, startY = e.clientY;
   const orig = nodeEls.map(el2 => {
     const node = state.nodes.find(n => n.id === el2.dataset.nodeId);
@@ -12551,6 +12598,7 @@ function startMultiNodeDrag(e, anchorEl, nodeEls) {
   let finished = false;
   let channel = null;
   let touchId = null;
+  let captured = false;
   const finish = () => {
     if (finished) return;
     finished = true;
@@ -12580,6 +12628,10 @@ function startMultiNodeDrag(e, anchorEl, nodeEls) {
       if (channel === 'touch') return;
       if (pid !== null && ev.pointerId !== pid) return;
       channel = 'pointer';
+      if (pid !== null && typeof anchorEl.setPointerCapture === 'function' && !captured) {
+        captured = true;
+        try { anchorEl.setPointerCapture(pid); } catch (err) {}
+      }
     }
     const dx = (coords.clientX - startX) / scale;
     const dy = (coords.clientY - startY) / scale;
@@ -14006,30 +14058,183 @@ function readNodeFormatClip() {
     node = nodeFormat.range.startContainer;
   } else return null;
   if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+  else if (node.nodeType === Node.ELEMENT_NODE) {
+    // 整段元素选区：下沉到最内层文本的父元素，读取真正携带格式的节点
+    const w = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null);
+    const t = w.nextNode();
+    if (t && t.parentElement) node = t.parentElement;
+  }
   if (!node) return null;
   const cs = window.getComputedStyle(node);
+  const bodyCs = window.getComputedStyle(body);
+  // 仅在确实异于正文默认值时视为"格式"，避免把继承来的默认字体/字号/颜色当成格式刷内容
+  const norm = (v) => { const s = String(v || '').trim().toLowerCase(); return s; };
+  const textColor = norm(cs.color) !== norm(bodyCs.color) ? normalizeColor(cs.color) : '';
+  const bgColor = (() => {
+    const c = normalizeColor(cs.backgroundColor);
+    return (c && c !== 'rgba(0, 0, 0, 0)' && c !== 'transparent') ? c : '';
+  })();
   return {
     bold: cs.fontWeight === 'bold' || parseInt(cs.fontWeight, 10) >= 600,
     italic: cs.fontStyle === 'italic',
     underline: /underline/i.test(cs.textDecorationLine || cs.textDecoration || ''),
-    foreColor: normalizeColor(cs.color),
-    hiliteColor: normalizeColor(cs.backgroundColor),
-    fontFamily: cs.fontFamily || '',
-    fontSize: cs.fontSize || ''
+    foreColor: textColor,
+    hiliteColor: bgColor,
+    fontFamily: cs.fontFamily !== bodyCs.fontFamily ? (cs.fontFamily || '') : '',
+    fontSize: cs.fontSize !== bodyCs.fontSize ? (cs.fontSize || '') : ''
   };
 }
 function applyNodeFormatClip(clip) {
-  const range = nodeRange();
-  if (!range || !clip) return false;
-  if (clip.bold) nodeWrapRange(range, 'b', null);
-  if (clip.italic) nodeWrapRange(range, 'i', null);
-  if (clip.underline) nodeWrapRange(range, 'u', null);
-  if (clip.foreColor) nodeWrapRange(range, 'span', { color: clip.foreColor });
-  if (clip.hiliteColor) nodeWrapRange(range, 'span', { 'background-color': clip.hiliteColor });
-  if (clip.fontFamily) nodeWrapRange(range, 'span', { 'font-family': clip.fontFamily });
-  if (clip.fontSize) nodeWrapRange(range, 'span', { 'font-size': clip.fontSize });
+  if (!clip) return false;
+  const body = nodeFormat.body;
+  if (!body) return false;
+  let range = nodeRange();
+  if (!range || range.collapsed) return false;
+  // 将元素端点归一化为文本端点，避免后续解包使端点失效（整段选区场景）
+  if (range.startContainer.nodeType === 1) {
+    const w = document.createTreeWalker(range.startContainer, NodeFilter.SHOW_TEXT, null);
+    const t = w.nextNode();
+    if (t) range.setStart(t, 0);
+  }
+  if (range.endContainer.nodeType === 1) {
+    let last = null;
+    const w = document.createTreeWalker(range.endContainer, NodeFilter.SHOW_TEXT, null);
+    let n; while ((n = w.nextNode())) last = n;
+    if (last) range.setEnd(last, last.length);
+  }
+
+  const INLINE = ['B', 'STRONG', 'I', 'EM', 'U', 'INS', 'SPAN', 'FONT'];
+  const childIdx = (p, c) => Array.prototype.indexOf.call(p.childNodes, c);
+
+  // 1) 边界拆分：让选区边界落在“干净”节点上，不再被内联格式元素整体包裹，
+  //    这样后续才能把目标里 clip 未携带的加粗/斜体/下划线等真正清除
+  if (range.startContainer.nodeType === 3 && range.startOffset > 0 && range.startOffset < range.startContainer.length) {
+    range.setStart(range.startContainer.splitText(range.startOffset), 0);
+  }
+  if (range.endContainer.nodeType === 3 && range.endOffset > 0 && range.endOffset < range.endContainer.length) {
+    range.endContainer.splitText(range.endOffset);
+  }
+  const sNode = range.startContainer, sOff = range.startOffset;
+  const eNode = range.endContainer, eOff = range.endOffset;
+  const inlinePath = (container, offset) => {
+    const path = [];
+    let cur, idx;
+    if (container.nodeType === 3) {
+      const p = container.parentNode;
+      if (!p || p.nodeType !== 1 || p === body) return path;
+      cur = p; idx = childIdx(p, container);
+    } else { cur = container; idx = offset; }
+    let prev = null;
+    while (cur && cur.nodeType === 1 && cur !== body) {
+      if (INLINE.indexOf(cur.tagName) !== -1) path.push({ el: cur, idx });
+      prev = cur;
+      cur = cur.parentNode;
+      if (cur && cur.nodeType === 1) idx = childIdx(cur, prev);
+    }
+    return path;
+  };
+  const splitAt = (el, idx) => {
+    if (idx <= 0 || idx >= el.childNodes.length) return;
+    const right = el.cloneNode(false);
+    while (el.childNodes[idx]) right.appendChild(el.childNodes[idx]);
+    if (el.parentNode) el.parentNode.insertBefore(right, el.nextSibling);
+  };
+  inlinePath(sNode, sOff).forEach(({ el, idx }) => splitAt(el, idx));
+  inlinePath(eNode, eOff).forEach(({ el, idx }) => splitAt(el, idx));
+
+  // 2) 用保存的端点重建选区，再解包“整体包裹选区”的 B/I/U 祖先
+  const mkRange = () => { try { const r = document.createRange(); r.setStart(sNode, sOff); r.setEnd(eNode, eOff); return r; } catch (e) { return null; } };
+  range = mkRange();
+  if (!range || range.collapsed) return false;
+  const sideChain = (node) => { const arr = []; let c = node; while (c && c !== body && c.nodeType === 1) { arr.push(c); c = c.parentNode; } return arr; };
+  const chain = Array.from(new Set(
+    sideChain(sNode.nodeType === 3 ? sNode.parentNode : sNode).concat(
+    sideChain(eNode.nodeType === 3 ? eNode.parentNode : eNode))
+  ));
+  for (const el of chain) {
+    if (el.nodeType !== 1 || !el.isConnected) continue;
+    const tag = el.tagName;
+    const r = mkRange(); if (!r) continue;
+    // 只要选区起终点在 el 内部（含选区容器就是 el 本身、即选中 el 全部内容的
+    // (el,0)..(el,N) 情形），就视为被 el 整体包裹，需解包/去样式
+    const fully = (r.startContainer === el || el.contains(r.startContainer)) &&
+                  (r.endContainer === el || el.contains(r.endContainer));
+    if (!fully) continue;
+    if (tag === 'B' || tag === 'STRONG' || tag === 'I' || tag === 'EM' || tag === 'U' || tag === 'INS') {
+      unwrapElement(el);
+    } else if (tag === 'SPAN' || tag === 'FONT') {
+      const st = el.style;
+      st.removeProperty('color');
+      st.removeProperty('background-color');
+      st.removeProperty('font-family');
+      st.removeProperty('font-size');
+      if (!el.getAttribute('style')) unwrapElement(el);
+    }
+  }
+  range = mkRange();
+  if (!range || range.collapsed) {
+    // 解包使保存的端点失效时，改从窗口选区读取（文本已上移且仍处于选中）
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) {
+      const wr = sel.getRangeAt(0);
+      if (wr && !wr.collapsed && body.contains(wr.commonAncestorContainer)) range = wr;
+    }
+  }
+  if (!range || range.collapsed) return false;
+
+  // 3) 提取目标内容到 fragment
+  const frag = range.extractContents();
+
+  // 4) 归一化：清除 fragment 内 clip 未携带的 7 类字符格式（保留超链接 / 图片等）
+  const walker = document.createTreeWalker(frag, NodeFilter.SHOW_ELEMENT, null);
+  const els = [];
+  let nn; while ((nn = walker.nextNode())) els.push(nn);
+  els.forEach(el => {
+    if (el.nodeType !== 1) return;
+    const tag = el.tagName;
+    if (tag === 'B' || tag === 'STRONG' || tag === 'I' || tag === 'EM' || tag === 'U' || tag === 'INS') {
+      while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el);
+      el.remove();
+      return;
+    }
+    const st = el.style;
+    st.removeProperty('color');
+    st.removeProperty('background-color');
+    st.removeProperty('font-family');
+    st.removeProperty('font-size');
+    if ((tag === 'SPAN' || tag === 'FONT') && !el.getAttribute('style')) {
+      while (el.firstChild) el.parentNode.insertBefore(el.firstChild, el);
+      el.remove();
+    }
+  });
+
+  // 5) 由内向外应用源里存在的格式，单次插入成型
+  const wrap = (f, tag, style) => {
+    const e = document.createElement(tag);
+    if (style) for (const k in style) e.style.setProperty(k, style[k], 'important');
+    e.appendChild(f);
+    return e;
+  };
+  let box = frag;
+  if (clip.bold)        box = wrap(box, 'b', null);
+  if (clip.italic)      box = wrap(box, 'i', null);
+  if (clip.underline)   box = wrap(box, 'u', null);
+  if (clip.foreColor)   box = wrap(box, 'span', { color: clip.foreColor });
+  if (clip.hiliteColor) box = wrap(box, 'span', { 'background-color': clip.hiliteColor });
+  if (clip.fontFamily)  box = wrap(box, 'span', { 'font-family': clip.fontFamily });
+  if (clip.fontSize)    box = wrap(box, 'span', { 'font-size': clip.fontSize });
+  if (box.nodeType !== Node.ELEMENT_NODE) box = wrap(box, 'span', null); // 无格式时用中性 span 承载
+
+  range.insertNode(box);
+
+  // 6) 重建选区到刚插入的内容
+  const nr = document.createRange();
+  nr.selectNodeContents(box);
+  const sel = window.getSelection();
+  if (sel) { sel.removeAllRanges(); sel.addRange(nr); }
+  nodeFormat.range = nr;
+
   syncNodeBodyContent();
-  nodeFormatRestoreSelection();
   return true;
 }
 function toggleNodeFormatPainter() {
@@ -14479,6 +14684,12 @@ document.addEventListener('keydown', (e) => {
     if (e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space') {
       const target = nodeId || (multiIds.length === 1 ? multiIds[0] : null);
       if (target) { e.preventDefault(); toggleNodeFocusView(target); }
+      return;
+    }
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'n' || e.key === 'N')) {
+      e.preventDefault();
+      const name = window.prompt('新页面名称：', makeDefaultPageName());
+      if (name !== null) createNodePage(name);
       return;
     }
     if (e.altKey && (e.ctrlKey || e.metaKey)) {
