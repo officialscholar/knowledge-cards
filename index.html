@@ -2660,6 +2660,20 @@ input, textarea, select, button { font-size: 16px; }
 .node-layout-row.on .lr-switch { background: var(--primary-bright); }
 .node-layout-row.on .lr-switch::after { transform: translateX(14px); }
 
+/* 节点尺寸自定义 */
+.node-size-row { display: flex; flex-direction: column; gap: 6px; padding: 2px 4px 6px; }
+.node-size-row .ns-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text); }
+.node-size-row .ns-item span { width: 56px; flex-shrink: 0; }
+.node-size-row .ns-item input {
+  flex: 1; min-width: 0; width: 100%;
+  padding: 5px 7px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--bg-input, var(--bg-surface));
+  color: var(--text); font-size: 0.75rem;
+}
+.node-size-row .ns-item em { font-style: normal; color: var(--text-faint); }
+.node-size-row .ns-actions { display: flex; gap: 6px; margin-top: 2px; }
+.node-size-row .ns-actions .node-layout-action { text-align: center; }
+
 .node-world {
   position: absolute;
   left: 0;
@@ -2803,7 +2817,7 @@ input, textarea, select, button { font-size: 16px; }
 
 .node-item {
   position: absolute;
-  width: 232px;
+  width: var(--node-width, 232px);
   background: var(--bg-surface);
   border: 1.5px solid var(--border-strong);
   border-radius: 14px;
@@ -3550,7 +3564,7 @@ input, textarea, select, button { font-size: 16px; }
   line-height: var(--node-body-line);
   color: var(--node-text);
   min-height: 46px;
-  max-height: 200px;
+  max-height: var(--node-body-maxh, 200px);
   overflow-y: auto;
   outline: none;
   word-break: break-word;
@@ -10313,26 +10327,14 @@ function addRightPort(node) {
 }
 const PORT_SAFE_MIN = 0.1;
 const PORT_SAFE_MAX = 0.9;
-const PORT_CENTER = 0.5;
-const PORT_MIN_GAP = 0.06;
 function repositionRightPorts(node) {
-  const customs = getRightCustomPorts(node);
-  const n = customs.length;
+  const all = getNodePorts(node).filter(p => p.side === 'right');
+  const n = all.length;
   if (n === 0) return;
   const span = PORT_SAFE_MAX - PORT_SAFE_MIN;
   const slot = span / (n + 1);
-  let prev = PORT_SAFE_MIN - slot;
-  customs.forEach((p, i) => {
-    let pos = PORT_SAFE_MIN + slot * (i + 1);
-    if (Math.abs(pos - PORT_CENTER) < PORT_MIN_GAP) {
-      const up = PORT_CENTER - PORT_MIN_GAP;
-      const down = PORT_CENTER + PORT_MIN_GAP;
-      pos = (up - prev >= PORT_MIN_GAP) ? up : down;
-    }
-    if (pos - prev < PORT_MIN_GAP) pos = prev + PORT_MIN_GAP;
-    pos = Math.min(PORT_SAFE_MAX, Math.max(PORT_SAFE_MIN, pos));
-    p.pos = pos;
-    prev = pos;
+  all.forEach((p, i) => {
+    p.pos = PORT_SAFE_MIN + slot * (i + 1);
   });
 }
 function renameNodePort(node, portId, name) {
@@ -11205,6 +11207,7 @@ function updateNodeView() {
     vp.style.backgroundPosition = `${v.x}px ${v.y}px`;
   }
   applyNodeFontScale();
+  applyNodeSize();
   applyMeasureScale();
   renderRulers();
   repositionNodeFormatBarIfVisible();
@@ -11256,6 +11259,36 @@ function applyNodeFontScale() {
     world.style.setProperty('--node-font-scale', next);
     world.dataset.fontScale = next;
   }
+}
+
+/* ---- 节点尺寸自定义（宽度 / 正文最大高度） ---- */
+const NODE_SIZE_KEY = 'knowledge_node_size_v1';
+function getNodeSizePref() {
+  const v = { width: 232, maxh: 200 };
+  try {
+    const s = localStorage.getItem(NODE_SIZE_KEY);
+    if (s) Object.assign(v, JSON.parse(s));
+  } catch (e) {}
+  if (!(v.width >= 120 && v.width <= 520)) v.width = 232;
+  if (!(v.maxh >= 80 && v.maxh <= 600)) v.maxh = 200;
+  return v;
+}
+function ensureNodeSize() {
+  if (!state.nodeSize) state.nodeSize = getNodeSizePref();
+  return state.nodeSize;
+}
+function applyNodeSize() {
+  const world = document.getElementById('nodeWorld');
+  if (!world) return;
+  const p = ensureNodeSize();
+  world.style.setProperty('--node-width', p.width + 'px');
+  world.style.setProperty('--node-body-maxh', p.maxh + 'px');
+}
+function setNodeSize(width, maxh) {
+  state.nodeSize = { width: Math.max(120, Math.min(520, width)), maxh: Math.max(80, Math.min(600, maxh)) };
+  try { localStorage.setItem(NODE_SIZE_KEY, JSON.stringify(state.nodeSize)); } catch (e) {}
+  applyNodeSize();
+  if (typeof updateNodeView === 'function') updateNodeView();
 }
 
 function zoomAtLocal(localX, localY, factor) {
@@ -11833,6 +11866,7 @@ function renderLayoutPanel() {
   const panel = document.getElementById('nodeLayoutPanel');
   if (!panel) return;
   const pref = getLayoutPref();
+  const sz = ensureNodeSize();
   const row = (key, icon, label, hint) =>
     `<div class="node-layout-row${pref[key] ? ' on' : ''}" data-layout="${key}" role="switch" aria-checked="${pref[key] ? 'true' : 'false'}">` +
     `<span class="lr-switch"></span>` +
@@ -11848,6 +11882,15 @@ function renderLayoutPanel() {
     '<div class="node-layout-actions">' +
       '<button type="button" class="node-layout-action danger" data-edge-action="delete-selected">⊘ 删除选中节点间连线</button>' +
       '<button type="button" class="node-layout-action danger" data-edge-action="delete-all">✕ 删除全部连线</button>' +
+    '</div>' +
+    '<div class="lp-title lp-sec">节点尺寸</div>' +
+    '<div class="node-size-row">' +
+      '<label class="ns-item"><span>宽度</span><input type="number" id="nodeSizeW" min="120" max="520" step="4" value="' + sz.width + '"><em>px</em></label>' +
+      '<label class="ns-item"><span>正文最高</span><input type="number" id="nodeSizeH" min="80" max="600" step="8" value="' + sz.maxh + '"><em>px</em></label>' +
+      '<div class="ns-actions">' +
+        '<button type="button" class="node-layout-action" id="nodeSizeApply">应用</button>' +
+        '<button type="button" class="node-layout-action" id="nodeSizeReset">恢复默认</button>' +
+      '</div>' +
     '</div>';
 }
 function toggleLayoutPanel() {
@@ -11909,6 +11952,22 @@ function bindLayoutPanel() {
   if (btn) btn.addEventListener('click', (e) => { e.stopPropagation(); toggleLayoutPanel(); });
   if (!panel) return;
   panel.addEventListener('click', (e) => {
+    if (e.target.closest('#nodeSizeApply')) {
+      e.stopPropagation();
+      const w = parseInt(panel.querySelector('#nodeSizeW')?.value, 10) || 232;
+      const h = parseInt(panel.querySelector('#nodeSizeH')?.value, 10) || 200;
+      setNodeSize(w, h);
+      renderLayoutPanel();
+      showToast('节点尺寸已更新');
+      return;
+    }
+    if (e.target.closest('#nodeSizeReset')) {
+      e.stopPropagation();
+      setNodeSize(232, 200);
+      renderLayoutPanel();
+      showToast('已恢复默认尺寸');
+      return;
+    }
     const actBtn = e.target.closest('[data-edge-action]');
     if (actBtn) {
       e.stopPropagation();
@@ -15172,6 +15231,7 @@ function applyNodeStylePropToRange(range, prop, value) {
   const sNode = range.startContainer, sOff = range.startOffset;
   const eNode = range.endContainer, eOff = range.endOffset;
   const childIdx = (parent, child) => Array.prototype.indexOf.call(parent.childNodes, child);
+  const BLOCK_X = new Set(['DIV', 'P', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'UL', 'OL', 'TABLE', 'TR', 'SECTION', 'ARTICLE']);
   const inlinePath = (container, offset) => {
     const path = [];
     let cur, idx;
@@ -15182,7 +15242,9 @@ function applyNodeStylePropToRange(range, prop, value) {
     } else { cur = container; idx = offset; }
     let prev = null;
     while (cur && cur.nodeType === 1 && cur !== body) {
-      path.push({ el: cur, idx });
+      // 只拆分内联元素，跳过块级（DIV/P 等）：拆分块级会把选区边界所在的块切成两个，
+      // 产生多余块而强制换行（设色后换行、回车又恢复的根因）
+      if (!BLOCK_X.has(cur.tagName)) path.push({ el: cur, idx });
       prev = cur; cur = cur.parentNode;
       if (cur && cur.nodeType === 1) idx = childIdx(cur, prev);
     }
