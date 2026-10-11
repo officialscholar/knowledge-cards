@@ -3588,6 +3588,8 @@ input, textarea, select, button { font-size: 16px; }
   pointer-events: none;
 }
 .node-body p { margin: 0 0 0.4em; }
+/* 导出模式：节点正文完全展开、不裁切，节点高度随内容自适应（用于导出图片时保证内容完整） */
+.node-export-mode .node-body { max-height: none !important; overflow: visible !important; }
 .node-body p:last-child { margin-bottom: 0; }
 .node-body ul, .node-body ol { padding-left: 1.2em; margin: 0 0 0.4em; }
 .node-body strong, .node-body b { color: var(--node-text-strong); font-weight: 700; }
@@ -13629,6 +13631,17 @@ function currentThemeVarsInline() {
   names.forEach(n => { const v = cs.getPropertyValue(n); if (v) out += n + ':' + v + ';'; });
   return out;
 }
+/* 收集节点自定义尺寸变量（--node-width/--node-body-maxh），导出时注入克隆容器，避免回退默认尺寸 */
+function nodeSizeVarsInline() {
+  const world = document.getElementById('nodeWorld');
+  if (!world) return '';
+  let out = '';
+  const wv = world.style.getPropertyValue('--node-width');
+  const hv = world.style.getPropertyValue('--node-body-maxh');
+  if (wv) out += '--node-width:' + wv + ';';
+  if (hv) out += '--node-body-maxh:' + hv + ';';
+  return out;
+}
 function inlineExportImages(root) {
   const imgs = Array.from(root.querySelectorAll('img'));
   const tasks = imgs.map(async (img) => {
@@ -13653,6 +13666,11 @@ async function exportNodeImage(opts) {
   const page = getCurrentNodePage();
   if (!page || !page.nodes || !page.nodes.length) { showToast('当前页面没有节点', true); return; }
   const nodes = page.nodes.slice();
+  /* 导出准备：进入导出模式（正文完全展开），并按展开后的节点尺寸重算连接线，保证内容完整、连线与节点对齐 */
+  const exportWorld = document.getElementById('nodeWorld');
+  const wasExportMode = exportWorld ? exportWorld.classList.contains('node-export-mode') : false;
+  if (exportWorld && !wasExportMode) exportWorld.classList.add('node-export-mode');
+  if (typeof renderAllEdges === 'function') renderAllEdges();
   if (!nodes.length) { showToast('没有可导出的节点', true); return; }
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   nodes.forEach(n => {
@@ -13675,11 +13693,15 @@ async function exportNodeImage(opts) {
   try {
     const holder = document.createElement('div');
     holder.setAttribute('xmlns', 'http://www.w3.org/1999/xhtml');
-    holder.style.cssText = 'box-sizing:border-box;width:' + W + 'px;height:' + H + 'px;overflow:hidden;' + currentThemeVarsInline();
+    holder.style.cssText = 'box-sizing:border-box;width:' + W + 'px;height:' + H + 'px;overflow:hidden;' + currentThemeVarsInline() + nodeSizeVarsInline();
     const inner = document.createElement('div');
     inner.style.cssText = 'box-sizing:border-box;transform:translate(' + tx + 'px,' + ty + 'px);width:' + (W) + 'px;height:' + (H) + 'px;';
     if (edgeSvg) { const es = edgeSvg.cloneNode(true); es.removeAttribute('style'); inner.appendChild(es); }
-    if (edgeLabel) inner.appendChild(edgeLabel.cloneNode(true));
+    if (edgeLabel) {
+      const el = edgeLabel.cloneNode(true);
+      el.querySelectorAll('.edge-label.empty').forEach(x => x.remove());
+      inner.appendChild(el);
+    }
     const nl = layer.cloneNode(true);
     if (!opts.expand) {
       nl.querySelectorAll('.node-item').forEach(item => {
@@ -13687,6 +13709,14 @@ async function exportNodeImage(opts) {
         if (!nodes.some(n => n.id === id)) item.remove();
       });
     }
+    /* 导出图片不含编辑辅助元素：连接点、节点/连线选中态高亮 */
+    nl.querySelectorAll('.node-port').forEach(p => p.remove());
+    nl.querySelectorAll('.node-item.selected, .node-item.multi-selected, .node-item.edge-source').forEach(it => {
+      it.classList.remove('selected', 'multi-selected', 'edge-source');
+    });
+    nl.querySelectorAll('.node-edge.selected').forEach(p => p.classList.remove('selected'));
+    /* 节点正文完全展开（max-height:none、overflow:visible），确保内容完整导出、不裁切 */
+    nl.querySelectorAll('.node-body').forEach(b => { b.style.maxHeight = 'none'; b.style.overflow = 'visible'; });
     inner.appendChild(nl);
     holder.appendChild(inner);
     await inlineExportImages(holder);
@@ -13738,6 +13768,11 @@ async function exportNodeImage(opts) {
   } catch (err) {
     console.warn('PNG 导出失败', err);
     showToast('导出失败：画布过大或存在无法内联的图片', true);
+  } finally {
+    /* 退出导出模式，恢复画布正常显示 */
+    const w2 = document.getElementById('nodeWorld');
+    if (w2 && !wasExportMode) w2.classList.remove('node-export-mode');
+    if (typeof renderAllEdges === 'function') renderAllEdges();
   }
 }
 function plainText(html) {
