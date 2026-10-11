@@ -15121,6 +15121,44 @@ function unwrapElement(el) {
 /* 对选区应用内联样式属性（颜色/背景/字体/字号）：
    先移除选区范围内已有的同一属性（含边界拆分处理），再用一个 span 包裹新值，
    避免反复设色时生成层层嵌套 span，导致外层旧色覆盖新色而“不生效”。 */
+/* 跨块选区分段包裹：当选区跨越多个块级元素（每行一个 <div> 等）时，逐个块内
+   的内联内容分别用 span 包裹，避免把块级 <div> 包进行内 <span>（非法 HTML，
+   会被浏览器拆分成块而强制换行）。 */
+function nodeWrapRangeSegmented(range, prop, value) {
+  const body = nodeFormat.body;
+  const BLOCK = new Set(['DIV', 'P', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'UL', 'OL', 'TABLE', 'TR', 'SECTION', 'ARTICLE']);
+  const blockOf = (t) => { let n = t.parentElement; while (n && n !== body) { if (BLOCK.has(n.tagName)) return n; n = n.parentElement; } return body; };
+  const walker = document.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT, null);
+  const texts = [];
+  let nn;
+  while ((nn = walker.nextNode())) if (range.intersectsNode(nn)) texts.push(nn);
+  texts.sort((a, b) => {
+    const d = a.compareDocumentPosition(b);
+    if (d & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+    if (d & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+    return 0;
+  });
+  const segs = [];
+  let cur = null;
+  for (const t of texts) {
+    const b = blockOf(t);
+    if (cur && cur.block === b) cur.nodes.push(t);
+    else { cur = { block: b, nodes: [t] }; segs.push(cur); }
+  }
+  for (const seg of segs) {
+    const first = seg.nodes[0], last = seg.nodes[seg.nodes.length - 1];
+    const sr = document.createRange();
+    const sOff = (first === range.startContainer) ? range.startOffset : 0;
+    const eOff = (last === range.endContainer) ? range.endOffset : last.length;
+    sr.setStart(first, sOff); sr.setEnd(last, eOff);
+    if (!sr.collapsed) nodeWrapRange(sr, 'span', { [prop]: value });
+  }
+  // 还原 nodeFormat.range 为完整选区，便于继续连续格式化
+  const nr = document.createRange();
+  nr.setStart(range.startContainer, range.startOffset);
+  nr.setEnd(range.endContainer, range.endOffset);
+  nodeFormat.range = nr;
+}
 function applyNodeStylePropToRange(range, prop, value) {
   const body = nodeFormat.body;
   if (!body || !range) return;
@@ -15227,7 +15265,18 @@ function applyNodeStylePropToRange(range, prop, value) {
   // 3) 重建范围并整体包裹新值（统一用端点引用重建，避免结构改动使范围失效）
   const r3 = mkRange();
   if (!r3 || r3.collapsed) return;
-  nodeWrapRange(r3, 'span', { [prop]: value });
+  // 若选区跨越块级元素（每行一个 <div> 等），按块分段包裹，避免把 <div> 包进行内 span
+  const BLOCK_SET = new Set(['DIV', 'P', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'UL', 'OL', 'TABLE', 'TR', 'SECTION', 'ARTICLE']);
+  const hasBlockInSubtree = (rng) => {
+    const root = rng.commonAncestorContainer;
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, null);
+    let bn; while ((bn = w.nextNode())) {
+      if (bn.nodeType === 1 && BLOCK_SET.has(bn.tagName)) return true;
+    }
+    return false;
+  };
+  if (hasBlockInSubtree(r3)) nodeWrapRangeSegmented(r3, prop, value);
+  else nodeWrapRange(r3, 'span', { [prop]: value });
 }
 function applyNodeInlineToRange(range, cmd, value) {
   if (cmd === 'bold' || cmd === 'italic' || cmd === 'underline') {
