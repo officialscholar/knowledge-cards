@@ -17,3 +17,6 @@ __pycache__/
 
 # 一键发布脚本的临时提交信息文件
 .release-commit-msg.txt
+
+# 发布脚本生成的一次性提交说明
+.release-msg.txt
