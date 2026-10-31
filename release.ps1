@@ -1,4 +1,4 @@
-#requires -Version 5.1
+﻿#requires -Version 5.1
 <#
     一键发布脚本：语法自检 → 备份 → add → 读取迭代记录最新条目生成提交信息(带 [release] 标记)
                   → commit → openssl 后端 push。推送成功后，云端 Actions 自动递增 patch 并发 Release。
