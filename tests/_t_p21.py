@@ -117,7 +117,7 @@ def main():
 
         print("B 固定相对位置：拖成员 = 整组一起走")
         before = positions(page)
-        drag(page, '.node-item[data-node-id="%s"] .node-grip' % n1, 90, 50)
+        drag(page, '.node-item[data-node-id="%s"] .node-title-text' % n1, 90, 50)
         after = positions(page)
         d = [(after[k][0] - before[k][0], after[k][1] - before[k][1]) for k in (n1, n2, n3)]
         check(all(abs(x - d[0][0]) <= 2 and abs(y - d[0][1]) <= 2 for x, y in d),
