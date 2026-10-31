@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Gate: check [release] marker in commit subject only
+      - name: "Gate: check release marker in commit subject only"
         id: gate
         shell: bash
         env:
