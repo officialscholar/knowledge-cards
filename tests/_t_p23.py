@@ -47,6 +47,8 @@ def clear(page):
 
 
 def open_export(page):
+    page.evaluate("() => document.getElementById('nodeToolbar').classList.contains('nt-collapsed') && document.getElementById('nodeToolbarMore').click()")
+    page.wait_for_timeout(150)
     page.click("#nodeExportBtn")
     page.wait_for_timeout(400)
 

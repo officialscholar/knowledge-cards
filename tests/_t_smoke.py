@@ -27,7 +27,7 @@ with sync_playwright() as pw:
         page.on("console", lambda m: errs.append("console: " + m.text) if m.type == "error" else None)
         page.goto("file:///" + PAGE.replace("\\", "/"), timeout=60000)
         page.wait_for_timeout(1500)
-        ck(page.evaluate("() => window.__KV__") == "2026-10-31k", "[%s] 版本号已更新" % label,
+        ck(page.evaluate("() => window.__KV__") == "2026-10-31l", "[%s] 版本号已更新" % label,
            page.evaluate("() => window.__KV__"))
         for btn, name in MODES:
             page.click("#" + btn)

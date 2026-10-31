@@ -3261,6 +3261,33 @@ input, textarea, select, button { font-size: 16px; }
 .node-menu button.menu-row:hover .mh { color: var(--primary-text); }
 .node-menu button.menu-row.danger { color: var(--text-danger); }
 .node-menu button.menu-row.danger:hover { background: var(--bg-danger); color: var(--text-danger); }
+/* 第145条：节点标题样式快捷条（左/中/右 + 加粗） */
+.node-menu .menu-title-style {
+  display: flex;
+  gap: 5px;
+  padding: 2px 9px 7px;
+}
+.node-menu .mts-btn {
+  flex: 1;
+  min-width: 0;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1;
+}
+.node-menu .mts-btn:hover { background: var(--bg-accent); color: var(--text); }
+.node-menu .mts-btn.on {
+  background: var(--accent, #4c8dff);
+  border-color: var(--accent, #4c8dff);
+  color: #fff;
+}
+.node-menu .mts-btn.mts-b { font-weight: 800; }
 .node-menu .menu-note {
   padding: 4px 10px 6px 35px;
   font-size: 0.7rem;
@@ -4437,7 +4464,12 @@ body.gmx-lock { overflow: hidden; }
   border: 1px solid var(--border);
   border-radius: 40px;
   box-shadow: var(--shadow-elevated);
+  transition: max-width 0.18s ease;
 }
+/* 第145条：默认只显示前三个控件（撤销/重做/新建），其余折叠进「⋯」 */
+.node-toolbar.nt-collapsed > *:not([data-pri]):not(#nodeToolbarMore) { display: none !important; }
+.node-toolbar .nt-more { font-weight: 800; letter-spacing: 0.5px; }
+.node-toolbar .nt-more.active { background: var(--bg-accent); color: var(--primary-text); }
 
 .node-minimap {
   position: absolute;
@@ -4758,6 +4790,152 @@ body.gmx-lock { overflow: hidden; }
   padding: 4px 8px 6px;
   font-size: 0.66rem;
   color: var(--text-faint);
+}
+
+/* ===== 第145条：页面管理弹窗（固定高度 + 搜索 + 自定义分类） ===== */
+.pgm-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, 0.34);
+}
+.pgm-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(432px, 100%);
+  max-height: min(76vh, 600px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-modal);
+  overflow: hidden;
+}
+.pgm-head { display: flex; align-items: center; gap: 8px; padding: 12px 12px 10px 16px; flex-shrink: 0; }
+.pgm-title { font-size: 0.88rem; font-weight: 700; color: var(--text); flex-shrink: 0; }
+.pgm-sub { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.68rem; color: var(--text-faint); }
+.pgm-x {
+  width: 28px; height: 28px; flex-shrink: 0;
+  border: none; border-radius: 8px; background: transparent;
+  color: var(--text-faint); font-size: 0.85rem; line-height: 1; cursor: pointer;
+}
+.pgm-x:hover { background: var(--bg-accent); color: var(--text); }
+.pgm-tools { padding: 0 12px 6px; flex-shrink: 0; }
+.pgm-search {
+  display: flex; align-items: center; gap: 6px;
+  height: 34px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--bg-input, var(--bg-subtle));
+}
+.pgm-search:focus-within { border-color: var(--accent, #4c8dff); box-shadow: 0 0 0 3px rgba(76, 141, 255, 0.14); }
+.pgm-search .pgm-si { flex-shrink: 0; font-size: 0.78rem; color: var(--text-faint); line-height: 1; }
+.pgm-search input {
+  flex: 1; min-width: 0; border: none; background: transparent; outline: none;
+  font-family: inherit; font-size: 0.8rem; color: var(--text);
+}
+.pgm-cats {
+  display: flex; gap: 6px; overflow-x: auto;
+  padding: 8px 12px 2px; scrollbar-width: none;
+}
+.pgm-cats::-webkit-scrollbar { display: none; }
+.pgm-chip {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+  height: 26px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 13px;
+  background: var(--bg-surface); color: var(--text-muted);
+  font-size: 0.72rem; font-family: inherit; cursor: pointer; white-space: nowrap;
+}
+.pgm-chip:hover { background: var(--bg-accent); color: var(--text); }
+.pgm-chip.on { background: var(--accent, #4c8dff); border-color: var(--accent, #4c8dff); color: #fff; }
+.pgm-chip .pc-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: 0.85; }
+.pgm-chip .pc-n { font-size: 0.66rem; opacity: 0.72; }
+.pgm-chip.add { border-style: dashed; color: var(--text-faint); }
+.pgm-list {
+  flex: 1 1 auto; min-height: 96px;
+  overflow-y: auto; padding: 4px 8px 8px;
+  -webkit-overflow-scrolling: touch;
+}
+.pgm-group {
+  display: flex; align-items: center; gap: 6px;
+  position: sticky; top: 0; z-index: 1;
+  padding: 8px 8px 4px; background: var(--bg-surface);
+  font-size: 0.66rem; font-weight: 700; color: var(--text-faint); letter-spacing: 0.04em;
+}
+.pgm-group .pg-dot { width: 8px; height: 8px; border-radius: 50%; }
+.pgm-row { display: flex; align-items: center; gap: 2px; border-radius: 10px; }
+.pgm-row:hover { background: var(--bg-accent); }
+.pgm-row.active { background: var(--bg-accent); box-shadow: inset 0 0 0 1.5px var(--accent, #4c8dff); }
+.pgm-main {
+  flex: 1; min-width: 0;
+  display: flex; align-items: center; gap: 7px;
+  height: 34px; padding: 0 8px;
+  border: none; background: transparent; color: var(--text);
+  font-family: inherit; font-size: 0.78rem; text-align: left; cursor: pointer;
+}
+.pgm-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pgm-row.active .pgm-name { font-weight: 700; color: var(--primary-text); }
+.pgm-cat {
+  flex-shrink: 0; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 1px 7px; border-radius: 9px; font-size: 0.64rem;
+  background: var(--bg-subtle); color: var(--text-muted);
+}
+.pgm-count { flex-shrink: 0; font-size: 0.64rem; color: var(--text-faint); padding-left: 2px; }
+.pgm-act {
+  flex-shrink: 0; width: 24px; height: 24px;
+  border: none; border-radius: 7px; background: transparent;
+  color: var(--text-faint); font-size: 0.72rem; line-height: 1; cursor: pointer;
+  opacity: 0; transition: opacity 0.12s;
+}
+.pgm-row:hover .pgm-act, .pgm-row.active .pgm-act { opacity: 1; }
+.pgm-act:hover { background: var(--border-light); color: var(--text); }
+.pgm-act.danger:hover { background: var(--bg-danger); color: var(--text-danger); }
+@media (hover: none) { .pgm-act { opacity: 0.65; } }
+.pgm-empty { padding: 26px 10px; text-align: center; font-size: 0.76rem; color: var(--text-faint); }
+.pgm-foot {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; flex-shrink: 0;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-surface);
+}
+.pgm-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 30px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: 9px;
+  background: var(--bg-surface); color: var(--text);
+  font-family: inherit; font-size: 0.74rem; cursor: pointer; flex-shrink: 0;
+}
+.pgm-btn:hover { background: var(--bg-accent); }
+.pgm-btn.primary { background: var(--accent, #4c8dff); border-color: var(--accent, #4c8dff); color: #fff; }
+.pgm-btn.primary:hover { filter: brightness(1.06); }
+.pgm-foot .pgm-tip {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 0.64rem; color: var(--text-faint); text-align: right;
+}
+.pgm-catrow { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 10px; }
+.pgm-catrow:hover { background: var(--bg-accent); }
+.pgm-catrow[data-pgm-act] { cursor: pointer; }
+.pgm-catrow:hover .pgm-act { opacity: 1; }
+.pgm-catrow .pc-bar { width: 4px; height: 16px; border-radius: 2px; flex-shrink: 0; }
+.pgm-catrow .pc-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.78rem; }
+.pgm-catrow .pc-n { font-size: 0.64rem; color: var(--text-faint); flex-shrink: 0; }
+.pgm-catrow .pc-cur {
+  flex-shrink: 0; font-size: 0.62rem; padding: 1px 7px; border-radius: 8px;
+  color: var(--accent, #4c8dff); background: rgba(76, 141, 255, 0.12);
+}
+.pgm-back {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 26px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 13px;
+  background: var(--bg-surface); color: var(--text-muted);
+  font-family: inherit; font-size: 0.72rem; cursor: pointer;
+}
+.pgm-back:hover { background: var(--bg-accent); color: var(--text); }
+@media (max-width: 560px) {
+  .pgm-mask { padding: 10px; align-items: flex-end; }
+  .pgm-panel { max-height: min(84vh, 640px); border-radius: 18px 18px 14px 14px; }
 }
 
 .node-hint {
@@ -7783,6 +7961,9 @@ const STORAGE_KEY_EDGES = 'knowledge_graph_edges_v1';
 const STORAGE_KEY_NODE_VIEW = 'knowledge_graph_view_v1';
 const STORAGE_KEY_NODE_PAGES = 'knowledge_graph_pages_v1';
 const STORAGE_KEY_NODE_HINT = 'knowledge_graph_hint_dismissed_v1';
+/* 第145条：纯 UI 偏好（不入备份、不影响数据） */
+const STORAGE_KEY_NODE_MINIMAP = 'knowledge_node_minimap_v1';
+const STORAGE_KEY_NODE_TB = 'knowledge_node_toolbar_v1';
 const MOBILE_BREAKPOINT = 700;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const NODE_DEFAULT_W = 232;
@@ -7793,6 +7974,8 @@ const NODE_EDGE_LABEL_MAX = 40;
 const NODE_IMPORT_COL_W = 280;
 const NODE_IMPORT_ROW_H = 250;
 const NODE_IMPORT_COLS = 3;
+/* 第145条：页面分类可选色（分类只存 name/color，页面存 catId） */
+const PAGE_CAT_COLORS = ['#4c8dff', '#22c55e', '#f59e0b', '#a855f7', '#ef4444', '#14b8a6', '#ec4899', '#64748b'];
 const NODE_IMPORT_GAP_Y = 240;
 const NODE_DUP_OFFSET = 30;
 const NODE_MAX_RIGHT_PORTS = 8;
@@ -7904,7 +8087,12 @@ const state = {
   nodeMoveMode: false,
   nodeLayoutMode: false,
   nodePadVisible: false,
-  nodeBoxMode: false
+  nodeBoxMode: false,
+  /* 第145条：小地图显隐 / 工具栏是否展开 / 页面管理弹窗视图状态 */
+  nodeMinimapOn: true,
+  nodeToolbarExpanded: false,
+  nodePageCats: [],
+  pgm: { view: 'list', q: '', cat: 'all', pageId: null }
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -8606,22 +8794,27 @@ function saveCollapsedState() {
    Ctrl+Z / Ctrl+Y 或工具栏按钮回退/重做。
    ============================================================ */
 const HISTORY_LIMIT = 60;
+/* 第145条：两套栈（节点/内容 与 页面结构）共用一个自增序号，
+   撤销/重做时挑「最近发生」的那一条，避免页面操作永远压过节点操作。 */
+let histSeq = 0;
 const hist = {
-  undo: [],        // [{label, before, after}]
+  undo: [],        // [{label, before, after, seq}]
   redo: [],
   pendingBefore: null,
   pendingLabel: null,
   __contentPending: false
 };
-/* 优化2：页面级历史栈（新建/重命名/删除页面。单页化快照不含 pages，需独立栈支持页面级撤销/重做） */
+/* 优化2：页面级历史栈（新建/重命名/删除页面/分类。单页化快照不含 pages，需独立栈支持页面级撤销/重做） */
 const pageHist = { undo: [], redo: [], __before: null, __label: '页面操作' };
-function pageHistSnapshot() { return JSON.stringify({ pages: state.nodePages, currentId: state.nodeCurrentPageId }); }
+function pageHistSnapshot() {
+  return JSON.stringify({ pages: state.nodePages, cats: (state.nodePageCats || []), currentId: state.nodeCurrentPageId });
+}
 function pageHistCapture(label) { pageHist.__before = pageHistSnapshot(); pageHist.__label = label || '页面操作'; }
 function pageHistCommit() {
   if (pageHist.__before == null) return;
   const after = pageHistSnapshot();
   if (after !== pageHist.__before) {
-    pageHist.undo.push({ label: pageHist.__label, before: pageHist.__before, after });
+    pageHist.undo.push({ label: pageHist.__label, before: pageHist.__before, after, seq: ++histSeq });
     if (pageHist.undo.length > HISTORY_LIMIT) pageHist.undo.shift();
     pageHist.redo.length = 0;
   }
@@ -8631,6 +8824,7 @@ function pageHistCommit() {
 function pageHistApply(data) {
   let s; try { s = JSON.parse(data); } catch (e) { return; }
   if (Array.isArray(s.pages)) state.nodePages = s.pages;
+  if (Array.isArray(s.cats)) state.nodePageCats = s.cats;
   if (s.currentId) state.nodeCurrentPageId = s.currentId;
   try { flushNodesSave(); } catch (e) {}
   try { switchNodePage(state.nodeCurrentPageId, { silent: true }); } catch (e) {}
@@ -8657,7 +8851,9 @@ function histCapture(label) {
 function histCommit() {
   if (!hist.pendingBefore) return;
   const after = histSnapshot();
-  hist.undo.push({ label: hist.pendingBefore.label, before: hist.pendingBefore.data, after });
+  /* 快照没变化就不落记录：避免「顺手调了一下但没改动」的操作把撤销栈塞满空记录 */
+  if (after === hist.pendingBefore.data) { hist.pendingBefore = null; return; }
+  hist.undo.push({ label: hist.pendingBefore.label, before: hist.pendingBefore.data, after, seq: ++histSeq });
   if (hist.undo.length > HISTORY_LIMIT) hist.undo.shift();
   hist.redo.length = 0;
   hist.pendingBefore = null;
@@ -8693,7 +8889,11 @@ function histApply(data) {
   }
 }
 function histUndo() {
-  if (pageHistUndo()) return;
+  const aSeq = hist.undo.length ? (hist.undo[hist.undo.length - 1].seq || 0) : -1;
+  const pSeq = pageHist.undo.length ? (pageHist.undo[pageHist.undo.length - 1].seq || 0) : -1;
+  if (aSeq < 0 && pSeq < 0) return;
+  /* 两栈择优：谁最近发生就先撤谁（同序号时优先节点栈） */
+  if (pSeq > aSeq) { pageHistUndo(); return; }
   const entry = hist.undo.pop();
   if (!entry) return;
   hist.redo.push(entry);
@@ -8701,7 +8901,10 @@ function histUndo() {
   updateHistoryButtons();
 }
 function histRedo() {
-  if (pageHistRedo()) return;
+  const aSeq = hist.redo.length ? (hist.redo[hist.redo.length - 1].seq || 0) : -1;
+  const pSeq = pageHist.redo.length ? (pageHist.redo[pageHist.redo.length - 1].seq || 0) : -1;
+  if (aSeq < 0 && pSeq < 0) return;
+  if (pSeq > aSeq) { pageHistRedo(); return; }
   const entry = hist.redo.pop();
   if (!entry) return;
   hist.undo.push(entry);
@@ -14257,7 +14460,7 @@ window.__T = {
         addNode: function (x, y, type, title) {
           var n = makeNode(x, y, type || 'content');
           if (title) n.title = title;
-          state.nodes.push(n); appendNodeEl(n); computeNodeLevels(); saveNodes(); renderAllEdges();
+          state.nodes.push(n); appendNodeEl(n); computeNodeLevels(); saveNodes(); renderAllEdges(); renderMinimap();
           return n.id;
         },
         positions: function () { return state.nodes.map(function (n) { return { id: n.id, x: n.x, y: n.y }; }); },
@@ -14323,6 +14526,52 @@ window.__T = {
           if (!b) return null;
           var r = b.getBoundingClientRect();
           return { l: r.left, t: r.top, w: r.width, h: r.height };
+        },
+        /* 第145条：标题样式 / 页面分类 / UI 开关 / 撤销重做 的自动化入口 */
+        titleStyle: function (id) {
+          var n = state.nodes.find(function (x) { return x.id === id; });
+          if (!n) return null;
+          var el2 = document.querySelector('.node-item[data-node-id="' + id + '"] .node-title-text');
+          return {
+            align: nodeTitleAlignOf(n), bold: nodeTitleBoldOf(n),
+            domAlign: el2 ? (el2.style.textAlign || '') : null,
+            domWeight: el2 ? (el2.style.fontWeight || '') : null
+          };
+        },
+        setTitleStyle: function (ids, patch) { return setNodeTitleStyle(ids, patch || {}); },
+        cats: function () {
+          return (state.nodePageCats || []).map(function (c) {
+            return { id: c.id, name: c.name, color: c.color, pages: pageCatCount(c.id) };
+          });
+        },
+        addCat: function (name) { var c = createPageCat(name); return c ? c.id : null; },
+        renameCat: function (id, name) { return renamePageCat(id, name, { silent: true }); },
+        delCat: function (id) { return deletePageCat(id); },
+        setPageCat: function (pid, cid) { return setPageCategory(pid, cid); },
+        pages: function () {
+          return (state.nodePages || []).map(function (p) {
+            return { id: p.id, name: p.name, catId: p.catId || null, nodes: (p.nodes || []).length, active: p.id === state.nodeCurrentPageId };
+          });
+        },
+        addPage: function (name, catId) { var p = createNodePage(name, catId); return p ? p.id : null; },
+        openPages: function () { openPageManager(); return true; },
+        closePages: function () { closeNodePageMenu(); return true; },
+        pageView: function () { return state.pgm ? JSON.parse(JSON.stringify({ view: state.pgm.view, q: state.pgm.q, cat: state.pgm.cat })) : null; },
+        minimapOn: function () { return !!state.nodeMinimapOn; },
+        toggleMinimap: function () { var b = document.getElementById('nodeMinimapBtn'); if (b) b.click(); return !!state.nodeMinimapOn; },
+        toolbarExpanded: function () { return !!state.nodeToolbarExpanded; },
+        toggleToolbar: function () { var b = document.getElementById('nodeToolbarMore'); if (b) b.click(); return !!state.nodeToolbarExpanded; },
+        undo: function () { histUndo(); return true; },
+        redo: function () { histRedo(); return true; },
+        hist: function () {
+          return { node: hist.undo.length, page: pageHist.undo.length, redoNode: hist.redo.length, redoPage: pageHist.redo.length };
+        },
+        histLabels: function () {
+          var fmt = function (e) { return (e.label || '?') + '#' + (e.seq || 0); };
+          return {
+            node: hist.undo.map(fmt), page: pageHist.undo.map(fmt), redoNode: hist.redo.map(fmt), redoPage: pageHist.redo.map(fmt),
+            pending: hist.pendingBefore ? hist.pendingBefore.label : null
+          };
         }
       };
     } catch (e) { return { err: String(e) }; }
@@ -20901,10 +21150,24 @@ async function applyUnifiedBackup(data) {
       }
       nodes.push({ ...n, images });
     }
-    nodePages.push({ id: p.id || generateId(), name: p.name || '未命名页面', nodes, edges: p.edges || [], groups: parseGroupsArray(p.groups, nodes), view: p.view || null, collapsed: p.collapsed || [] });
+    nodePages.push({ id: p.id || generateId(), name: p.name || '未命名页面', catId: p.catId || null, nodes, edges: p.edges || [], groups: parseGroupsArray(p.groups, nodes), view: p.view || null, collapsed: p.collapsed || [] });
   }
   state.items = items;
   state.nodePages = nodePages;
+  /* 第145条：页面分类随备份一起还原 */
+  if (Array.isArray(data.nodePageCats)) {
+    state.nodePageCats = data.nodePageCats
+      .filter(c => c && typeof c === 'object')
+      .map((c, i) => ({
+        id: sanitizeId(c.id) || generateId(),
+        name: (typeof c.name === 'string' && c.name.trim()) ? c.name.trim().slice(0, 16) : ('分类 ' + (i + 1)),
+        color: /^#[0-9a-fA-F]{6}$/.test(String(c.color || '')) ? c.color : PAGE_CAT_COLORS[i % PAGE_CAT_COLORS.length]
+      }));
+  } else state.nodePageCats = [];
+  {
+    const alive = new Set(state.nodePageCats.map(c => c.id));
+    nodePages.forEach(p => { if (p.catId && !alive.has(p.catId)) p.catId = null; });
+  }
   const curPage = nodePages.find(q => q.id === data.currentId) || nodePages[0] || null;
   state.nodeCurrentPageId = curPage ? curPage.id : null;
   // 关键：persistNodePages 会用全局 state.nodes/state.edges 覆盖当前页数据，
@@ -21727,6 +21990,9 @@ function normalizeNode(n) {
     linkedItemId: (typeof n.linkedItemId === 'string') ? n.linkedItemId : null,
     ports,
     type,
+    /* 第145条：标题样式（对齐/加粗）——空字符串表示沿用类型默认（标题节点居中、其余左对齐） */
+    titleAlign: (n.titleAlign === 'left' || n.titleAlign === 'center' || n.titleAlign === 'right') ? n.titleAlign : '',
+    titleBold: n.titleBold === false ? false : true,
     tocItems: (type === 'toc' && Array.isArray(n.tocItems))
       ? n.tocItems
           .filter(t => t && typeof t === 'object')
@@ -21853,11 +22119,29 @@ function loadNodePages() {
       }
       const arr = obj && Array.isArray(obj.pages) ? obj.pages : null;
       if (arr) {
+        /* 第145条：页面自定义分类（{id,name,color}），页面用 catId 关联 */
+        const rawCats = Array.isArray(obj.cats) ? obj.cats : [];
+        const cats = [];
+        const seenCat = new Set();
+        rawCats.forEach(c => {
+          if (!c || typeof c !== 'object') return;
+          const cid = sanitizeId(c.id) || generateId();
+          if (seenCat.has(cid)) return;
+          seenCat.add(cid);
+          cats.push({
+            id: cid,
+            name: (typeof c.name === 'string' && c.name.trim()) ? c.name.trim().slice(0, 16) : ('分类 ' + (cats.length + 1)),
+            color: /^#[0-9a-fA-F]{6}$/.test(String(c.color || '')) ? c.color : PAGE_CAT_COLORS[cats.length % PAGE_CAT_COLORS.length]
+          });
+        });
+        state.nodePageCats = cats;
+        const catIds = new Set(cats.map(c => c.id));
         pages = arr.filter(p => p && typeof p === 'object').map(p => {
           const nodes = parseNodesArray(p.nodes);
           return {
             id: sanitizeId(p.id),
             name: (typeof p.name === 'string' && p.name.trim()) ? p.name.trim().slice(0, 24) : '未命名页面',
+            catId: (typeof p.catId === 'string' && catIds.has(p.catId)) ? p.catId : null,
             nodes,
             edges: parseEdgesArray(p.edges, nodes),
             groups: parseGroupsArray(p.groups, nodes),
@@ -21920,7 +22204,8 @@ function persistNodePages() {
   page.collapsed = Array.from(state.nodeCollapsed || []);
   if (state.nodeLayout) page.layout = { ...getLayoutPref() };
   const payload = JSON.stringify({
-    v: 2, currentId: state.nodeCurrentPageId, pages: state.nodePages
+    v: 2, currentId: state.nodeCurrentPageId, pages: state.nodePages,
+    cats: (state.nodePageCats || []).map(c => ({ id: c.id, name: c.name, color: c.color }))
   });
   try {
     localStorage.setItem(STORAGE_KEY_NODE_PAGES, payload);
@@ -21951,10 +22236,11 @@ function flushNodesSave() {
 function sanitizePageName(raw) {
   return String(raw || '').replace(/[\r\n\t]/g, ' ').trim().slice(0, 24);
 }
-function createNodePage(name) {
+function createNodePage(name, catId) {
   const pageName = sanitizePageName(name) || makeDefaultPageName();
   const page = {
     id: generateId(), name: pageName,
+    catId: (catId && pageCatById(catId)) ? catId : null,
     nodes: [], edges: [], groups: [], view: { x: 60, y: 60, scale: 1 }, collapsed: [], layout: null
   };
   pageHistCapture('新建页面');
@@ -21974,7 +22260,6 @@ function renameNodePage(pageId, name) {
   flushNodesSave();
   pageHistCommit();
   renderNodePageSwitcher();
-  closeNodePageMenu();
   showToast(`已重命名为「${next}」`);
   return true;
 }
@@ -22000,6 +22285,7 @@ function duplicateNodePage(pageId) {
   const copy = {
     id: generateId(),
     name: sanitizePageName((src.name || '页面') + ' 副本'),
+    catId: src.catId || null,
     nodes: JSON.parse(JSON.stringify(src.nodes || [])),
     edges: JSON.parse(JSON.stringify(src.edges || [])),
     groups: JSON.parse(JSON.stringify(src.groups || [])),
@@ -22048,41 +22334,237 @@ function cycleNodePage(delta) {
   switchNodePage(pages[next].id);
 }
 
+/* ============================================================
+   第145条：页面管理弹窗
+   原「下拉长列表」的问题：页面一多就一直变长、无法搜索、不同主题的页面混在一起。
+   现在改为固定高度面板：搜索框 + 分类筛选 + 分组列表（列表区独立滚动）+ 底部操作。
+   ============================================================ */
+function pageCatById(id) { return (state.nodePageCats || []).find(c => c.id === id) || null; }
+function pageCatOfPage(p) { return (p && p.catId) ? pageCatById(p.catId) : null; }
+function pageCatCount(catId) {
+  const key = catId || null;
+  return (state.nodePages || []).filter(p => (p.catId || null) === key).length;
+}
+function createPageCat(name) {
+  const nm = sanitizePageName(name).slice(0, 16);
+  if (!nm) { showToast('分类名不能为空', true); return null; }
+  if ((state.nodePageCats || []).some(c => c.name === nm)) { showToast('已经有同名分类了', true); return null; }
+  pageHistCapture('新建页面分类');
+  const cat = {
+    id: generateId(), name: nm,
+    color: PAGE_CAT_COLORS[(state.nodePageCats || []).length % PAGE_CAT_COLORS.length]
+  };
+  state.nodePageCats.push(cat);
+  flushNodesSave();
+  pageHistCommit();
+  return cat;
+}
+function renamePageCat(id, name, opts) {
+  const cat = pageCatById(id);
+  if (!cat) return false;
+  const nm = sanitizePageName(name).slice(0, 16);
+  if (!nm) { showToast('分类名不能为空', true); return false; }
+  if ((state.nodePageCats || []).some(c => c !== cat && c.name === nm)) { showToast('已经有同名分类了', true); return false; }
+  pageHistCapture('重命名页面分类');
+  cat.name = nm;
+  flushNodesSave();
+  pageHistCommit();
+  if (!(opts && opts.silent)) showToast('分类已改名为「' + nm + '」');
+  return true;
+}
+function deletePageCat(id) {
+  const cat = pageCatById(id);
+  if (!cat) return false;
+  const n = pageCatCount(id);
+  pageHistCapture('删除页面分类');
+  state.nodePageCats = (state.nodePageCats || []).filter(c => c.id !== id);
+  (state.nodePages || []).forEach(p => { if (p.catId === id) p.catId = null; });
+  if (state.pgm && state.pgm.cat === id) state.pgm.cat = 'all';
+  flushNodesSave();
+  pageHistCommit();
+  showToast('已删除分类「' + cat.name + '」' + (n ? '，其中 ' + n + ' 个页面回到未分类' : ''));
+  return true;
+}
+function setPageCategory(pageId, catId) {
+  const page = state.nodePages.find(p => p.id === pageId);
+  if (!page) return false;
+  const next = (catId && pageCatById(catId)) ? catId : null;
+  if ((page.catId || null) === next) return true;
+  pageHistCapture('设置页面分类');
+  page.catId = next;
+  flushNodesSave();
+  pageHistCommit();
+  return true;
+}
+function pgmFilteredPages() {
+  const st = state.pgm || {};
+  const q = String(st.q || '').trim().toLowerCase();
+  return (state.nodePages || []).filter(p => {
+    if (st.cat && st.cat !== 'all') {
+      const cid = p.catId || null;
+      if (st.cat === 'none' ? cid !== null : cid !== st.cat) return false;
+    }
+    if (q && String(p.name || '').toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  });
+}
+function pgmChipsHtml() {
+  const st = state.pgm || {};
+  let h = '<button type="button" class="pgm-chip' + (st.cat === 'all' ? ' on' : '') + '" data-pgm-act="filter" data-cat="all">全部 <span class="pc-n">' + (state.nodePages || []).length + '</span></button>';
+  h += '<button type="button" class="pgm-chip' + (st.cat === 'none' ? ' on' : '') + '" data-pgm-act="filter" data-cat="none">未分类 <span class="pc-n">' + pageCatCount(null) + '</span></button>';
+  (state.nodePageCats || []).forEach(c => {
+    h += '<button type="button" class="pgm-chip' + (st.cat === c.id ? ' on' : '') + '" data-pgm-act="filter" data-cat="' + escapeHtml(c.id) + '">' +
+      '<span class="pc-dot" style="background:' + c.color + '"></span>' + escapeHtml(c.name) +
+      ' <span class="pc-n">' + pageCatCount(c.id) + '</span></button>';
+  });
+  h += '<button type="button" class="pgm-chip add" data-pgm-act="cat-add" title="新建分类">＋</button>';
+  return h;
+}
+function pgmRowHtml(p) {
+  const active = p.id === state.nodeCurrentPageId;
+  const cat = pageCatOfPage(p);
+  const n = (p.nodes || []).length;
+  const catStyle = cat ? ' style="color:' + cat.color + '"' : '';
+  return '<div class="pgm-row' + (active ? ' active' : '') + '" data-page-id="' + escapeHtml(p.id) + '">' +
+    '<button type="button" class="pgm-main" data-pgm-act="switch" data-page-id="' + escapeHtml(p.id) + '" title="' + escapeHtml(p.name) + '">' +
+      '<span class="pgm-name">' + escapeHtml(p.name) + '</span>' +
+      '<span class="pgm-cat"' + catStyle + '>' + escapeHtml(cat ? cat.name : '未分类') + '</span>' +
+      '<span class="pgm-count">' + n + '</span>' +
+    '</button>' +
+    '<button type="button" class="pgm-act" data-pgm-act="set-cat" data-page-id="' + escapeHtml(p.id) + '" title="设置分类">🏷</button>' +
+    '<button type="button" class="pgm-act" data-pgm-act="rename" data-page-id="' + escapeHtml(p.id) + '" title="重命名">✏️</button>' +
+    '<button type="button" class="pgm-act danger" data-pgm-act="delete" data-page-id="' + escapeHtml(p.id) + '" title="删除页面">✕</button>' +
+  '</div>';
+}
+function pgmCatsHtml() {
+  const cats = state.nodePageCats || [];
+  let html = '<div class="pgm-catrow"><span class="pc-bar" style="background:#94a3b8"></span>' +
+    '<span class="pc-name">未分类</span><span class="pc-n">' + pageCatCount(null) + ' 页</span></div>';
+  cats.forEach(c => {
+    html += '<div class="pgm-catrow" data-cat-id="' + escapeHtml(c.id) + '">' +
+      '<span class="pc-bar" style="background:' + c.color + '"></span>' +
+      '<span class="pc-name">' + escapeHtml(c.name) + '</span>' +
+      '<span class="pc-n">' + pageCatCount(c.id) + ' 页</span>' +
+      '<button type="button" class="pgm-act" data-pgm-act="cat-rename" data-cat-id="' + escapeHtml(c.id) + '" title="重命名分类">✏️</button>' +
+      '<button type="button" class="pgm-act danger" data-pgm-act="cat-del" data-cat-id="' + escapeHtml(c.id) + '" title="删除分类">✕</button>' +
+    '</div>';
+  });
+  if (!cats.length) html += '<div class="pgm-empty">还没有自定义分类<br>点下方「＋ 新建分类」，例如「前端」「算法」「英语」</div>';
+  return html;
+}
+function pgmPickHtml() {
+  const st = state.pgm || {};
+  const p = (state.nodePages || []).find(x => x.id === st.pageId);
+  const cur = p ? (p.catId || null) : null;
+  const curTag = '<span class="pc-cur">✓ 当前</span>';
+  let html = '<div class="pgm-catrow" data-pgm-act="pick" data-cat="none">' +
+    '<span class="pc-bar" style="background:#94a3b8"></span><span class="pc-name">未分类</span>' +
+    (cur === null ? curTag : '') + '<span class="pc-n">· ' + pageCatCount(null) + ' 页</span></div>';
+  (state.nodePageCats || []).forEach(c => {
+    html += '<div class="pgm-catrow" data-pgm-act="pick" data-cat="' + escapeHtml(c.id) + '">' +
+      '<span class="pc-bar" style="background:' + c.color + '"></span>' +
+      '<span class="pc-name">' + escapeHtml(c.name) + '</span>' +
+      (cur === c.id ? curTag : '') +
+      '<span class="pc-n">· ' + pageCatCount(c.id) + ' 页</span></div>';
+  });
+  if (!(state.nodePageCats || []).length) html += '<div class="pgm-empty">还没有分类，可先「＋ 新建分类」</div>';
+  return html;
+}
+function pgmRenderList() {
+  const list = document.getElementById('pgmList');
+  if (!list) return;
+  const st = state.pgm || {};
+  if (st.view === 'cats') { list.innerHTML = pgmCatsHtml(); return; }
+  if (st.view === 'pick') { list.innerHTML = pgmPickHtml(); return; }
+  const pages = pgmFilteredPages();
+  if (!pages.length) {
+    list.innerHTML = '<div class="pgm-empty">' +
+      (String(st.q || '').trim() ? '没有匹配的页面' : '这个分类下还没有页面') + '</div>';
+    return;
+  }
+  /* 选了具体分类就不再分组；「全部」按分类分组，一眼看清每类各有多少页 */
+  if (st.cat && st.cat !== 'all') { list.innerHTML = pages.map(pgmRowHtml).join(''); return; }
+  let html = '';
+  const uncat = pages.filter(p => !pageCatOfPage(p));
+  if (uncat.length) {
+    html += '<div class="pgm-group"><span class="pg-dot" style="background:#94a3b8"></span>未分类 · ' + uncat.length + '</div>' +
+      uncat.map(pgmRowHtml).join('');
+  }
+  (state.nodePageCats || []).forEach(c => {
+    const items = pages.filter(p => p.catId === c.id);
+    if (!items.length) return;
+    html += '<div class="pgm-group"><span class="pg-dot" style="background:' + c.color + '"></span>' + escapeHtml(c.name) + ' · ' + items.length + '</div>' +
+      items.map(pgmRowHtml).join('');
+  });
+  list.innerHTML = html;
+}
+function renderPageManager() {
+  const mask = document.getElementById('nodePageModal');
+  if (!mask) return;
+  const st = state.pgm || (state.pgm = { view: 'list', q: '', cat: 'all', pageId: null });
+  const pages = state.nodePages || [];
+  const cats = state.nodePageCats || [];
+  const title = document.getElementById('pgmTitle');
+  const sub = document.getElementById('pgmSub');
+  const tools = document.getElementById('pgmTools');
+  const foot = document.getElementById('pgmFoot');
+  if (!title || !tools || !foot) return;
+  if (st.view === 'pick') {
+    const p = pages.find(x => x.id === st.pageId);
+    title.textContent = '设置分类';
+    sub.textContent = p ? p.name : '';
+  } else if (st.view === 'cats') {
+    title.textContent = '分类管理';
+    sub.textContent = cats.length + ' 个分类';
+  } else {
+    title.textContent = '页面管理';
+    sub.textContent = pages.length + ' 个页面 · ' + cats.length + ' 个分类';
+  }
+  if (st.view === 'list') {
+    tools.innerHTML = '<div class="pgm-search"><span class="pgm-si">🔍</span>' +
+      '<input id="pgmSearchInput" type="text" placeholder="搜索页面名称…" autocomplete="off" spellcheck="false" value="' + escapeHtml(st.q || '') + '"></div>' +
+      '<div class="pgm-cats">' + pgmChipsHtml() + '</div>';
+    foot.innerHTML = '<button type="button" class="pgm-btn primary" data-pgm-act="create">＋ 新建页面</button>' +
+      '<button type="button" class="pgm-btn" data-pgm-act="duplicate">📋 复制当前页</button>' +
+      '<button type="button" class="pgm-btn" data-pgm-act="cat-manage">🏷 分类</button>';
+  } else {
+    tools.innerHTML = '<div style="padding:0 0 2px;"><button type="button" class="pgm-back" data-pgm-act="back">‹ 返回页面列表</button></div>';
+    if (st.view === 'cats') {
+      foot.innerHTML = '<button type="button" class="pgm-btn primary" data-pgm-act="cat-add">＋ 新建分类</button>' +
+        '<span class="pgm-tip">分类只用于整理页面，不影响节点数据</span>' +
+        '<button type="button" class="pgm-btn" data-pgm-act="back">完成</button>';
+    } else {
+      foot.innerHTML = '<button type="button" class="pgm-btn primary" data-pgm-act="cat-add">＋ 新建分类</button>' +
+        '<span class="pgm-tip"></span>' +
+        '<button type="button" class="pgm-btn" data-pgm-act="back">返回</button>';
+    }
+  }
+  pgmRenderList();
+}
+function openPageManager() {
+  const mask = document.getElementById('nodePageModal');
+  if (!mask) return;
+  closeNodeToolbarPanels('nodePageModal');
+  state.pgm = { view: 'list', q: '', cat: 'all', pageId: null };
+  mask.style.display = 'flex';
+  renderPageManager();
+  /* 手机端不自动聚焦：拉起虚拟键盘会把弹窗顶掉一半 */
+  if (window.innerWidth > 560) {
+    const inp = document.getElementById('pgmSearchInput');
+    if (inp) { try { inp.focus(); } catch (e) {} }
+  }
+}
+/* 供各页面操作复用：同步工具栏上的当前页名，并在弹窗打开时刷新它 */
 function renderNodePageSwitcher() {
-  const menu = document.getElementById('nodePageMenu');
-  if (!menu) return;
   const page = getCurrentNodePage();
   const label = document.getElementById('nodePageLabel');
   if (label) label.textContent = page ? page.name : '页面';
-  const pages = state.nodePages;
-  let html = `<div class="node-page-title">页面（${pages.length}）</div>`;
-  pages.forEach((p, i) => {
-    const active = p.id === state.nodeCurrentPageId;
-    html += `
-      <div class="node-page-row ${active ? 'active' : ''}" data-page-id="${escapeHtml(p.id)}">
-        <button type="button" class="np-main" data-page-action="switch" data-page-id="${escapeHtml(p.id)}" title="${escapeHtml(p.name)}">
-          <span class="np-name">${active ? '● ' : ''}${escapeHtml(p.name)}</span>
-          <span class="np-count">${p.nodes.length}</span>
-        </button>
-        <button type="button" class="np-icon" data-page-action="rename" data-page-id="${escapeHtml(p.id)}" title="重命名">✏️</button>
-        <button type="button" class="np-icon danger" data-page-action="delete" data-page-id="${escapeHtml(p.id)}" title="删除页面">✕</button>
-      </div>`;
-  });
-  html += `<div class="node-page-sep"></div>
-    <div class="node-page-row">
-      <button type="button" class="np-main" data-page-action="duplicate" title="复制当前页全部节点与连线为副本">
-        <span class="np-name">📋 创建当前页副本</span>
-      </button>
-    </div>
-    <div class="node-page-row">
-      <button type="button" class="np-main" data-page-action="create" title="新建页面（Ctrl+N）">
-        <span class="np-name">＋ 新建页面</span>
-      </button>
-    </div>
-    <div class="node-page-hint">Ctrl+Alt+→ / ← 切换页面 · 节点选中后 Ctrl+C / Ctrl+V 复制粘贴（可跨页面）</div>`;
-  menu.innerHTML = html;
+  const mask = document.getElementById('nodePageModal');
+  if (mask && mask.style.display !== 'none') renderPageManager();
 }
 function closeNodePageMenu() {
+  const mask = document.getElementById('nodePageModal');
+  if (mask) mask.style.display = 'none';
   const menu = document.getElementById('nodePageMenu');
   if (menu) menu.style.display = 'none';
 }
@@ -22091,6 +22573,7 @@ function closeNodePageMenu() {
    由 openNodeLinkPanel 自行协调，这里按需统一关闭。 */
 function closeNodeToolbarPanels(exceptId) {
   const hide = (el) => { if (el) el.style.display = 'none'; };
+  if (exceptId !== 'nodePageModal') hide(document.getElementById('nodePageModal'));
   if (exceptId !== 'nodePageMenu') hide(document.getElementById('nodePageMenu'));
   if (exceptId !== 'nodeFilterPanel') closeNodeFilterPanel();
   if (exceptId !== 'nodeLayoutPanel') hide(document.getElementById('nodeLayoutPanel'));
@@ -22134,43 +22617,105 @@ function bindNodeLayoutMenu() {
   });
 }
 function toggleNodePageMenu() {
-  const menu = document.getElementById('nodePageMenu');
-  if (!menu) return;
-  if (menu.style.display !== 'none') { closeNodePageMenu(); return; }
-  closeNodeToolbarPanels('nodePageMenu');
-  renderNodePageSwitcher();
-  menu.style.display = '';
+  const mask = document.getElementById('nodePageModal');
+  if (!mask) return;
+  if (mask.style.display !== 'none') { closeNodePageMenu(); return; }
+  openPageManager();
 }
 function bindNodePageSwitcher() {
-  const menu = document.getElementById('nodePageMenu');
   const btn = document.getElementById('nodePageBtn');
+  const mask = document.getElementById('nodePageModal');
   if (btn) btn.addEventListener('click', (e) => { e.stopPropagation(); toggleNodePageMenu(); });
-  if (!menu) return;
-  menu.addEventListener('click', (e) => {
-    const act = e.target.closest('[data-page-action]');
-    if (!act) return;
+  if (!mask) return;
+  const closeBtn = document.getElementById('pgmClose');
+  if (closeBtn) closeBtn.addEventListener('click', closeNodePageMenu);
+  mask.addEventListener('click', (e) => { if (e.target === mask) closeNodePageMenu(); });
+  /* 搜索：只重绘列表，保留输入焦点与光标 */
+  mask.addEventListener('input', (e) => {
+    if (!e.target || e.target.id !== 'pgmSearchInput') return;
+    state.pgm.q = e.target.value;
+    pgmRenderList();
+  });
+  mask.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    e.preventDefault();
     e.stopPropagation();
-    const action = act.dataset.pageAction;
-    const pageId = act.dataset.pageId;
-    if (action === 'switch') switchNodePage(pageId);
-    else if (action === 'duplicate') {
-      duplicateNodePage(state.nodeCurrentPageId);
-    } else if (action === 'create') {
+    if (state.pgm && state.pgm.view !== 'list') { state.pgm.view = 'list'; renderPageManager(); }
+    else closeNodePageMenu();
+  });
+  mask.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-pgm-act]');
+    if (!t) return;
+    e.stopPropagation();
+    const act = t.dataset.pgmAct;
+    const st = state.pgm || (state.pgm = { view: 'list', q: '', cat: 'all', pageId: null });
+    const pageId = t.dataset.pageId || st.pageId;
+    const catId = t.dataset.cat;
+    if (act === 'filter') { st.cat = catId; renderPageManager(); return; }
+    if (act === 'back') { st.view = 'list'; st.pageId = null; renderPageManager(); return; }
+    if (act === 'switch') { switchNodePage(pageId); return; }
+    if (act === 'create') {
       const name = window.prompt('新页面名称：', makeDefaultPageName());
       if (name === null) return;
-      createNodePage(name);
-    } else if (action === 'rename') {
+      /* 当前正筛着某个分类时，新建的页面直接归到该分类 */
+      const cat = (st.cat && st.cat !== 'all' && st.cat !== 'none') ? st.cat : null;
+      createNodePage(name, cat);
+      return;
+    }
+    if (act === 'duplicate') { duplicateNodePage(state.nodeCurrentPageId); return; }
+    if (act === 'rename') {
       const page = state.nodePages.find(p => p.id === pageId);
       if (!page) return;
       const name = window.prompt('重命名页面：', page.name);
       if (name === null) return;
       renameNodePage(pageId, name);
-    } else if (action === 'delete') {
+      return;
+    }
+    if (act === 'delete') {
       const page = state.nodePages.find(p => p.id === pageId);
       if (!page) return;
       showConfirm('删除页面',
         `确定删除页面「${page.name}」吗？\n该页面上的 ${page.nodes.length} 个节点与它们的连线会一并删除。\n（关联的知识点本身不会被删除）`,
-        () => { deleteNodePage(pageId); });
+        () => {
+          deleteNodePage(pageId);
+          /* 删完继续留在管理弹窗里（deleteNodePage 内部切页会顺手关弹窗） */
+          mask.style.display = 'flex';
+          renderPageManager();
+        });
+      return;
+    }
+    if (act === 'set-cat') { st.view = 'pick'; st.pageId = pageId; renderPageManager(); return; }
+    if (act === 'pick') {
+      setPageCategory(st.pageId, catId === 'none' ? null : catId);
+      st.view = 'list'; st.pageId = null;
+      renderPageManager();
+      return;
+    }
+    if (act === 'cat-manage') { st.view = 'cats'; renderPageManager(); return; }
+    if (act === 'cat-add') {
+      const name = window.prompt('新分类名称：', '');
+      if (name === null) return;
+      const cat = createPageCat(name);
+      if (cat && st.view === 'pick') setPageCategory(st.pageId, cat.id);
+      renderPageManager();
+      return;
+    }
+    if (act === 'cat-rename') {
+      const cat = pageCatById(t.dataset.catId);
+      if (!cat) return;
+      const name = window.prompt('重命名分类：', cat.name);
+      if (name === null) return;
+      renamePageCat(cat.id, name);
+      renderPageManager();
+      return;
+    }
+    if (act === 'cat-del') {
+      const cat = pageCatById(t.dataset.catId);
+      if (!cat) return;
+      showConfirm('删除分类',
+        `确定删除分类「${cat.name}」吗？\n该分类下的 ${pageCatCount(cat.id)} 个页面会回到「未分类」（页面本身不会被删除）。`,
+        () => { deletePageCat(cat.id); renderPageManager(); });
+      return;
     }
   });
 }
@@ -22203,10 +22748,10 @@ function renderNodeMode() {
         </div>
         <div class="node-statbar" id="nodeStatBar" title="画布统计"></div>
         <div class="node-minimap" id="nodeMinimap"></div>
-        <div class="node-toolbar">
-          <button class="node-tool-btn" id="nodeUndoBtn" data-hist="undo" title="撤销（Ctrl+Z）" disabled>↩</button>
-          <button class="node-tool-btn" id="nodeRedoBtn" data-hist="redo" title="重做（Ctrl+Y）" disabled>↪</button>
-          <button class="node-tool-btn" id="nodeAddBtn" title="新建节点">➕</button>
+        <div class="node-toolbar nt-collapsed" id="nodeToolbar">
+          <button class="node-tool-btn" id="nodeUndoBtn" data-hist="undo" data-pri="1" title="撤销（Ctrl+Z）" disabled>↩</button>
+          <button class="node-tool-btn" id="nodeRedoBtn" data-hist="redo" data-pri="1" title="重做（Ctrl+Y）" disabled>↪</button>
+          <button class="node-tool-btn" id="nodeAddBtn" data-pri="1" title="新建节点">➕</button>
           <button class="node-tool-btn" id="nodePadBtn" title="方向轮盘：显示/隐藏底部半透明方向键，用于微调节点位置">✥</button>
           <button class="node-tool-btn" id="nodeImportBtn" title="把知识点导入为节点">📥</button>
           <button class="node-tool-btn" id="nodeSelectBtn" title="选择节点：全选、按标签、按目录">☑️</button>
@@ -22225,8 +22770,23 @@ function renderNodeMode() {
           <button class="node-tool-btn" id="nodeSearchBtn" title="搜索节点（Ctrl+F）">🔍</button>
           <button class="node-tool-btn" id="nodeOutlineBtn" title="大纲视图（层级树）">☰</button>
           <button class="node-tool-btn" id="nodeExportBtn" title="导出：图片 / PDF / 批量">💾</button>
+          <button class="node-tool-btn" id="nodeMinimapBtn" title="显示 / 隐藏小地图">🗺</button>
+          <button class="node-tool-btn nt-more" id="nodeToolbarMore" title="更多工具">⋯</button>
         </div>
         <div class="node-page-menu" id="nodePageMenu" style="display:none;"></div>
+        <!-- 第145条：页面管理弹窗（替代原来的长列表下拉菜单） -->
+        <div class="pgm-mask" id="nodePageModal" style="display:none;">
+          <div class="pgm-panel" role="dialog" aria-modal="true" aria-label="页面管理">
+            <div class="pgm-head">
+              <span class="pgm-title" id="pgmTitle">页面管理</span>
+              <span class="pgm-sub" id="pgmSub"></span>
+              <button type="button" class="pgm-x" id="pgmClose" title="关闭（Esc）">✕</button>
+            </div>
+            <div class="pgm-tools" id="pgmTools"></div>
+            <div class="pgm-list" id="pgmList"></div>
+            <div class="pgm-foot" id="pgmFoot"></div>
+          </div>
+        </div>
         <div class="node-filter-panel" id="nodeFilterPanel" style="display:none;"></div>
         <div class="node-layout-panel" id="nodeLayoutPanel" style="display:none;"></div>
         <div class="node-search-panel" id="nodeSearchPanel" style="display:none;"></div>
@@ -22345,8 +22905,11 @@ function renderNodeMode() {
     bindNodeMenu();
     bindNodePasteHandler();
     initNodeFormatBar();
+    loadNodeUiPrefs();
+    applyNodeToolbarState();
     mountAllNodes();
     bindMinimap();
+    applyNodeMinimapState();
     applyNodeHintVisibility();
     nodeDomReady = true;
   }
@@ -22376,6 +22939,37 @@ function updateNodeEmptyTip() {
   const tip = document.getElementById('nodeEmptyTip');
   if (!tip) return;
   tip.style.display = state.nodes.length === 0 ? '' : 'none';
+}
+
+/* ---------- 第145条：工具栏折叠 & 小地图显隐（纯 UI 偏好） ---------- */
+function loadNodeUiPrefs() {
+  try { state.nodeToolbarExpanded = localStorage.getItem(STORAGE_KEY_NODE_TB) === '1'; }
+  catch (e) { state.nodeToolbarExpanded = false; }
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_NODE_MINIMAP);
+    /* 首次使用：宽屏默认显示，窄屏默认隐藏（小屏会被遮挡） */
+    state.nodeMinimapOn = (raw === null) ? (window.innerWidth > 720) : (raw === '1');
+  } catch (e) { state.nodeMinimapOn = true; }
+}
+function applyNodeToolbarState() {
+  const tb = document.getElementById('nodeToolbar');
+  if (!tb) return;
+  tb.classList.toggle('nt-collapsed', !state.nodeToolbarExpanded);
+  const more = document.getElementById('nodeToolbarMore');
+  if (more) {
+    more.textContent = state.nodeToolbarExpanded ? '‹' : '⋯';
+    more.title = state.nodeToolbarExpanded ? '收起工具（只保留撤销 / 重做 / 新建）' : '更多工具';
+    more.classList.toggle('active', !!state.nodeToolbarExpanded);
+  }
+}
+function applyNodeMinimapState() {
+  const mm = document.getElementById('nodeMinimap');
+  if (!mm) return;
+  mm.style.display = state.nodeMinimapOn ? 'block' : 'none';
+  const btn = document.getElementById('nodeMinimapBtn');
+  if (btn) btn.classList.toggle('active', !!state.nodeMinimapOn);
+  if (state.nodeMinimapOn) renderMinimap();
+  else if (mm.innerHTML) mm.innerHTML = '';
 }
 
 function bindNodeToolbar() {
@@ -22464,6 +23058,21 @@ function bindNodeToolbar() {
   if (outlineBtn) outlineBtn.addEventListener('click', toggleNodeOutlinePanel);
   const exportBtn = document.getElementById('nodeExportBtn');
   if (exportBtn) exportBtn.addEventListener('click', openNodeExportModal);
+  /* 小地图显隐 + 工具栏折叠（默认只露前三个控件） */
+  const mmBtn = document.getElementById('nodeMinimapBtn');
+  if (mmBtn) mmBtn.addEventListener('click', () => {
+    state.nodeMinimapOn = !state.nodeMinimapOn;
+    try { localStorage.setItem(STORAGE_KEY_NODE_MINIMAP, state.nodeMinimapOn ? '1' : '0'); } catch (e) {}
+    applyNodeMinimapState();
+    showToast(state.nodeMinimapOn ? '已显示小地图' : '已隐藏小地图');
+  });
+  const tbMore = document.getElementById('nodeToolbarMore');
+  if (tbMore) tbMore.addEventListener('click', (e) => {
+    e.stopPropagation();
+    state.nodeToolbarExpanded = !state.nodeToolbarExpanded;
+    try { localStorage.setItem(STORAGE_KEY_NODE_TB, state.nodeToolbarExpanded ? '1' : '0'); } catch (e) {}
+    applyNodeToolbarState();
+  });
   bindCommandPalette();
   renderRulers();
 }
@@ -22709,10 +23318,12 @@ function addRightPort(node) {
   if (!canAddRightPort(node)) { showToast(`最多只能新建 ${NODE_MAX_RIGHT_PORTS} 个连接点`, true); return null; }
   const p = makePort('right', 0.5, '');
   p.custom = true;
+  histCapture('新建连接点');
   getNodePorts(node).push(p);
   repositionRightPorts(node);
   saveNodes();
   renderNodePorts(node);
+  histCommit();
   return p;
 }
 const PORT_SAFE_MIN = 0.1;
@@ -22733,10 +23344,13 @@ function renameNodePort(node, portId, name) {
   if (isFixedPortNode(node)) { showToast('该节点类型不支持重命名连接点', true); return false; }
   if (isTocNode(node)) { showToast('目录节点连接点随条目管理，请直接在条目上修改', true); return false; }
   const clean = String(name == null ? '' : name).replace(/[\r\n\t]/g, ' ').trim().slice(0, 12);
+  if (p.name === clean) return true;
+  histCapture('重命名连接点');
   p.name = clean;
   if (p.side === 'right' && p.id !== defaultPortIdForSide('right')) p.custom = true;
   saveNodes();
   renderNodePorts(node);
+  histCommit();
   return true;
 }
 function removeNodePort(node, portId) {
@@ -22745,6 +23359,7 @@ function removeNodePort(node, portId) {
   if (isFixedPortNode(node)) { showToast('该节点类型不允许删除连接点', true); return false; }
   if (isTocNode(node)) { showToast('目录节点连接点随条目管理，请删除对应条目', true); return false; }
   if (p.id === defaultPortIdForSide(p.side)) { showToast('每边默认连接点不能删除，只能重命名', true); return false; }
+  histCapture('删除连接点');
   node.ports = getNodePorts(node).filter(x => x.id !== portId);
   const fallback = defaultPortIdForSide(p.side);
   state.edges.forEach(e => {
@@ -22755,6 +23370,7 @@ function removeNodePort(node, portId) {
   saveNodes();
   renderNodePorts(node);
   renderAllEdges();
+  histCommit();
   showToast('已删除连接点');
   return true;
 }
@@ -22794,6 +23410,41 @@ function buildNodePortEls(node, nodeEl) {
    标题太长自动换行完全显示；标题节点/图片节点额外有居中样式 */
 function titleInputHtml(node) {
   return `<div class="node-title-text" contenteditable="true" data-placeholder="节点标题" spellcheck="false">${escapeHtml(node.title)}</div>`;
+}
+/* ---------- 第145条：节点标题对齐 / 加粗 ---------- */
+function nodeTitleAlignOf(node) {
+  const a = node && node.titleAlign;
+  return (a === 'left' || a === 'center' || a === 'right') ? a : '';
+}
+function nodeTitleBoldOf(node) { return !(node && node.titleBold === false); }
+/* 把标题样式写到 DOM：空对齐时清掉内联样式，回落到类型默认（标题节点居中、其余左对齐） */
+function applyNodeTitleStyle(nodeEl, node) {
+  if (!nodeEl || !node) return;
+  const t = nodeEl.querySelector('.node-title-text') || nodeEl.querySelector('.node-title-input');
+  if (!t) return;
+  const al = nodeTitleAlignOf(node);
+  t.style.textAlign = al || '';
+  const bold = nodeTitleBoldOf(node);
+  t.style.fontWeight = bold ? '' : '500';
+  nodeEl.classList.toggle('title-plain', !bold);
+}
+/* 设置标题样式：align=''|'left'|'center'|'right'，bold=true/false，任一为 undefined 表示不改 */
+function setNodeTitleStyle(ids, patch) {
+  const list = (ids || []).filter(id => state.nodes.some(n => n.id === id));
+  if (!list.length) { showToast('请先选择节点', true); return 0; }
+  histCapture('设置标题样式');
+  list.forEach(id => {
+    const n = state.nodes.find(x => x.id === id);
+    if (!n) return;
+    if (patch && patch.align !== undefined) n.titleAlign = patch.align || '';
+    if (patch && patch.bold !== undefined) n.titleBold = patch.bold !== false;
+    const el = document.querySelector(`.node-item[data-node-id="${id}"]`);
+    if (el) applyNodeTitleStyle(el, n);
+  });
+  saveNodes();
+  histCommit();
+  scheduleEdgesRedraw();
+  return list.length;
 }
 /* 目录节点：条目行 = 彩色圆点 + 名称输入；输入行圆点在左(连接点在左)，输出行圆点在右(连接点在右)。
    行内小操作（换向/删除）悬停或触屏常显淡色。点击圆点循环换色，回车新建条目。 */
@@ -22853,6 +23504,7 @@ function createNodeEl(node) {
   const body = div.querySelector('.node-body');
   if (body) applyNodeBodyMode(div, node);
   applyNodeGripStatus(div, node);
+  applyNodeTitleStyle(div, node);
   if (type === 'toc') alignTocPorts(div, node);
   return div;
 }
@@ -24223,6 +24875,8 @@ function minimapMapping() {
 function renderMinimap() {
   const mm = document.getElementById('nodeMinimap');
   if (!mm || state.mode !== 'node') return;
+  /* 隐藏时不重绘（省掉大画布每次拖动都要拼 SVG 的开销） */
+  if (!state.nodeMinimapOn) { if (mm.innerHTML) mm.innerHTML = ''; return; }
   if (!state.nodes.length) { mm.innerHTML = '<span class="mm-label">地图</span>'; return; }
   const mp = minimapMapping();
   const dark = isDarkTheme();
@@ -26086,10 +26740,12 @@ function removeNodeImage(nodeId, idx) {
   const node = state.nodes.find(n => n.id === nodeId);
   if (!node) return false;
   if (!(idx >= 0) || idx >= node.images.length) return false;
+  histCapture('移除节点图片');
   node.images.splice(idx, 1);
   saveNodes();
   const nodeEl = document.querySelector(`.node-item[data-node-id="${nodeId}"]`);
   renderNodeImages(node, nodeEl ? nodeEl.querySelector('.node-images') : null);
+  histCommit();
   showToast('已移除图片');
   return true;
 }
@@ -26507,6 +27163,14 @@ function updateNodeBatchBar() {
   }
   const stats = getBatchSelectionStats(ids);
   bar.style.display = '';
+  /* 标题样式：单节点多选都可用（左/中/右 + 加粗），与节点右键菜单里的「标题样式」同源 */
+  const titleHtml =
+    '<span class="node-batch-group-label">标题</span>' +
+    '<button type="button" class="node-batch-btn icon" data-batch="title-left" title="标题左对齐">左</button>' +
+    '<button type="button" class="node-batch-btn icon" data-batch="title-center" title="标题居中">中</button>' +
+    '<button type="button" class="node-batch-btn icon" data-batch="title-right" title="标题右对齐">右</button>' +
+    '<button type="button" class="node-batch-btn icon" data-batch="title-bold" title="标题加粗 / 取消加粗">B</button>' +
+    '<span class="node-batch-sep"></span>';
   const alignHtml = ids.length >= 2
     ? '<span class="node-batch-group-label">对齐</span>' +
       '<button type="button" class="node-batch-btn icon" data-batch="align-left" title="左对齐">⇤</button>' +
@@ -26541,7 +27205,7 @@ function updateNodeBatchBar() {
       `<span class="node-batch-count">已选 ${ids.length} 个节点</span>` +
       `<button type="button" class="node-batch-done" data-batch="clear">完成</button>` +
     `</div>` +
-    `<div class="node-batch-groups">` + alignHtml + actHtml + `</div>`;
+    `<div class="node-batch-groups">` + alignHtml + titleHtml + actHtml + `</div>`;
 }
 function getBatchSelectionStats(ids) {
   let plain = 0, linked = 0, hidden = 0;
@@ -26576,6 +27240,18 @@ function runBatchNodeAction(action) {
     const mode = action.replace('align-', '').replace('distribute-', 'distribute-');
     const ok = alignSelectedNodes(mode);
     if (ok) showToast('已应用对齐');
+    return;
+  }
+  if (action.indexOf('title-') === 0) {
+    const kind = action.slice(6);
+    if (kind === 'bold') {
+      const anyBold = ids.some(id => { const n = state.nodes.find(x => x.id === id); return n && nodeTitleBoldOf(n); });
+      const n2 = setNodeTitleStyle(ids, { bold: !anyBold });
+      showToast((anyBold ? '已取消加粗 ' : '已加粗 ') + n2 + ' 个节点的标题');
+    } else {
+      const n2 = setNodeTitleStyle(ids, { align: kind });
+      showToast('标题已' + (kind === 'left' ? '左对齐' : kind === 'center' ? '居中' : '右对齐') + '（' + n2 + ' 个）');
+    }
     return;
   }
   if (action === 'del-edge-sel') { deleteEdgesBetweenSelected(); return; }
@@ -28335,7 +29011,7 @@ async function buildUnifiedBackup() {
       const images = (typeof resolveImageArray === 'function') ? await resolveImageArray(n.images) : (n.images || []);
       nodes.push({ ...n, images });
     }
-    nodePages.push({ id: p.id, name: p.name, nodes, edges: p.edges || [], groups: p.groups || [], view: p.view || null, collapsed: p.collapsed || [] });
+    nodePages.push({ id: p.id, name: p.name, catId: p.catId || null, nodes, edges: p.edges || [], groups: p.groups || [], view: p.view || null, collapsed: p.collapsed || [] });
   }
   return {
     app: 'knowledge-cards',
@@ -28344,6 +29020,7 @@ async function buildUnifiedBackup() {
     data: {
       items,
       nodePages,
+      nodePageCats: (state.nodePageCats || []).map(c => ({ id: c.id, name: c.name, color: c.color })),
       currentId: state.nodeCurrentPageId || null,
       collapsedGroups: state.collapsedGroups || [],
       theme: state.theme || 'auto',
@@ -28608,6 +29285,13 @@ function currentPageName() { const p = getCurrentNodePage(); return p ? p.name :
 const COMMAND_REGISTRY = [
   { icon: '➕', title: '新建节点', hint: '在画布中心添加', run: () => addNodeAtCenter() },
   { icon: '🗂', title: '新建页面', hint: '', run: () => { const n = window.prompt('新页面名称：', makeDefaultPageName()); if (n !== null) createNodePage(n); } },
+  { icon: '📑', title: '页面管理（搜索 / 分类）', hint: '', run: () => { closeCommandPalette(); openPageManager(); } },
+  { icon: '🗺', title: '显示 / 隐藏小地图', hint: '', run: () => { const b = document.getElementById('nodeMinimapBtn'); if (b) b.click(); } },
+  { icon: '⋯', title: '展开 / 收起工具栏', hint: '', run: () => { const b = document.getElementById('nodeToolbarMore'); if (b) b.click(); } },
+  { icon: 'A', title: '标题：左对齐（选中节点）', hint: '', run: () => runBatchNodeAction('title-left') },
+  { icon: 'A', title: '标题：居中（选中节点）', hint: '', run: () => runBatchNodeAction('title-center') },
+  { icon: 'A', title: '标题：右对齐（选中节点）', hint: '', run: () => runBatchNodeAction('title-right') },
+  { icon: 'B', title: '标题：加粗 / 取消加粗（选中节点）', hint: '', run: () => runBatchNodeAction('title-bold') },
   { icon: '🪄', title: '自动排列所有节点', hint: 'Ctrl+Shift+L', run: () => autoLayoutNodes() },
   { icon: '⤢', title: '适应画布', hint: '', run: () => fitNodes() },
   { icon: '🔍', title: '搜索节点', hint: 'Ctrl+F', run: () => { closeCommandPalette(); toggleNodeSearchPanel(); } },
@@ -28836,6 +29520,15 @@ function openNodeMenu(nodeId, clientX, clientY) {
   html += '<div class="menu-section">节点</div>';
   html += menuRow('zoom', '🔍', '最佳视图', '快捷键：空格');
   html += menuRow('size', '📐', '自定义尺寸', '设置选中/全部节点宽度');
+  /* 标题样式：左/中/右 + 加粗，点一下立即生效（菜单保持打开便于连点） */
+  const tAl = nodeTitleAlignOf(node), tBold = nodeTitleBoldOf(node);
+  html += '<div class="menu-section">标题样式</div>';
+  html += '<div class="menu-title-style">' +
+    '<button type="button" class="mts-btn' + (tAl === 'left' ? ' on' : '') + '" data-title-style="left" title="标题左对齐">左</button>' +
+    '<button type="button" class="mts-btn' + (tAl === 'center' ? ' on' : '') + '" data-title-style="center" title="标题居中">中</button>' +
+    '<button type="button" class="mts-btn' + (tAl === 'right' ? ' on' : '') + '" data-title-style="right" title="标题右对齐">右</button>' +
+    '<button type="button" class="mts-btn mts-b' + (tBold ? ' on' : '') + '" data-title-style="bold" title="加粗 / 取消加粗">B</button>' +
+    '</div>';
   if (node.images && node.images.length) {
     html += menuRow('remove-img', '🖼', '移除图片', `共 ${node.images.length} 张`);
   }
@@ -28876,8 +29569,9 @@ function openNodeSizeDialog(nodeId) {
   menu.style.display = '';
   placeNodeMenu(menu, viewport, viewport.getBoundingClientRect().left + 200, viewport.getBoundingClientRect().top + 120);
 }
-function applyNodeSize(nodeId, w, all) {
+function applyNodeWidthTo(nodeId, w, all) {
   const world = document.getElementById('nodeWorld');
+  histCapture('调整节点尺寸');
   const doSet = (n) => {
     n.width = w;
     const el2 = document.querySelector('.node-item[data-node-id="' + n.id + '"]');
@@ -29031,11 +29725,29 @@ function bindNodeMenu() {
       e.stopPropagation();
       const inp = menu.querySelector('.port-name-input');
       const w = Math.max(120, Math.min(1600, parseInt(inp && inp.value, 10) || NODE_DEFAULT_W));
-      applyNodeSize(nodeId, w, sizeBtn.dataset.size === 'all');
+      applyNodeWidthTo(nodeId, w, sizeBtn.dataset.size === 'all');
       closeNodeMenu();
       return;
     }
     const btn = e.target.closest('button[data-menu]');
+    const tsBtn = e.target.closest('button[data-title-style]');
+    if (tsBtn) {
+      e.stopPropagation();
+      const kind = tsBtn.dataset.titleStyle;
+      const n = state.nodes.find(x => x.id === nodeId);
+      if (!n) return;
+      if (kind === 'bold') setNodeTitleStyle([nodeId], { bold: !nodeTitleBoldOf(n) });
+      else {
+        const cur = nodeTitleAlignOf(n);
+        setNodeTitleStyle([nodeId], { align: cur === kind ? '' : kind });
+      }
+      /* 菜单保持打开：就地刷新高亮，方便连续调整 */
+      menu.querySelectorAll('button[data-title-style]').forEach(b => {
+        const k = b.dataset.titleStyle;
+        b.classList.toggle('on', k === 'bold' ? nodeTitleBoldOf(n) : (nodeTitleAlignOf(n) === k));
+      });
+      return;
+    }
     if (!btn) return;
     e.stopPropagation();
     const act = btn.dataset.menu;
@@ -29091,6 +29803,7 @@ function bindNodeMenu() {
 function importItemsAsNodes(pending) {
   const list = Array.isArray(pending) ? pending : state.items.slice();
   if (list.length === 0) { showToast('没有需要导入的知识点'); return 0; }
+  histCapture('导入知识节点');
   const box = getNodesBBox();
   const baseX = box ? Math.round(box.minX) : 60;
   const startY = box ? Math.round(box.maxY + NODE_IMPORT_GAP_Y) : 60;
@@ -29108,6 +29821,7 @@ function importItemsAsNodes(pending) {
   mountAllNodes();
   renderAllEdges();
   saveNodes();
+  histCommit();
   requestAnimationFrame(() => { fitNodes(); });
   return list.length;
 }
@@ -29419,6 +30133,7 @@ function doNodeImport() {
   const { toImport, map, already } = getNodeImportCounts();
   if (toImport.length === 0) { showToast('当前范围没有可导入的知识点'); return; }
   const updateExistingNodes = () => {
+    histCapture('刷新导入节点');
     toImport.forEach(it => {
       const node = map.get(it.id);
       if (!node) return;
@@ -29429,6 +30144,7 @@ function doNodeImport() {
     mountAllNodes();
     renderAllEdges();
     saveNodes();
+    histCommit();
     showToast(`已刷新 ${toImport.length} 个节点`);
   };
   if (state.nodeImportConflict === 'skip') {
@@ -30669,6 +31385,14 @@ document.addEventListener('keydown', (e) => {
     }
     if (state.mode === 'node') closeNodeMenu();
     if (state.mode === 'node') closeNodeFilterPanel();
+    /* 第145条：页面管理弹窗优先响应 Esc（先回到列表，再关弹窗） */
+    if (state.mode === 'node') {
+      const pgm = document.getElementById('nodePageModal');
+      if (pgm && pgm.style.display !== 'none') {
+        if (state.pgm && state.pgm.view !== 'list') { state.pgm.view = 'list'; renderPageManager(); }
+        else closeNodePageMenu();
+      }
+    }
     if (state.mode === 'node') { closeNodeSearchPanel(); closeNodeExportModal(); const op = document.getElementById('nodeOutlinePanel'); if (op) op.style.display = 'none'; closeCommandPalette(); }
   }
   const ae = document.activeElement;

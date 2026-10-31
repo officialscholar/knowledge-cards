@@ -122,6 +122,8 @@ def main():
         page.fill(".ng-name-input", "导出用名")
         page.wait_for_timeout(150)
         # 不回车，直接点导出按钮（失焦即提交）
+        page.evaluate("() => document.getElementById('nodeToolbar').classList.contains('nt-collapsed') && document.getElementById('nodeToolbarMore').click()")
+        page.wait_for_timeout(150)
         page.click("#nodeExportBtn")
         page.wait_for_timeout(500)
         check(ginput_count(page) == 0, "点别处后输入框自动收掉", ginput_count(page))
@@ -176,6 +178,8 @@ def main():
         print("F 导出图包含组名与大括号说明")
         page.evaluate("([id,s,t]) => __T.node().braceSetText(id,s,t)", [gid, "right", "右边总结\n第二行说明"])
         page.wait_for_timeout(300)
+        page.evaluate("() => document.getElementById('nodeToolbar').classList.contains('nt-collapsed') && document.getElementById('nodeToolbarMore').click()")
+        page.wait_for_timeout(150)
         page.click("#nodeExportBtn")
         page.wait_for_timeout(400)
         with page.expect_download(timeout=30000) as dl2:

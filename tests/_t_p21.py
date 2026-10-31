@@ -226,6 +226,8 @@ def main():
         rel_before = None
         pos = positions(page)
         rel_before = (pos[x1][0] - pos[x2][0], pos[x1][1] - pos[x2][1])
+        page.evaluate("() => document.getElementById('nodeToolbar').classList.contains('nt-collapsed') && document.getElementById('nodeToolbarMore').click()")
+        page.wait_for_timeout(150)
         page.click("#nodeAutoLayoutBtn")
         page.wait_for_timeout(900)
         pos2 = positions(page)
