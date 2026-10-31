@@ -68,13 +68,36 @@ jobs:
           cp index.html "knowledge-cards-${{ steps.ver.outputs.next }}.html"
           ls -l "knowledge-cards-${{ steps.ver.outputs.next }}.html"
 
+      - name: Build release notes from this release's commit list
+        if: steps.gate.outputs.trigger == 'true'
+        id: notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          prev="${{ steps.ver.outputs.prev }}"
+          next="${{ steps.ver.outputs.next }}"
+          {
+            echo "## 本次更新（${prev:-首次发布} → ${next}）"
+            echo
+            if [ -n "$prev" ]; then
+              git log --pretty=format:'- %s' "$prev"..HEAD | sed 's/ \[release\]$//'
+            else
+              git log --pretty=format:'- %s' HEAD
+            fi
+            echo
+            echo
+            if [ -n "$prev" ]; then
+              echo "**Full Changelog**: https://github.com/officialscholar/knowledge-cards/compare/${prev}...${next}"
+            fi
+          } > RELEASE_NOTES.md
+          cat RELEASE_NOTES.md
+
       - name: Create GitHub Release and upload asset
         if: steps.gate.outputs.trigger == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.next }}
           name: knowledge-cards ${{ steps.ver.outputs.next }}
-          generate_release_notes: true
-          previous_tag: ${{ steps.ver.outputs.prev }}
+          body_path: RELEASE_NOTES.md
           files: knowledge-cards-*.html
           fail_on_unmatched_files: true
