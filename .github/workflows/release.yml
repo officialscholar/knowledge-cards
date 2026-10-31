@@ -1,0 +1,59 @@
+# Auto release: triggered only when the latest commit on main carries the [release] marker.
+# Local one-key script (release.ps1) adds that marker; ordinary pushes without it do not publish.
+# Version: read the latest semver tag, bump PATCH by one (v1.0.0 -> v1.0.1).
+# Asset: root index.html uploaded as knowledge-cards-vX.Y.Z.html.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    # Only the newest commit of this push triggers a release.
+    if: contains(github.event.head_commit.message, '[release]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history (tags + commits for notes)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next patch version
+        id: ver
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest=$(git tag -l 'v[0-9]*' --sort=-v:refname | head -n1)
+          if [ -z "$latest" ]; then
+            major=1; minor=0; patch=0; prev=""
+          else
+            v=${latest#v}
+            IFS='.' read -r major minor patch <<< "$v"
+            patch=$((patch + 1))
+            prev="$latest"
+          fi
+          next="v${major}.${minor}.${patch}"
+          echo "latest=${latest:-none} previous=${prev:-none} next=${next}"
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+          echo "prev=$prev" >> "$GITHUB_OUTPUT"
+
+      - name: Stage release asset with versioned name
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp index.html "knowledge-cards-${{ steps.ver.outputs.next }}.html"
+          ls -l "knowledge-cards-${{ steps.ver.outputs.next }}.html"
+
+      - name: Create GitHub Release and upload asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.next }}
+          name: knowledge-cards ${{ steps.ver.outputs.next }}
+          generate_release_notes: true
+          previous_tag: ${{ steps.ver.outputs.prev }}
+          files: knowledge-cards-*.html
+          fail_on_unmatched_files: true

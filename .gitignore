@@ -14,3 +14,6 @@ Thumbs.db
 Desktop.ini
 *.log
 __pycache__/
+
+# 一键发布脚本的临时提交信息文件
+.release-commit-msg.txt
