@@ -1,5 +1,7 @@
-# Auto release: triggered only when the latest commit on main carries the [release] marker.
-# Local one-key script (release.ps1) adds that marker; ordinary pushes without it do not publish.
+# Auto release: triggered only when the LATEST COMMIT SUBJECT (first line) on main carries the [release] marker.
+# Local one-key script (release.ps1) appends that marker to the subject; ordinary pushes do not publish.
+# NOTE: matching the full message would also hit the marker mentioned in the commit body, so we gate on the
+#       subject line only inside a bash step.
 # Version: read the latest semver tag, bump PATCH by one (v1.0.0 -> v1.0.1).
 # Asset: root index.html uploaded as knowledge-cards-vX.Y.Z.html.
 name: Release
@@ -13,8 +15,6 @@ permissions:
 
 jobs:
   release:
-    # Only the newest commit of this push triggers a release.
-    if: contains(github.event.head_commit.message, '[release]')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout full history (tags + commits for notes)
@@ -22,8 +22,27 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Gate: check [release] marker in commit subject only
+        id: gate
+        shell: bash
+        env:
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          subject=$(printf '%s' "$COMMIT_MSG" | head -n1)
+          echo "commit subject: $subject"
+          # grep -F: treat "[release]" as a literal string, not a glob character class; match subject only.
+          if printf '%s' "$subject" | grep -Fq "[release]"; then
+            echo "trigger=true" >> "$GITHUB_OUTPUT"
+            echo "release marker found in subject -> proceed"
+          else
+            echo "trigger=false" >> "$GITHUB_OUTPUT"
+            echo "no [release] marker in subject -> skip release"
+          fi
+
       - name: Compute next patch version
         id: ver
+        if: steps.gate.outputs.trigger == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -42,6 +61,7 @@ jobs:
           echo "prev=$prev" >> "$GITHUB_OUTPUT"
 
       - name: Stage release asset with versioned name
+        if: steps.gate.outputs.trigger == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -49,6 +69,7 @@ jobs:
           ls -l "knowledge-cards-${{ steps.ver.outputs.next }}.html"
 
       - name: Create GitHub Release and upload asset
+        if: steps.gate.outputs.trigger == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.next }}
