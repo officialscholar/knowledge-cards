@@ -439,6 +439,22 @@ python tests/_t_smoke.py      # 七模式冒烟
 
 回归脚本用 Playwright，桌面 1440×900 / 手机 390×844 双端跑，语音相关用例会 mock `speechSynthesis` 与 `Audio`。
 
+### 7.1 一键发布（提交 + 推送 + 自动发 Release）
+
+完成一条迭代、跑通回归后，在项目根目录执行：
+
+```powershell
+.\release.ps1                  # 自动取 docs/开发迭代记录.txt 最新条目作为提交信息
+.\release.ps1 "手动提交说明"    # 或手动指定标题
+```
+
+也可以直接双击 `发布.bat`。脚本依次完成：语法自检 → 备份当前 `index.html` 到 `backups/` → `git add -A` → 读取迭代记录最新条目生成提交信息（首行自动追加发版标记）→ `git commit` → `git push origin main`（OpenSSL 后端，失败自动重试 3 次）。
+
+推送成功后，仓库内的 GitHub Actions（`.github/workflows/release.yml`）检测到提交首行的发版标记，自动：读取最新语义化 tag 递增 patch（如 `v1.0.0 → v1.0.1`）、汇总本次提交生成 Release 说明、把 `index.html` 作为附件上传为 `knowledge-cards-vX.Y.Z.html`。
+
+- 普通提交（不带发版标记）不会触发发版；脚本在没有任何变更时会直接退出。
+- Release 版本号只在云端 Actions 递增，与程序内 `window.__KV__`（日期+字母迭代标记）相互独立。
+
 ## 8. 已知限制
 
 - **数据在浏览器本地**：换浏览器、清站点数据、换设备都需要先导出再导入，没有云端同步。
